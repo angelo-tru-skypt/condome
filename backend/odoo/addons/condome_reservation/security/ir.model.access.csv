@@ -1,0 +1,3 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_condome_common_area_owner,condome.common.area.owner,model_condome_common_area,condome_auth.group_condome_owner,1,1,1,1
+access_condome_area_reservation_owner,condome.area.reservation.owner,model_condome_area_reservation,condome_auth.group_condome_owner,1,1,1,1

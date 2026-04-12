@@ -1,0 +1,21 @@
+{
+    "name": "Condome Dashboard",
+    "version": "1.0.0",
+    "summary": "Resumen administrativo del condominio",
+    "description": "Expone métricas y agregados para el dashboard administrativo.",
+    "category": "Custom",
+    "depends": [
+        "base",
+        "condome_auth",
+        "condome_core",
+        "condome_structure",
+        "condome_directory",
+        "condome_access_control",
+        "condome_incident",
+        "condome_governance",
+        "condome_reservation",
+    ],
+    "installable": True,
+    "application": False,
+    "license": "LGPL-3",
+}

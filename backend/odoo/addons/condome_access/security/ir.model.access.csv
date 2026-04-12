@@ -1,0 +1,11 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_condome_visita_owner,condome.visita.owner,model_condome_visita,condome_auth.group_condome_owner,1,1,1,1
+access_condome_visita_propietario,condome.visita.propietario,model_condome_visita,condome_auth.group_condome_propietario,1,1,1,1
+access_condome_visita_residente,condome.visita.residente,model_condome_visita,condome_auth.group_condome_residente,1,1,1,0
+access_condome_notification_owner,condome.notification.owner,model_condome_notification,condome_auth.group_condome_owner,1,1,1,1
+access_condome_notification_propietario,condome.notification.propietario,model_condome_notification,condome_auth.group_condome_propietario,1,1,1,1
+access_condome_access_policy_owner,condome.access.policy.owner,model_condome_access_policy,condome_auth.group_condome_owner,1,1,1,1
+access_condome_access_policy_propietario,condome.access.policy.propietario,model_condome_access_policy,condome_auth.group_condome_propietario,1,1,1,1
+access_condome_vehiculo_owner,condome.vehiculo.owner,model_condome_vehiculo,condome_auth.group_condome_owner,1,1,1,1
+access_condome_vehiculo_propietario,condome.vehiculo.propietario,model_condome_vehiculo,condome_auth.group_condome_propietario,1,1,1,1
+access_condome_vehiculo_residente,condome.vehiculo.residente,model_condome_vehiculo,condome_auth.group_condome_residente,1,1,1,0

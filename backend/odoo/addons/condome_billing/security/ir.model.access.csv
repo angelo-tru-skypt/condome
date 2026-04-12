@@ -1,0 +1,3 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_condome_fee_template_user,access.condome.fee.template.user,model_condome_fee_template,base.group_user,1,1,1,1
+access_condome_charge_user,access.condome.charge.user,model_condome_charge,base.group_user,1,1,1,1

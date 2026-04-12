@@ -1,0 +1,42 @@
+services:
+  web:
+    image: odoo:17.0
+    restart: unless-stopped
+    depends_on:
+      mydb:
+        condition: service_healthy
+    ports:
+      - "8069:8069"
+    volumes:
+      - ./backend/odoo/addons:/mnt/extra-addons
+      - ./backend/odoo/odoo.conf:/etc/odoo/odoo.conf
+      - ./backend/data/odoo:/var/lib/odoo
+    environment:
+      - HOST=mydb
+      - USER=odoo
+      - PASSWORD=myodoo
+      - DB_HOST=mydb
+      - DB_PORT=5432
+      - DB_USER=odoo
+      - DB_PASSWORD=myodoo
+    command:
+      - odoo
+      - -c
+      - /etc/odoo/odoo.conf
+      - --load=web
+      - --log-level
+      - info
+  mydb:
+    image: postgres:15
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_PASSWORD=myodoo
+      - POSTGRES_USER=odoo
+    volumes:
+      - ./backend/data/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U odoo -d postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 10

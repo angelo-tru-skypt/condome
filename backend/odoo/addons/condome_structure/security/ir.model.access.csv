@@ -1,0 +1,7 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_condome_condominio_owner,condome.condominio.owner,model_condome_condominio,condome_auth.group_condome_owner,1,1,1,1
+access_condome_condominio_propietario,condome.condominio.propietario,model_condome_condominio,condome_auth.group_condome_propietario,1,1,1,0
+access_condome_edificio_owner,condome.edificio.owner,model_condome_edificio,condome_auth.group_condome_owner,1,1,1,1
+access_condome_edificio_propietario,condome.edificio.propietario,model_condome_edificio,condome_auth.group_condome_propietario,1,1,1,0
+access_condome_apartamento_owner,condome.apartamento.owner,model_condome_apartamento,condome_auth.group_condome_owner,1,1,1,1
+access_condome_apartamento_propietario,condome.apartamento.propietario,model_condome_apartamento,condome_auth.group_condome_propietario,1,1,1,0

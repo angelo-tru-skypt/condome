@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_condome_residente_owner,condome.residente.owner,model_condome_residente,condome_auth.group_condome_owner,1,1,1,1
+access_condome_residente_propietario,condome.residente.propietario,model_condome_residente,condome_auth.group_condome_propietario,1,1,1,0
+access_condome_propietario_owner,condome.propietario.owner,model_condome_propietario,condome_auth.group_condome_owner,1,1,1,1
+access_condome_propietario_propietario,condome.propietario.propietario,model_condome_propietario,condome_auth.group_condome_propietario,1,0,0,0

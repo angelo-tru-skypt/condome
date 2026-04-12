@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Template del Reporte Financiero -->
+    <template id="report_financial_document">
+        <t t-call="web.external_layout">
+            <t t-set="doc" t-value="doc.with_context(lang=user.lang)" />
+            <div class="page" style="font-family: 'Helvetica', sans-serif; color: #333;">
+                <style>
+                    .brand-orange { color: #D94F10; }
+                    .bg-brand-orange { background-color: #D94F10; color: white; }
+                    .report-header { border-bottom: 2px solid #D94F10; padding-bottom: 10px; margin-bottom: 20px; }
+                    .table-financial { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                    .table-financial th { background-color: #D94F10; color: white; padding: 10px; text-align: left; text-transform: uppercase; font-size: 12px; }
+                    .table-financial td { padding: 10px; border-bottom: 1px solid #EEE; font-size: 13px; }
+                    .summary-card { padding: 15px; border: 1px solid #D94F10; border-radius: 8px; text-align: center; }
+                    .summary-value { font-size: 24px; font-weight: bold; color: #D94F10; }
+                </style>
+
+                <div class="report-header">
+                    <div class="row">
+                        <div class="col-6">
+                            <h2 class="brand-orange">Reporte Financiero</h2>
+                            <p class="text-muted">Estado de Cobros y Pagos</p>
+                        </div>
+                        <div class="col-6 text-right">
+                            <t t-if="doc.condominio_id">
+                                <h4 t-field="doc.condominio_id.name"/>
+                            </t>
+                            <t t-else="">
+                                <h4>Resumen Global</h4>
+                            </t>
+                            <p>Fecha: <span t-field="doc.requested_at" t-options='{"widget": "datetime"}'/></p>
+                        </div>
+                    </div>
+                </div>
+
+                <t t-set="data" t-value="doc.get_financial_data()"/>
+
+                <!-- Caso Admin: Múltiples Condominios -->
+                <t t-if="'condominios' in data">
+                    <table class="table-financial">
+                        <thead>
+                            <tr>
+                                <th>Condominio</th>
+                                <th class="text-right">Generado (Cobrado)</th>
+                                <th class="text-right">Esperado (Propuesto)</th>
+                                <th class="text-right">Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr t-foreach="data['condominios']" t-as="item">
+                                <td><t t-esc="item['name']"/></td>
+                                <td class="text-right"><t t-esc="item['generado']" t-options='{"widget": "monetary", "display_currency": user.company_id.currency_id}'/></td>
+                                <td class="text-right"><t t-esc="item['esperado']" t-options='{"widget": "monetary", "display_currency": user.company_id.currency_id}'/></td>
+                                <td class="text-right text-muted">
+                                    <t t-if="item['esperado'] > 0">
+                                        <t t-esc="'%.2f' % (item['generado'] / item['esperado'] * 100)"/>%
+                                    </t>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </t>
+
+                <!-- Caso Propietario: Detalle de un Condominio -->
+                <t t-if="'pagos' in data">
+                    <div class="row mt-4">
+                        <div class="col-6">
+                            <div class="summary-card">
+                                <p class="text-muted text-uppercase small">Total Generado</p>
+                                <div class="summary-value">
+                                    <t t-esc="data['total_generado']" t-options='{"widget": "monetary", "display_currency": user.company_id.currency_id}'/>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="summary-card">
+                                <p class="text-muted text-uppercase small">Total Esperado</p>
+                                <div class="summary-value" style="color: #666;">
+                                    <t t-esc="data['total_esperado']" t-options='{"widget": "monetary", "display_currency": user.company_id.currency_id}'/>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h4 class="mt-4 brand-orange">Historial de Pagos de Residentes</h4>
+                    <table class="table-financial">
+                        <thead>
+                            <tr>
+                                <th>Residente</th>
+                                <th>Apartamento</th>
+                                <th>Fecha Pago</th>
+                                <th>Referencia</th>
+                                <th class="text-right">Monto</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr t-foreach="data['pagos']" t-as="pago">
+                                <td><t t-esc="pago['residente']"/></td>
+                                <td><t t-esc="pago['apartamento']"/></td>
+                                <td><t t-esc="pago['fecha']" t-options='{"widget": "date"}'/></td>
+                                <td><t t-esc="pago['referencia']"/></td>
+                                <td class="text-right"><t t-esc="pago['monto']" t-options='{"widget": "monetary", "display_currency": user.company_id.currency_id}'/></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </t>
+
+                <div class="footer mt-5 p-3 text-center small text-muted border-top">
+                    Generado automáticamente por Condome - Tu Gestión de Condominios
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <!-- Registro de la Acción de Reporte -->
+    <record id="action_report_financial" model="ir.actions.report">
+        <field name="name">Reporte Financiero Condome</field>
+        <field name="model">condome.report.export</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">condome_reporting.report_financial_document</field>
+        <field name="report_file">condome_reporting.report_financial_document</field>
+        <field name="print_report_name">'Financial_Report_%s' % (object.requested_at)</field>
+        <field name="binding_model_id" ref="model_condome_report_export"/>
+        <field name="binding_type">report</field>
+    </record>
+</odoo>
