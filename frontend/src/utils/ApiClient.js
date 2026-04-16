@@ -10,7 +10,7 @@
 
 import { apiLogger } from "./Logger.js";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "";
+export const API_BASE_URL = import.meta.env.VITE_API_URL || "";
 const DEFAULT_TIMEOUT = 30000; // 30 segundos
 const DEFAULT_RETRIES = 3;
 
@@ -362,6 +362,97 @@ class ApiClient {
   buildUrl(endpoint, params = {}) {
     const queryString = this.buildQueryString(params);
     return queryString ? `${endpoint}?${queryString}` : endpoint;
+  }
+
+  _extractFilename(contentDisposition, fallback = "download") {
+    if (!contentDisposition) return fallback;
+    const match = contentDisposition.match(/filename="?([^"]+)"?/i);
+    return match?.[1] || fallback;
+  }
+
+  async download(endpoint, options = {}) {
+    const {
+      method = "GET",
+      body = null,
+      headers = {},
+      timeout = this.timeout,
+    } = options;
+
+    const url = `${this.baseURL}${endpoint}`;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+    try {
+      const requestConfig = {
+        method,
+        headers: {
+          ...headers,
+        },
+        credentials: "include",
+        signal: controller.signal,
+      };
+
+      const token = this._getToken();
+      if (token) {
+        requestConfig.headers.Authorization = `Bearer ${token}`;
+      }
+
+      if (body) {
+        requestConfig.headers["Content-Type"] = "application/json";
+        requestConfig.body = JSON.stringify(body);
+      }
+
+      this._log("info", `DOWNLOAD ${endpoint}`);
+
+      const response = await fetch(url, requestConfig);
+      clearTimeout(timeoutId);
+
+      if (response.status === 401) {
+        if (this.onTokenExpired) {
+          this.onTokenExpired();
+        }
+        throw new TokenExpiredError();
+      }
+
+      if (!response.ok) {
+        let errorMessage = `Error HTTP ${response.status}`;
+        try {
+          const data = await response.json();
+          errorMessage = data?.detail || data?.error?.message || errorMessage;
+        } catch (_error) {
+          // Keep the fallback message for non-JSON responses.
+        }
+        throw new ApiError({
+          status: response.status,
+          message: errorMessage,
+          data: null,
+          endpoint,
+        });
+      }
+
+      const blob = await response.blob();
+      const contentDisposition = response.headers.get("Content-Disposition");
+      const contentType = response.headers.get("Content-Type") || blob.type;
+
+      return {
+        blob,
+        contentType,
+        filename: this._extractFilename(contentDisposition),
+      };
+    } catch (error) {
+      clearTimeout(timeoutId);
+      if (error.name === "AbortError") {
+        const timeoutError = new ApiError({
+          status: 408,
+          message: `Timeout después de ${timeout}ms`,
+          data: null,
+          endpoint,
+        });
+        timeoutError.timeout = true;
+        throw timeoutError;
+      }
+      throw error;
+    }
   }
 }
 

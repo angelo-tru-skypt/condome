@@ -1022,7 +1022,7 @@ export default function DashboardLayout() {
         </header>
 
         <main className="flex-1 overflow-y-auto px-4 py-5 md:px-6 md:py-6 xl:px-8" style={{ color: theme.mainTextColor }}>
-          <div className="mx-auto w-full max-w-[1480px]">
+          <div key={location.pathname} className="mx-auto w-full max-w-[1480px] animate-reveal">
             <Outlet />
           </div>
         </main>

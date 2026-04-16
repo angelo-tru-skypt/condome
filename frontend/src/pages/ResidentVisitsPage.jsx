@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import residentPortalService from "../utils/residentPortalService";
 
-const SURFACE = "bg-[#1A1A1A] border border-[#DCE7E7] rounded-[28px]";
+const SURFACE = "bg-[var(--surface-1)] border border-[var(--border-standard)] rounded-[28px] shadow-[var(--shadow-whisper)]";
 const INPUT =
-  "w-full px-4 py-3 bg-[#F6FBFB] border border-[#262626] rounded-xl text-[#E5E5E5] text-sm outline-none transition-all focus:border-[#1A6B9A] focus:bg-[#1A1A1A] focus:ring-4 focus:ring-[#1A6B9A]/10";
-const LABEL = "block text-[10px] font-semibold tracking-[0.12em] uppercase text-[#5D6B6A] mb-1.5";
+  "w-full px-4 py-3 bg-[var(--surface-2)] border border-[var(--border-standard)] rounded-xl text-[var(--fg-primary)] text-sm outline-none transition-all focus:border-[var(--condome-orange)] focus:ring-4 focus:ring-[var(--condome-orange)]/5";
+const LABEL = "block text-[10px] font-bold tracking-[0.14em] uppercase text-[var(--fg-tertiary)] mb-1.5";
 
 function todayDate() {
   return new Date().toISOString().slice(0, 10);
@@ -92,7 +92,7 @@ export default function ResidentVisitsPage() {
   return (
     <div className="space-y-6">
       <section
-        className="rounded-[32px] overflow-hidden border border-[#CFE3E3]"
+        className="rounded-[32px] overflow-hidden border border-[#CFE3E3] animate-reveal"
         style={{
           background: "linear-gradient(135deg, #0E2433 0%, #143349 46%, #1A6B9A 100%)",
           boxShadow: "0 18px 50px rgba(14,36,51,0.16)",
@@ -114,7 +114,7 @@ export default function ResidentVisitsPage() {
                 Cada solicitud llega al propietario del condominio para que decida si autoriza o rechaza la entrada del invitado.
               </p>
             </div>
-            <div className="rounded-[24px] bg-[#333333] border border-[#262626] backdrop-blur-sm p-5">
+            <div className="rounded-[24px] bg-white/5 border border-white/10 backdrop-blur-md p-5 flex flex-col gap-3">
               <InfoTile label="Condominio" value={context?.condominio?.nombre || "Sin contexto"} />
               <InfoTile label="Edificio" value={context?.edificio?.nombre || "Sin contexto"} />
               <InfoTile label="Apartamento" value={context?.apartamento?.nombre || "Sin contexto"} />
@@ -131,9 +131,9 @@ export default function ResidentVisitsPage() {
           <h2 className="mt-2 text-xl font-semibold text-[#E5E5E5]">Registrar invitado</h2>
 
           <div className="mt-5 grid grid-cols-3 gap-3">
-            <SummaryCard label="Total" value={summary.total} />
-            <SummaryCard label="Pendientes" value={summary.pending} />
-            <SummaryCard label="Aprobadas" value={summary.approved} />
+            <SummaryCard label="Total" value={summary.total} color="var(--fg-primary)" />
+            <SummaryCard label="Pendientes" value={summary.pending} color="var(--condome-orange)" />
+            <SummaryCard label="Aprobadas" value={summary.approved} color="#2E7D52" />
           </div>
 
           <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
@@ -207,8 +207,8 @@ export default function ResidentVisitsPage() {
             <button
               type="submit"
               disabled={saving}
-              className="w-full py-3 rounded-xl text-white text-sm font-semibold border-none disabled:opacity-50 cursor-pointer"
-              style={{ background: "linear-gradient(135deg, #1A6B9A, #0E2433)" }}
+              className="w-full py-4 rounded-xl text-white text-xs font-bold uppercase tracking-widest border-none disabled:opacity-50 cursor-pointer hover:brightness-110 shadow-lg active:scale-[0.98] transition-all"
+              style={{ background: "linear-gradient(135deg, var(--condome-orange-soft), var(--condome-orange))" }}
             >
               {saving ? "Enviando..." : "Enviar solicitud"}
             </button>
@@ -218,10 +218,10 @@ export default function ResidentVisitsPage() {
         <div className={`${SURFACE} p-6 md:p-7`}>
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div>
-              <p className="text-[11px] uppercase tracking-[0.22em] font-semibold text-[#5D6B6A]">
+              <p className="text-[11px] uppercase tracking-[0.22em] font-bold text-[var(--fg-tertiary)]">
                 Seguimiento
               </p>
-              <h2 className="mt-2 text-xl font-semibold text-[#E5E5E5]">Tus solicitudes recientes</h2>
+              <h2 className="mt-2 text-xl font-bold text-[var(--fg-primary)]">Tus solicitudes recientes</h2>
             </div>
             <span className="px-3 py-1.5 rounded-full bg-[#EAF5FA] text-[#1A6B9A] text-xs font-semibold">
               {summary.rejected} rechazadas
@@ -230,12 +230,16 @@ export default function ResidentVisitsPage() {
 
           <div className="mt-6 grid gap-4">
             {visits.length ? (
-              visits.map((visit) => (
-                <article key={visit.id} className="rounded-[24px] border border-[#262626] bg-[#141414] p-5">
+              visits.map((visit, idx) => (
+                <article 
+                  key={visit.id} 
+                  className="rounded-[24px] border border-[var(--border-standard)] bg-[var(--surface-2)] p-5 animate-slide-up group hover:shadow-md transition-shadow"
+                  style={{ animationDelay: `${idx * 100}ms` }}
+                >
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <h3 className="text-lg font-semibold text-[#E5E5E5]">{visit.visitante_nombre}</h3>
-                      <p className="mt-1 text-sm text-[#6F7B7B]">
+                      <h3 className="text-lg font-bold text-[var(--fg-primary)]">{visit.visitante_nombre}</h3>
+                      <p className="mt-1 text-xs font-medium text-[var(--fg-tertiary)] uppercase tracking-wider">
                         {formatDate(visit.fecha_visita)} · {visit.hora_ingreso || "Sin hora"}
                       </p>
                     </div>
@@ -249,9 +253,9 @@ export default function ResidentVisitsPage() {
                     <MiniRow label="Teléfono" value={visit.visitante_telefono || "Sin teléfono"} />
                   </div>
 
-                  <div className="mt-4 rounded-2xl bg-[#1A1A1A] border border-[#262626] px-4 py-3">
-                    <p className="text-[11px] uppercase tracking-[0.18em] text-[#A3A3A3]">Motivo</p>
-                    <p className="mt-1 text-sm text-[#E5E5E5]">{visit.motivo || "Sin detalles adicionales."}</p>
+                  <div className="mt-4 rounded-2xl bg-[var(--canvas)] border border-[var(--border-subtle)] px-4 py-3">
+                    <p className="text-[10px] uppercase tracking-[0.18em] font-bold text-[var(--fg-tertiary)]">Motivo</p>
+                    <p className="mt-1 text-sm leading-relaxed text-[var(--fg-secondary)]">{visit.motivo || "Sin detalles adicionales."}</p>
                   </div>
 
                   {visit.notas_propietario && (
@@ -290,20 +294,20 @@ function PageLoader({ label }) {
   );
 }
 
-function SummaryCard({ label, value }) {
+function SummaryCard({ label, value, color }) {
   return (
-    <div className="rounded-2xl bg-[#F4FAFA] border border-[#262626] px-4 py-4 text-center">
-      <p className="text-[11px] uppercase tracking-[0.18em] text-[#A3A3A3]">{label}</p>
-      <p className="mt-2 text-2xl font-semibold text-[#E5E5E5]">{value}</p>
+    <div className="rounded-2xl border border-[var(--border-standard)] px-4 py-4 text-center group bg-[var(--canvas)]">
+      <p className="text-[10px] uppercase tracking-[0.18em] font-bold text-[var(--fg-tertiary)]">{label}</p>
+      <p className="mt-2 text-2xl font-black font-serif" style={{ color }}>{value}</p>
     </div>
   );
 }
 
 function InfoTile({ label, value }) {
   return (
-    <div className="rounded-2xl border border-[#262626] bg-black/10 px-4 py-3">
-      <p className="text-[11px] uppercase tracking-[0.2em] text-white/45">{label}</p>
-      <p className="mt-1 text-sm font-semibold text-white">{value}</p>
+    <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-md px-4 py-3 hover:bg-white/10 transition-colors group cursor-default">
+      <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-white/40 group-hover:text-white/60 transition-colors">{label}</p>
+      <p className="mt-1 text-sm font-semibold text-white tracking-wide">{value}</p>
     </div>
   );
 }
@@ -322,9 +326,9 @@ function StatusBadge({ status }) {
 
 function MiniRow({ label, value }) {
   return (
-    <div className="rounded-2xl bg-[#1A1A1A] border border-[#262626] px-4 py-3">
-      <p className="text-[11px] uppercase tracking-[0.18em] text-[#A3A3A3]">{label}</p>
-      <p className="mt-1 text-sm font-semibold text-[#E5E5E5]">{value}</p>
+    <div className="rounded-xl bg-[var(--canvas)]/50 border border-[var(--border-subtle)] px-3 py-2">
+      <p className="text-[10px] uppercase tracking-[0.14em] font-bold text-[var(--fg-tertiary)]">{label}</p>
+      <p className="mt-0.5 text-xs font-semibold text-[var(--fg-secondary)]">{value}</p>
     </div>
   );
 }

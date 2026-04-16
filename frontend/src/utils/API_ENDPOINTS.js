@@ -122,6 +122,7 @@ export const ADMIN_ENDPOINTS = {
   // Reportes
   reportes: `${API_PREFIX}/owner/reportes/`,
   reportesExportaciones: `${API_PREFIX}/owner/reportes/exportaciones/`,
+  getReportDownload: (id) => `${API_PREFIX}/report/download/${id}`,
 
   // Vehículos
   vehiculos: `${API_PREFIX}/owner/vehiculos/`,

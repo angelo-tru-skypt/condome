@@ -1,126 +1,303 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- Template del Reporte Financiero -->
     <template id="report_financial_document">
-        <t t-call="web.external_layout">
-            <t t-set="doc" t-value="doc.with_context(lang=user.lang)" />
-            <div class="page" style="font-family: 'Helvetica', sans-serif; color: #333;">
-                <style>
-                    .brand-orange { color: #D94F10; }
-                    .bg-brand-orange { background-color: #D94F10; color: white; }
-                    .report-header { border-bottom: 2px solid #D94F10; padding-bottom: 10px; margin-bottom: 20px; }
-                    .table-financial { width: 100%; border-collapse: collapse; margin-top: 20px; }
-                    .table-financial th { background-color: #D94F10; color: white; padding: 10px; text-align: left; text-transform: uppercase; font-size: 12px; }
-                    .table-financial td { padding: 10px; border-bottom: 1px solid #EEE; font-size: 13px; }
-                    .summary-card { padding: 15px; border: 1px solid #D94F10; border-radius: 8px; text-align: center; }
-                    .summary-value { font-size: 24px; font-weight: bold; color: #D94F10; }
-                </style>
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-set="payload" t-value="doc.get_report_payload()"/>
+                <t t-set="company" t-value="doc.company_id or user.company_id"/>
+                <t t-call="web.external_layout">
+                    <div class="page condome-report-page">
+                        <style>
+                            .condome-report-page {
+                                font-family: 'Helvetica', sans-serif;
+                                color: #261b14;
+                            }
+                            .condome-report-shell {
+                                border: 1px solid #eaded3;
+                                border-radius: 18px;
+                                overflow: hidden;
+                                background: #fffdfb;
+                            }
+                            .condome-report-hero {
+                                background: linear-gradient(135deg, #211712 0%, #493122 42%, #d94f10 100%);
+                                color: #fff6f0;
+                                padding: 28px 30px;
+                            }
+                            .condome-report-row {
+                                display: table;
+                                width: 100%;
+                                table-layout: fixed;
+                            }
+                            .condome-report-col {
+                                display: table-cell;
+                                vertical-align: top;
+                            }
+                            .condome-report-brand {
+                                width: 88px;
+                                height: 88px;
+                                border-radius: 24px;
+                                background: rgba(255, 255, 255, 0.12);
+                                border: 1px solid rgba(255, 255, 255, 0.18);
+                                text-align: center;
+                                vertical-align: middle;
+                            }
+                            .condome-report-brand img {
+                                max-width: 72px;
+                                max-height: 72px;
+                                margin-top: 8px;
+                            }
+                            .condome-report-logo-fallback {
+                                display: inline-block;
+                                margin-top: 22px;
+                                font-size: 30px;
+                                font-weight: 700;
+                                letter-spacing: 0.08em;
+                            }
+                            .condome-report-eyebrow {
+                                text-transform: uppercase;
+                                letter-spacing: 0.28em;
+                                font-size: 10px;
+                                color: rgba(255, 246, 240, 0.74);
+                                margin-bottom: 10px;
+                            }
+                            .condome-report-title {
+                                font-size: 26px;
+                                font-weight: 700;
+                                margin: 0 0 6px 0;
+                            }
+                            .condome-report-subtitle {
+                                font-size: 12px;
+                                line-height: 1.6;
+                                color: rgba(255, 246, 240, 0.78);
+                                margin: 0;
+                                max-width: 370px;
+                            }
+                            .condome-report-meta {
+                                background: rgba(255, 255, 255, 0.12);
+                                border: 1px solid rgba(255, 255, 255, 0.16);
+                                border-radius: 18px;
+                                padding: 16px 18px;
+                                margin-left: 18px;
+                            }
+                            .condome-report-meta-label {
+                                font-size: 9px;
+                                letter-spacing: 0.2em;
+                                text-transform: uppercase;
+                                color: rgba(255, 246, 240, 0.62);
+                            }
+                            .condome-report-meta-value {
+                                display: block;
+                                font-size: 12px;
+                                font-weight: 600;
+                                color: #ffffff;
+                                margin-top: 4px;
+                                margin-bottom: 12px;
+                            }
+                            .condome-report-body {
+                                padding: 24px 28px 10px 28px;
+                            }
+                            .condome-report-section-title {
+                                font-size: 11px;
+                                letter-spacing: 0.24em;
+                                text-transform: uppercase;
+                                color: #8a6b58;
+                                margin-bottom: 10px;
+                            }
+                            .condome-report-card-grid {
+                                width: 100%;
+                                margin-bottom: 16px;
+                            }
+                            .condome-report-card {
+                                width: 23%;
+                                display: inline-block;
+                                vertical-align: top;
+                                border: 1px solid #f0e4d8;
+                                background: #fff7f1;
+                                border-radius: 16px;
+                                padding: 14px 14px 12px 14px;
+                                margin-right: 1.33%;
+                                min-height: 102px;
+                            }
+                            .condome-report-card.last {
+                                margin-right: 0;
+                            }
+                            .condome-report-card-label {
+                                font-size: 9px;
+                                text-transform: uppercase;
+                                letter-spacing: 0.18em;
+                                color: #8f776a;
+                            }
+                            .condome-report-card-value {
+                                font-size: 22px;
+                                line-height: 1.15;
+                                font-weight: 700;
+                                color: #d94f10;
+                                margin: 10px 0 8px 0;
+                            }
+                            .condome-report-card-helper {
+                                font-size: 11px;
+                                line-height: 1.5;
+                                color: #65544a;
+                            }
+                            .condome-report-note {
+                                border: 1px solid #f0e4d8;
+                                border-radius: 16px;
+                                background: #fffdfa;
+                                padding: 14px 16px;
+                                margin: 6px 0 18px 0;
+                            }
+                            .condome-report-note-text {
+                                font-size: 12px;
+                                color: #54443a;
+                                line-height: 1.7;
+                                margin: 6px 0 0 0;
+                            }
+                            .condome-report-table {
+                                width: 100%;
+                                border-collapse: separate;
+                                border-spacing: 0;
+                                border: 1px solid #eaded3;
+                                border-radius: 18px;
+                                overflow: hidden;
+                            }
+                            .condome-report-table thead th {
+                                background: #f5e6da;
+                                color: #6e574b;
+                                text-transform: uppercase;
+                                letter-spacing: 0.14em;
+                                font-size: 10px;
+                                font-weight: 700;
+                                padding: 12px 14px;
+                                border-bottom: 1px solid #eaded3;
+                            }
+                            .condome-report-table tbody td {
+                                padding: 12px 14px;
+                                font-size: 12px;
+                                color: #2f241e;
+                                border-bottom: 1px solid #f3e8de;
+                            }
+                            .condome-report-table tbody tr:nth-child(even) td {
+                                background: #fffaf5;
+                            }
+                            .condome-report-table tbody tr:last-child td {
+                                border-bottom: none;
+                            }
+                            .condome-report-footer {
+                                margin-top: 18px;
+                                padding: 16px 28px 0 28px;
+                                font-size: 10px;
+                                color: #8b7d73;
+                                line-height: 1.6;
+                                border-top: 1px solid #efe3d7;
+                            }
+                        </style>
 
-                <div class="report-header">
-                    <div class="row">
-                        <div class="col-6">
-                            <h2 class="brand-orange">Reporte Financiero</h2>
-                            <p class="text-muted">Estado de Cobros y Pagos</p>
-                        </div>
-                        <div class="col-6 text-right">
-                            <t t-if="doc.condominio_id">
-                                <h4 t-field="doc.condominio_id.name"/>
-                            </t>
-                            <t t-else="">
-                                <h4>Resumen Global</h4>
-                            </t>
-                            <p>Fecha: <span t-field="doc.requested_at" t-options='{"widget": "datetime"}'/></p>
-                        </div>
-                    </div>
-                </div>
+                        <div class="condome-report-shell">
+                            <div class="condome-report-hero">
+                                <div class="condome-report-row">
+                                    <div class="condome-report-col" style="width: 96px;">
+                                        <div class="condome-report-brand">
+                                            <img t-if="company.logo" t-att-src="image_data_uri(company.logo)" alt="Logo"/>
+                                            <span
+                                                t-else=""
+                                                class="condome-report-logo-fallback"
+                                                t-esc="(payload.get('scopeName') or 'C')[0]"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div class="condome-report-col">
+                                        <div class="condome-report-eyebrow">Condome Report Center</div>
+                                        <h2 class="condome-report-title" t-esc="payload.get('title')"/>
+                                        <p class="condome-report-subtitle" t-esc="payload.get('subtitle')"/>
+                                    </div>
+                                    <div class="condome-report-col" style="width: 230px;">
+                                        <div class="condome-report-meta">
+                                            <span class="condome-report-meta-label">Condominium</span>
+                                            <span class="condome-report-meta-value" t-esc="payload.get('scopeName')"/>
+                                            <span class="condome-report-meta-label">Generated</span>
+                                            <span class="condome-report-meta-value" t-esc="payload.get('generatedAt')"/>
+                                            <span class="condome-report-meta-label">Requested By</span>
+                                            <span class="condome-report-meta-value" t-esc="payload.get('requestedBy')"/>
+                                            <span class="condome-report-meta-label">Format</span>
+                                            <span class="condome-report-meta-value" t-esc="payload.get('formatLabel')"/>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
 
-                <t t-set="data" t-value="doc.get_financial_data()"/>
-
-                <!-- Caso Admin: Múltiples Condominios -->
-                <t t-if="'condominios' in data">
-                    <table class="table-financial">
-                        <thead>
-                            <tr>
-                                <th>Condominio</th>
-                                <th class="text-right">Generado (Cobrado)</th>
-                                <th class="text-right">Esperado (Propuesto)</th>
-                                <th class="text-right">Estado</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr t-foreach="data['condominios']" t-as="item">
-                                <td><t t-esc="item['name']"/></td>
-                                <td class="text-right"><t t-esc="item['generado']" t-options='{"widget": "monetary", "display_currency": user.company_id.currency_id}'/></td>
-                                <td class="text-right"><t t-esc="item['esperado']" t-options='{"widget": "monetary", "display_currency": user.company_id.currency_id}'/></td>
-                                <td class="text-right text-muted">
-                                    <t t-if="item['esperado'] > 0">
-                                        <t t-esc="'%.2f' % (item['generado'] / item['esperado'] * 100)"/>%
+                            <div class="condome-report-body">
+                                <div class="condome-report-section-title">Report Summary</div>
+                                <div class="condome-report-card-grid">
+                                    <t t-foreach="payload.get('cards', [])" t-as="card">
+                                        <div t-attf-class="condome-report-card #{'last' if card_last else ''}">
+                                            <div class="condome-report-card-label" t-esc="card.get('label')"/>
+                                            <div class="condome-report-card-value" t-esc="card.get('value')"/>
+                                            <div class="condome-report-card-helper" t-esc="card.get('helper')"/>
+                                        </div>
                                     </t>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </t>
+                                </div>
 
-                <!-- Caso Propietario: Detalle de un Condominio -->
-                <t t-if="'pagos' in data">
-                    <div class="row mt-4">
-                        <div class="col-6">
-                            <div class="summary-card">
-                                <p class="text-muted text-uppercase small">Total Generado</p>
-                                <div class="summary-value">
-                                    <t t-esc="data['total_generado']" t-options='{"widget": "monetary", "display_currency": user.company_id.currency_id}'/>
+                                <div class="condome-report-note">
+                                    <div class="condome-report-section-title" style="margin-bottom: 0;">Operational Context</div>
+                                    <p class="condome-report-note-text">
+                                        <strong>Address:</strong>
+                                        <span t-esc="payload.get('address')"/>
+                                        <span> | </span>
+                                        <strong>Email:</strong>
+                                        <span t-esc="payload.get('email')"/>
+                                        <span> | </span>
+                                        <strong>Phone:</strong>
+                                        <span t-esc="payload.get('phone')"/>
+                                    </p>
+                                    <p class="condome-report-note-text">
+                                        <strong>Requested:</strong>
+                                        <span t-esc="payload.get('requestedAt')"/>
+                                        <span> | </span>
+                                        <strong>Note:</strong>
+                                        <span t-esc="payload.get('note')"/>
+                                    </p>
                                 </div>
+
+                                <div class="condome-report-section-title">Detailed Breakdown</div>
+                                <table class="condome-report-table" t-if="payload.get('columns')">
+                                    <thead>
+                                        <tr>
+                                            <th
+                                                t-foreach="payload.get('columns', [])"
+                                                t-as="column"
+                                                t-esc="column.get('label')"
+                                            />
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr t-foreach="payload.get('rows', [])" t-as="row">
+                                            <td
+                                                t-foreach="payload.get('columns', [])"
+                                                t-as="column"
+                                                t-esc="row.get(column.get('key'), '-')"
+                                            />
+                                        </tr>
+                                    </tbody>
+                                </table>
                             </div>
-                        </div>
-                        <div class="col-6">
-                            <div class="summary-card">
-                                <p class="text-muted text-uppercase small">Total Esperado</p>
-                                <div class="summary-value" style="color: #666;">
-                                    <t t-esc="data['total_esperado']" t-options='{"widget": "monetary", "display_currency": user.company_id.currency_id}'/>
-                                </div>
+
+                            <div class="condome-report-footer">
+                                <span t-esc="payload.get('footerNote')"/>
                             </div>
                         </div>
                     </div>
-
-                    <h4 class="mt-4 brand-orange">Historial de Pagos de Residentes</h4>
-                    <table class="table-financial">
-                        <thead>
-                            <tr>
-                                <th>Residente</th>
-                                <th>Apartamento</th>
-                                <th>Fecha Pago</th>
-                                <th>Referencia</th>
-                                <th class="text-right">Monto</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr t-foreach="data['pagos']" t-as="pago">
-                                <td><t t-esc="pago['residente']"/></td>
-                                <td><t t-esc="pago['apartamento']"/></td>
-                                <td><t t-esc="pago['fecha']" t-options='{"widget": "date"}'/></td>
-                                <td><t t-esc="pago['referencia']"/></td>
-                                <td class="text-right"><t t-esc="pago['monto']" t-options='{"widget": "monetary", "display_currency": user.company_id.currency_id}'/></td>
-                            </tr>
-                        </tbody>
-                    </table>
                 </t>
-
-                <div class="footer mt-5 p-3 text-center small text-muted border-top">
-                    Generado automáticamente por Condome - Tu Gestión de Condominios
-                </div>
-            </div>
+            </t>
         </t>
     </template>
 
-    <!-- Registro de la Acción de Reporte -->
     <record id="action_report_financial" model="ir.actions.report">
-        <field name="name">Reporte Financiero Condome</field>
+        <field name="name">Condome Administrative Report</field>
         <field name="model">condome.report.export</field>
         <field name="report_type">qweb-pdf</field>
         <field name="report_name">condome_reporting.report_financial_document</field>
         <field name="report_file">condome_reporting.report_financial_document</field>
-        <field name="print_report_name">'Financial_Report_%s' % (object.requested_at)</field>
+        <field name="print_report_name">'Condome_Report_%s' % (object.id)</field>
         <field name="binding_model_id" ref="model_condome_report_export"/>
         <field name="binding_type">report</field>
     </record>

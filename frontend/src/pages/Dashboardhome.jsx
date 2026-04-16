@@ -88,7 +88,7 @@ export default function DashboardHome() {
   return (
     <div className="space-y-6">
       <section
-        className="rounded-[34px] overflow-hidden border border-[#E9D5C6]"
+        className="rounded-[34px] overflow-hidden border border-[#E9D5C6] animate-reveal"
         style={{
           background:
             "linear-gradient(145deg, #1A1612 0%, #2A221D 45%, #56311E 100%)",
@@ -170,19 +170,20 @@ export default function DashboardHome() {
       </section>
 
       <section className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-        {heroStats.map((stat) => (
+        {heroStats.map((stat, idx) => (
           <article
             key={stat.label}
-            className={`${SURFACE} p-6`}
+            className={`${SURFACE} p-6 animate-slide-up hover:border-[var(--condome-orange)]/30 hover:shadow-xl transition-all duration-300 group`}
+            style={{ animationDelay: `${idx * 100}ms` }}
           >
             <div
-              className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm"
+              className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm transition-transform group-hover:rotate-12"
               style={{ background: `${stat.color}15`, color: stat.color }}
             >
               <MetricIcon />
             </div>
-            <p className="mt-5 text-4xl font-black text-[var(--fg-primary)] tracking-tight">{stat.value}</p>
-            <p className="mt-1 text-[10px] font-black uppercase tracking-widest text-[var(--fg-tertiary)]">{stat.label}</p>
+            <p className="mt-5 text-4xl font-black text-[var(--fg-primary)] tracking-tight font-serif">{stat.value}</p>
+            <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-[var(--fg-tertiary)]">{stat.label}</p>
             <p className="mt-3 text-xs leading-relaxed text-[var(--fg-secondary)] font-medium">{stat.helper}</p>
           </article>
         ))}
@@ -361,10 +362,10 @@ export default function DashboardHome() {
 
 function StatusTile({ label, value, helper }) {
   return (
-    <div className="rounded-2xl border border-white/20 bg-white/10 px-4 py-3">
-      <p className="text-[11px] uppercase tracking-[0.2em] font-bold text-white/70">{label}</p>
-      <p className="mt-1 text-sm font-bold text-white">{value}</p>
-      <p className="mt-1 text-xs leading-6 text-white/50">{helper}</p>
+    <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-md px-4 py-3 hover:bg-white/10 transition-colors group cursor-default">
+      <p className="text-[10px] uppercase tracking-[0.24em] font-black text-white/40 group-hover:text-white/60 transition-colors">{label}</p>
+      <p className="mt-1 text-sm font-bold text-white tracking-wide">{value}</p>
+      <p className="mt-1 text-[11px] leading-5 text-white/50">{helper}</p>
     </div>
   );
 }

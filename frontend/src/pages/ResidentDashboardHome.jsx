@@ -164,7 +164,7 @@ export default function ResidentDashboardHome() {
   return (
     <div className="space-y-6 md:space-y-7">
       <section
-        className="rounded-[34px] overflow-hidden border border-[#CFE3E3]"
+        className="rounded-[34px] overflow-hidden border border-[#CFE3E3] animate-reveal"
         style={{
           background:
             "linear-gradient(145deg, #0E2433 0%, #123244 45%, #1A6B9A 100%)",
@@ -245,20 +245,23 @@ export default function ResidentDashboardHome() {
       {error ? <ErrorBanner message={error} /> : null}
 
       <section className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 md:gap-5">
-        {areaCards.map((stat) => (
+        {areaCards.map((stat, idx) => (
           <article
             key={stat.label}
-            className={`${SURFACE} p-5`}
-            style={{ boxShadow: "0 1px 3px rgba(14,36,51,0.06)" }}
+            className={`${SURFACE} p-5 animate-slide-up hover:border-[var(--condome-orange)]/30 hover:shadow-xl transition-all duration-300 cursor-default group`}
+            style={{ 
+              boxShadow: "0 1px 3px rgba(14,36,51,0.06)",
+              animationDelay: `${idx * 100}ms`
+            }}
           >
             <div
-              className="w-11 h-11 rounded-2xl flex items-center justify-center"
+              className="w-11 h-11 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110"
               style={{ background: `${stat.color}15`, color: stat.color }}
             >
               <MetricIcon />
             </div>
             <p className="mt-4 text-sm font-semibold text-[#10212D]">{stat.title}</p>
-            <p className="mt-1 text-[11px] uppercase tracking-[0.18em]" style={{ color: stat.color }}>
+            <p className="mt-1 text-[11px] uppercase tracking-[0.24em] font-bold" style={{ color: stat.color }}>
               {stat.label}
             </p>
             <p className="mt-2 text-sm leading-6 text-[#5B6B71]">{stat.helper}</p>
@@ -359,9 +362,9 @@ function PageLoader({ label }) {
 
 function InfoTile({ label, value }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-black/10 px-4 py-3">
-      <p className="text-[11px] uppercase tracking-[0.2em] text-white/45">{label}</p>
-      <p className="mt-1 text-sm font-semibold text-white">{value}</p>
+    <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-md px-4 py-3 hover:bg-white/10 transition-colors cursor-default group">
+      <p className="text-[10px] uppercase tracking-[0.22em] font-bold text-white/40 group-hover:text-white/60 transition-colors">{label}</p>
+      <p className="mt-1 text-sm font-semibold text-white tracking-wide">{value}</p>
     </div>
   );
 }

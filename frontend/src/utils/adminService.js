@@ -464,6 +464,14 @@ const adminService = {
     }
   },
 
+  async downloadReport(exportId) {
+    try {
+      return await apiClient.download(ADMIN_ENDPOINTS.getReportDownload(exportId));
+    } catch (error) {
+      throw new Error(error.message || "Error al descargar el reporte");
+    }
+  },
+
   // ── Notificaciones ─────────────────────────────────────────────────────────
 
   async listNotifications(condominioId) {
