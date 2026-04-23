@@ -44,6 +44,11 @@ class OwnerReportingApiService(BaseApiService):
 
     def _download_headers(self, filename, content_type):
         origin = request.httprequest.headers.get("Origin")
+        # Asegurar que el filename tenga la extensión si falta
+        if "." not in filename:
+            ext = "pdf" if content_type == "application/pdf" else "csv"
+            filename = f"{filename}.{ext}"
+
         headers = [
             ("Content-Type", content_type),
             ("Content-Disposition", f'attachment; filename="{filename}"'),
@@ -319,6 +324,23 @@ class OwnerReportingApiService(BaseApiService):
             _logger.exception("Report export request failed")
             return self.error_response(error, status=400)
 
+    def handle_export_delete(self, export_id):
+        try:
+            if self.is_preflight_request(): return self.handle_options()
+            user = self.require_owner_session()
+            model = request.env["condome.report.export"].sudo()
+            record = model.search([("id", "=", export_id)] + self.owner_domain(user), limit=1)
+            if not record:
+                return self.error_response(_("Exportación no encontrada"), status=404)
+            record.unlink()
+            return self.build_response({"data": {"id": export_id}})
+        except PermissionError as error:
+            return self.error_response(error, status=403)
+        except Exception as error:  # pragma: no cover
+            _logger.exception("Report export delete failed")
+            return self.error_response(error, status=400)
+
+
     def handle_report_download(self, export_id):
         try:
             if self.is_preflight_request():
@@ -330,7 +352,13 @@ class OwnerReportingApiService(BaseApiService):
 
             if record.export_format == "pdf":
                 report_action = request.env.ref("condome_reporting.action_report_financial").sudo()
-                content, _content_type = report_action._render_qweb_pdf(record.ids)
+                # Odoo 17: _render_qweb_pdf(report_ref, res_ids)
+                content, _content_type = report_action._render_qweb_pdf(
+                    "condome_reporting.report_financial_document", record.ids
+                )
+                if not content:
+                    raise ValueError("No se pudo generar el contenido del PDF")
+
                 response = request.make_response(
                     content,
                     headers=self._download_headers(filename, "application/pdf"),

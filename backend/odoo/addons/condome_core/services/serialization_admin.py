@@ -63,6 +63,10 @@ class ApiSerializationAdminMixin:
             "lateFeeGraceDays": record.late_fee_grace_days,
             "supportEmail": record.support_email or "",
             "automaticAccessValidation": record.automatic_access_validation,
+            "bankName": record.bank_name or "",
+            "bankAccountNumber": record.bank_account_number or "",
+            "bankAccountType": record.bank_account_type or "corriente",
+            "bankAccountHolder": record.bank_account_holder or "",
             "updatedAt": record.write_date.isoformat() if record.write_date else None,
         }
 

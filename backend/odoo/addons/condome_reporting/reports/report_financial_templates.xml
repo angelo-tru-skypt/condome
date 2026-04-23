@@ -1,304 +1,288 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <template id="report_financial_document">
-        <t t-call="web.html_container">
-            <t t-foreach="docs" t-as="doc">
-                <t t-set="payload" t-value="doc.get_report_payload()"/>
-                <t t-set="company" t-value="doc.company_id or user.company_id"/>
-                <t t-call="web.external_layout">
-                    <div class="page condome-report-page">
-                        <style>
-                            .condome-report-page {
-                                font-family: 'Helvetica', sans-serif;
-                                color: #261b14;
-                            }
-                            .condome-report-shell {
-                                border: 1px solid #eaded3;
-                                border-radius: 18px;
-                                overflow: hidden;
-                                background: #fffdfb;
-                            }
-                            .condome-report-hero {
-                                background: linear-gradient(135deg, #211712 0%, #493122 42%, #d94f10 100%);
-                                color: #fff6f0;
-                                padding: 28px 30px;
-                            }
-                            .condome-report-row {
-                                display: table;
-                                width: 100%;
-                                table-layout: fixed;
-                            }
-                            .condome-report-col {
-                                display: table-cell;
-                                vertical-align: top;
-                            }
-                            .condome-report-brand {
-                                width: 88px;
-                                height: 88px;
-                                border-radius: 24px;
-                                background: rgba(255, 255, 255, 0.12);
-                                border: 1px solid rgba(255, 255, 255, 0.18);
-                                text-align: center;
-                                vertical-align: middle;
-                            }
-                            .condome-report-brand img {
-                                max-width: 72px;
-                                max-height: 72px;
-                                margin-top: 8px;
-                            }
-                            .condome-report-logo-fallback {
-                                display: inline-block;
-                                margin-top: 22px;
-                                font-size: 30px;
-                                font-weight: 700;
-                                letter-spacing: 0.08em;
-                            }
-                            .condome-report-eyebrow {
-                                text-transform: uppercase;
-                                letter-spacing: 0.28em;
-                                font-size: 10px;
-                                color: rgba(255, 246, 240, 0.74);
-                                margin-bottom: 10px;
-                            }
-                            .condome-report-title {
-                                font-size: 26px;
-                                font-weight: 700;
-                                margin: 0 0 6px 0;
-                            }
-                            .condome-report-subtitle {
-                                font-size: 12px;
-                                line-height: 1.6;
-                                color: rgba(255, 246, 240, 0.78);
-                                margin: 0;
-                                max-width: 370px;
-                            }
-                            .condome-report-meta {
-                                background: rgba(255, 255, 255, 0.12);
-                                border: 1px solid rgba(255, 255, 255, 0.16);
-                                border-radius: 18px;
-                                padding: 16px 18px;
-                                margin-left: 18px;
-                            }
-                            .condome-report-meta-label {
-                                font-size: 9px;
-                                letter-spacing: 0.2em;
-                                text-transform: uppercase;
-                                color: rgba(255, 246, 240, 0.62);
-                            }
-                            .condome-report-meta-value {
-                                display: block;
-                                font-size: 12px;
-                                font-weight: 600;
-                                color: #ffffff;
-                                margin-top: 4px;
-                                margin-bottom: 12px;
-                            }
-                            .condome-report-body {
-                                padding: 24px 28px 10px 28px;
-                            }
-                            .condome-report-section-title {
-                                font-size: 11px;
-                                letter-spacing: 0.24em;
-                                text-transform: uppercase;
-                                color: #8a6b58;
-                                margin-bottom: 10px;
-                            }
-                            .condome-report-card-grid {
-                                width: 100%;
-                                margin-bottom: 16px;
-                            }
-                            .condome-report-card {
-                                width: 23%;
-                                display: inline-block;
-                                vertical-align: top;
-                                border: 1px solid #f0e4d8;
-                                background: #fff7f1;
-                                border-radius: 16px;
-                                padding: 14px 14px 12px 14px;
-                                margin-right: 1.33%;
-                                min-height: 102px;
-                            }
-                            .condome-report-card.last {
-                                margin-right: 0;
-                            }
-                            .condome-report-card-label {
-                                font-size: 9px;
-                                text-transform: uppercase;
-                                letter-spacing: 0.18em;
-                                color: #8f776a;
-                            }
-                            .condome-report-card-value {
-                                font-size: 22px;
-                                line-height: 1.15;
-                                font-weight: 700;
-                                color: #d94f10;
-                                margin: 10px 0 8px 0;
-                            }
-                            .condome-report-card-helper {
-                                font-size: 11px;
-                                line-height: 1.5;
-                                color: #65544a;
-                            }
-                            .condome-report-note {
-                                border: 1px solid #f0e4d8;
-                                border-radius: 16px;
-                                background: #fffdfa;
-                                padding: 14px 16px;
-                                margin: 6px 0 18px 0;
-                            }
-                            .condome-report-note-text {
-                                font-size: 12px;
-                                color: #54443a;
-                                line-height: 1.7;
-                                margin: 6px 0 0 0;
-                            }
-                            .condome-report-table {
-                                width: 100%;
-                                border-collapse: separate;
-                                border-spacing: 0;
-                                border: 1px solid #eaded3;
-                                border-radius: 18px;
-                                overflow: hidden;
-                            }
-                            .condome-report-table thead th {
-                                background: #f5e6da;
-                                color: #6e574b;
-                                text-transform: uppercase;
-                                letter-spacing: 0.14em;
-                                font-size: 10px;
-                                font-weight: 700;
-                                padding: 12px 14px;
-                                border-bottom: 1px solid #eaded3;
-                            }
-                            .condome-report-table tbody td {
-                                padding: 12px 14px;
-                                font-size: 12px;
-                                color: #2f241e;
-                                border-bottom: 1px solid #f3e8de;
-                            }
-                            .condome-report-table tbody tr:nth-child(even) td {
-                                background: #fffaf5;
-                            }
-                            .condome-report-table tbody tr:last-child td {
-                                border-bottom: none;
-                            }
-                            .condome-report-footer {
-                                margin-top: 18px;
-                                padding: 16px 28px 0 28px;
-                                font-size: 10px;
-                                color: #8b7d73;
-                                line-height: 1.6;
-                                border-top: 1px solid #efe3d7;
-                            }
-                        </style>
+<template id="report_financial_document">
+<t t-call="web.html_container">
+<t t-set="head">
+<style type="text/css">
+body {
+    font-family: Helvetica, Arial, sans-serif;
+    font-size: 10pt;
+    color: #2D2620;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+}
+table { -webkit-print-color-adjust: exact !important; }
+</style>
+</t>
 
-                        <div class="condome-report-shell">
-                            <div class="condome-report-hero">
-                                <div class="condome-report-row">
-                                    <div class="condome-report-col" style="width: 96px;">
-                                        <div class="condome-report-brand">
-                                            <img t-if="company.logo" t-att-src="image_data_uri(company.logo)" alt="Logo"/>
-                                            <span
-                                                t-else=""
-                                                class="condome-report-logo-fallback"
-                                                t-esc="(payload.get('scopeName') or 'C')[0]"
-                                            />
-                                        </div>
-                                    </div>
-                                    <div class="condome-report-col">
-                                        <div class="condome-report-eyebrow">Condome Report Center</div>
-                                        <h2 class="condome-report-title" t-esc="payload.get('title')"/>
-                                        <p class="condome-report-subtitle" t-esc="payload.get('subtitle')"/>
-                                    </div>
-                                    <div class="condome-report-col" style="width: 230px;">
-                                        <div class="condome-report-meta">
-                                            <span class="condome-report-meta-label">Condominium</span>
-                                            <span class="condome-report-meta-value" t-esc="payload.get('scopeName')"/>
-                                            <span class="condome-report-meta-label">Generated</span>
-                                            <span class="condome-report-meta-value" t-esc="payload.get('generatedAt')"/>
-                                            <span class="condome-report-meta-label">Requested By</span>
-                                            <span class="condome-report-meta-value" t-esc="payload.get('requestedBy')"/>
-                                            <span class="condome-report-meta-label">Format</span>
-                                            <span class="condome-report-meta-value" t-esc="payload.get('formatLabel')"/>
-                                        </div>
-                                    </div>
-                                </div>
+<t t-foreach="docs" t-as="doc">
+<t t-set="p" t-value="doc.get_report_payload()"/>
+<div class="page" style="padding: 0; margin: 0;">
+
+    <!-- ============================================================
+         LOGO - centrado en fondo blanco
+    ============================================================= -->
+    <div style="text-align:center; padding:24px 0 18px 0; border-bottom:3px solid #D94F10;">
+        <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMjAgODAiIHdpZHRoPSIzMjAiIGhlaWdodD0iODAiPgogIDxkZWZzPgogICAgPGxpbmVhckdyYWRpZW50IGlkPSJkZyIgeDE9IjAlIiB5MT0iMCUiIHgyPSIxMDAlIiB5Mj0iMTAwJSI+CiAgICAgIDxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiNGRjdBMzAiLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSIjRDk0RjEwIi8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSgwLDApIj4KICAgIDxyZWN0IHg9IjEzIiB5PSIxMyIgd2lkdGg9IjU0IiBoZWlnaHQ9IjU0IiByeD0iMTAiIHRyYW5zZm9ybT0icm90YXRlKDQ1IDQwIDQwKSIgZmlsbD0idXJsKCNkZykiLz4KICAgIDxyZWN0IHg9IjE2IiB5PSIxNiIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiByeD0iOCIgdHJhbnNmb3JtPSJyb3RhdGUoNDUgNDAgNDApIiBmaWxsPSJub25lIiBzdHJva2U9InJnYmEoMjU1LDI1NSwyNTUsMC4yNSkiIHN0cm9rZS13aWR0aD0iMS41Ii8+CiAgICA8cG9seWdvbiBwb2ludHM9IjQwLDE4IDU2LDMwIDI0LDMwIiBmaWxsPSJ3aGl0ZSIgb3BhY2l0eT0iMC45NyIvPgogICAgPHJlY3QgeD0iMjYiIHk9IjMwIiB3aWR0aD0iMjgiIGhlaWdodD0iMTgiIHJ4PSIxIiBmaWxsPSJ3aGl0ZSIgb3BhY2l0eT0iMC45NyIvPgogICAgPHJlY3QgeD0iMzUiIHk9IjM2IiB3aWR0aD0iMTAiIGhlaWdodD0iMTIiIHJ4PSIxLjUiIGZpbGw9InJnYmEoMjE3LDc5LDE2LDAuMzUpIi8+CiAgICA8cmVjdCB4PSIyOSIgeT0iMzMiIHdpZHRoPSI1IiBoZWlnaHQ9IjUiIHJ4PSIxIiBmaWxsPSJyZ2JhKDIxNyw3OSwxNiwwLjI1KSIvPgogICAgPHJlY3QgeD0iNDYiIHk9IjMzIiB3aWR0aD0iNSIgaGVpZ2h0PSI1IiByeD0iMSIgZmlsbD0icmdiYSgyMTcsNzksMTYsMC4yNSkiLz4KICA8L2c+CiAgPGcgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoODgsMCkiPgogICAgPHRleHQgeD0iMCIgeT0iNTAiIGZvbnQtZmFtaWx5PSJHZW9yZ2lhLHNlcmlmIiBmb250LXNpemU9IjM4IiBmb250LXdlaWdodD0iNjAwIiBmaWxsPSIjMUExNjEyIj5Db25kbzwvdGV4dD4KICAgIDx0ZXh0IHg9IjEyMiIgeT0iNTAiIGZvbnQtZmFtaWx5PSJHZW9yZ2lhLHNlcmlmIiBmb250LXNpemU9IjM4IiBmb250LXdlaWdodD0iNjAwIiBmaWxsPSIjRDk0RjEwIj5tZTwvdGV4dD4KICAgIDx0ZXh0IHg9IjEiIHk9IjY2IiBmb250LWZhbWlseT0iSGVsdmV0aWNhLEFyaWFsLHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iOSIgZm9udC13ZWlnaHQ9IjUwMCIgZmlsbD0iIzk5OTA4NyIgbGV0dGVyLXNwYWNpbmc9IjMiPkdFU1RJT04gUkVTSURFTkNJQUw8L3RleHQ+CiAgPC9nPgo8L3N2Zz4=" alt="Condome" style="height:60px; width:auto;"/>
+    </div>
+
+    <!-- ============================================================
+         TITULO CENTRADO
+    ============================================================= -->
+    <div style="text-align:center; padding:20px 40px 18px 40px; background-color:#FCFAF8; border-bottom:2px solid #F0E8E1;">
+        <div style="display:inline-block; background:#FFF2EB; color:#D94F10; font-size:8pt; font-weight:bold; text-transform:uppercase; letter-spacing:2px; padding:3px 14px; border-radius:20px; border:1px solid #FDDCC9; margin-bottom:8px;">
+            Reporte Oficial
+        </div>
+        <br/>
+        <div style="font-size:22pt; font-weight:bold; color:#1F1A16; margin-bottom:4px;">
+            <t t-esc="p.get('title', 'Reporte Administrativo')"/>
+        </div>
+        <div style="font-size:9pt; color:#8C8177; font-weight:bold; text-transform:uppercase; letter-spacing:2px;">
+            <t t-esc="p.get('subtitle', 'Gestion Residencial')"/>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         CONTENIDO
+    ============================================================= -->
+    <div style="padding:30px 40px 20px 40px;">
+
+        <!-- === METADATOS (3 columnas) =========================== -->
+        <div style="font-size:8pt; font-weight:bold; text-transform:uppercase; letter-spacing:2px; color:#D94F10; border-bottom:2px solid #F0E8E1; padding-bottom:8px; margin-bottom:14px;">
+            Datos del Reporte
+        </div>
+        <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #E6D9CD; margin-bottom:30px;">
+            <tr>
+                <td width="33%" style="padding:14px 20px; vertical-align:top; border-right:1px solid #E6D9CD;">
+                    <span style="display:block; font-size:7pt; font-weight:bold; text-transform:uppercase; letter-spacing:1px; color:#A3968C; margin-bottom:4px;">Condominio</span>
+                    <span style="display:block; font-size:12pt; font-weight:bold; color:#1F1A16;"><t t-esc="p.get('scopeName', '-')"/></span>
+                </td>
+                <td width="33%" style="padding:14px 20px; vertical-align:top; border-right:1px solid #E6D9CD;">
+                    <span style="display:block; font-size:7pt; font-weight:bold; text-transform:uppercase; letter-spacing:1px; color:#A3968C; margin-bottom:4px;">Fecha de Generacion</span>
+                    <span style="display:block; font-size:12pt; font-weight:bold; color:#1F1A16;"><t t-esc="p.get('generatedAt', '-')"/></span>
+                </td>
+                <td width="34%" style="padding:14px 20px; vertical-align:top;">
+                    <span style="display:block; font-size:7pt; font-weight:bold; text-transform:uppercase; letter-spacing:1px; color:#A3968C; margin-bottom:4px;">ID Reporte</span>
+                    <span style="display:block; font-size:12pt; font-weight:bold; color:#1F1A16;"><t t-esc="doc.id"/></span>
+                </td>
+            </tr>
+        </table>
+
+        <!-- === KPI CARDS (4 columnas) =========================== -->
+        <t t-if="p.get('cards')">
+            <div style="font-size:8pt; font-weight:bold; text-transform:uppercase; letter-spacing:2px; color:#D94F10; border-bottom:2px solid #F0E8E1; padding-bottom:8px; margin-bottom:14px;">
+                Indicadores Clave
+            </div>
+            <table width="100%" cellpadding="0" cellspacing="8" style="margin-bottom:30px;">
+                <tr>
+                    <t t-foreach="p.get('cards', [])" t-as="card">
+                        <td width="25%" style="vertical-align:top;">
+                            <div style="border:1px solid #E2D5CA; border-top:4px solid #D94F10; border-radius:6px; padding:16px 14px; background:#FFFFFF;">
+                                <span style="display:block; font-size:7pt; font-weight:bold; text-transform:uppercase; letter-spacing:1px; color:#8C8177; margin-bottom:8px;">
+                                    <t t-esc="card.get('label', '')"/>
+                                </span>
+                                <span style="display:block; font-size:16pt; font-weight:bold; color:#1F1A16; line-height:1.1; margin-bottom:4px;">
+                                    <t t-esc="card.get('value', '-')"/>
+                                </span>
+                                <span style="display:block; font-size:8pt; color:#6D625A;">
+                                    <t t-esc="card.get('helper', '')"/>
+                                </span>
                             </div>
+                        </td>
+                    </t>
+                </tr>
+            </table>
+        </t>
 
-                            <div class="condome-report-body">
-                                <div class="condome-report-section-title">Report Summary</div>
-                                <div class="condome-report-card-grid">
-                                    <t t-foreach="payload.get('cards', [])" t-as="card">
-                                        <div t-attf-class="condome-report-card #{'last' if card_last else ''}">
-                                            <div class="condome-report-card-label" t-esc="card.get('label')"/>
-                                            <div class="condome-report-card-value" t-esc="card.get('value')"/>
-                                            <div class="condome-report-card-helper" t-esc="card.get('helper')"/>
-                                        </div>
-                                    </t>
-                                </div>
+        <!-- === ANALISIS FINANCIERO (2 columnas) ================= -->
+        <div style="font-size:8pt; font-weight:bold; text-transform:uppercase; letter-spacing:2px; color:#D94F10; border-bottom:2px solid #F0E8E1; padding-bottom:8px; margin-bottom:14px;">
+            Analisis Financiero y Cuotas
+        </div>
+        <table width="100%" cellpadding="0" cellspacing="10" style="margin-bottom:30px;">
+            <tr>
+                <!-- COLUMNA IZQUIERDA: Flujo de caja -->
+                <td width="50%" style="vertical-align:top;">
+                    <div style="border:1px solid #E6D9CD; border-radius:8px; padding:18px; background:#FFFFFF;">
+                        <div style="font-size:8pt; font-weight:bold; text-transform:uppercase; letter-spacing:1px; color:#4E4640; text-align:center; border-bottom:1px solid #F0E8E1; padding-bottom:8px; margin-bottom:16px;">
+                            Flujo de Caja
+                        </div>
 
-                                <div class="condome-report-note">
-                                    <div class="condome-report-section-title" style="margin-bottom: 0;">Operational Context</div>
-                                    <p class="condome-report-note-text">
-                                        <strong>Address:</strong>
-                                        <span t-esc="payload.get('address')"/>
-                                        <span> | </span>
-                                        <strong>Email:</strong>
-                                        <span t-esc="payload.get('email')"/>
-                                        <span> | </span>
-                                        <strong>Phone:</strong>
-                                        <span t-esc="payload.get('phone')"/>
-                                    </p>
-                                    <p class="condome-report-note-text">
-                                        <strong>Requested:</strong>
-                                        <span t-esc="payload.get('requestedAt')"/>
-                                        <span> | </span>
-                                        <strong>Note:</strong>
-                                        <span t-esc="payload.get('note')"/>
-                                    </p>
-                                </div>
+                        <!-- Barra: Ingresos -->
+                        <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:4px;">
+                            <tr>
+                                <td style="font-size:9pt; font-weight:bold; color:#2D2620;">Ingresos</td>
+                                <td style="font-size:9pt; font-weight:bold; color:#1F1A16; text-align:right;">
+                                    <t t-esc="p.get('chart_income_val', '$45,000')"/>
+                                </td>
+                            </tr>
+                        </table>
+                        <div style="background:#F0E8E1; border-radius:4px; height:10px; width:100%; margin-bottom:14px;">
+                            <div t-attf-style="background:#27AE60; border-radius:4px; height:10px; width:#{p.get('chart_income_pct', 70)}%;"></div>
+                        </div>
 
-                                <div class="condome-report-section-title">Detailed Breakdown</div>
-                                <table class="condome-report-table" t-if="payload.get('columns')">
-                                    <thead>
-                                        <tr>
-                                            <th
-                                                t-foreach="payload.get('columns', [])"
-                                                t-as="column"
-                                                t-esc="column.get('label')"
-                                            />
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr t-foreach="payload.get('rows', [])" t-as="row">
-                                            <td
-                                                t-foreach="payload.get('columns', [])"
-                                                t-as="column"
-                                                t-esc="row.get(column.get('key'), '-')"
-                                            />
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
+                        <!-- Barra: Egresos -->
+                        <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:4px;">
+                            <tr>
+                                <td style="font-size:9pt; font-weight:bold; color:#2D2620;">Egresos</td>
+                                <td style="font-size:9pt; font-weight:bold; color:#1F1A16; text-align:right;">
+                                    <t t-esc="p.get('chart_expense_val', '$28,000')"/>
+                                </td>
+                            </tr>
+                        </table>
+                        <div style="background:#F0E8E1; border-radius:4px; height:10px; width:100%; margin-bottom:14px;">
+                            <div t-attf-style="background:#E53935; border-radius:4px; height:10px; width:#{p.get('chart_expense_pct', 45)}%;"></div>
+                        </div>
 
-                            <div class="condome-report-footer">
-                                <span t-esc="payload.get('footerNote')"/>
-                            </div>
+                        <!-- Barra: Fondo de Reserva -->
+                        <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:4px;">
+                            <tr>
+                                <td style="font-size:9pt; font-weight:bold; color:#2D2620;">Fondo Reserva</td>
+                                <td style="font-size:9pt; font-weight:bold; color:#1F1A16; text-align:right;">
+                                    <t t-esc="p.get('chart_reserve_val', '$15,500')"/>
+                                </td>
+                            </tr>
+                        </table>
+                        <div style="background:#F0E8E1; border-radius:4px; height:10px; width:100%;">
+                            <div t-attf-style="background:#F39C12; border-radius:4px; height:10px; width:#{p.get('chart_reserve_pct', 25)}%;"></div>
                         </div>
                     </div>
-                </t>
-            </t>
-        </t>
-    </template>
+                </td>
 
-    <record id="action_report_financial" model="ir.actions.report">
-        <field name="name">Condome Administrative Report</field>
-        <field name="model">condome.report.export</field>
-        <field name="report_type">qweb-pdf</field>
-        <field name="report_name">condome_reporting.report_financial_document</field>
-        <field name="report_file">condome_reporting.report_financial_document</field>
-        <field name="print_report_name">'Condome_Report_%s' % (object.id)</field>
-        <field name="binding_model_id" ref="model_condome_report_export"/>
-        <field name="binding_type">report</field>
-    </record>
+                <!-- COLUMNA DERECHA: Cuotas -->
+                <td width="50%" style="vertical-align:top;">
+                    <div style="border:1px solid #E6D9CD; border-radius:8px; padding:18px; background:#FFFFFF;">
+                        <div style="font-size:8pt; font-weight:bold; text-transform:uppercase; letter-spacing:1px; color:#4E4640; text-align:center; border-bottom:1px solid #F0E8E1; padding-bottom:8px; margin-bottom:16px;">
+                            Estado de Cuotas
+                        </div>
+
+                        <div style="text-align:center; background:#FCFAF8; border:1px dashed #D4C5B8; border-radius:8px; padding:22px 14px; margin-bottom:14px;">
+                            <span style="display:block; font-size:34pt; font-weight:bold; color:#D94F10; line-height:1;">
+                                <t t-esc="p.get('chart_paid_pct', '85%')"/>
+                            </span>
+                            <span style="display:block; font-size:8pt; font-weight:bold; color:#8C8177; text-transform:uppercase; letter-spacing:1px; margin-top:4px;">
+                                Unidades al Dia
+                            </span>
+                        </div>
+
+                        <table width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid #F0E8E1;">
+                            <tr>
+                                <td width="50%" style="text-align:center; padding:10px 6px; font-size:9pt; font-weight:bold; color:#4E4640;">
+                                    <span style="display:inline-block; width:9px; height:9px; border-radius:50%; background:#27AE60; margin-right:4px; vertical-align:middle;"></span>
+                                    <b>Al Dia</b>  <t t-esc="p.get('chart_paid_pct', '85%')"/>
+                                </td>
+                                <td width="50%" style="text-align:center; padding:10px 6px; font-size:9pt; font-weight:bold; color:#4E4640;">
+                                    <span style="display:inline-block; width:9px; height:9px; border-radius:50%; background:#E53935; margin-right:4px; vertical-align:middle;"></span>
+                                    <b>En Mora</b>  <t t-esc="p.get('chart_unpaid_pct', '15%')"/>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </td>
+            </tr>
+        </table>
+
+        <!-- === INFORMACION DEL CONDOMINIO (3 columnas) ========== -->
+        <div style="font-size:8pt; font-weight:bold; text-transform:uppercase; letter-spacing:2px; color:#D94F10; border-bottom:2px solid #F0E8E1; padding-bottom:8px; margin-bottom:14px;">
+            Informacion del Condominio
+        </div>
+        <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #E6D9CD; border-left:5px solid #D94F10; margin-bottom:30px;">
+            <tr>
+                <td width="33%" style="padding:18px 20px; vertical-align:top; border-right:1px solid #F0E8E1;">
+                    <span style="display:block; font-size:7pt; font-weight:bold; text-transform:uppercase; letter-spacing:1px; color:#A3968C; margin-bottom:6px;">Direccion</span>
+                    <span style="display:block; font-size:11pt; font-weight:bold; color:#1F1A16; line-height:1.4;">
+                        <t t-esc="p.get('address', 'No registrada')"/>
+                    </span>
+                </td>
+                <td width="33%" style="padding:18px 20px; vertical-align:top; border-right:1px solid #F0E8E1;">
+                    <span style="display:block; font-size:7pt; font-weight:bold; text-transform:uppercase; letter-spacing:1px; color:#A3968C; margin-bottom:6px;">Correo de Contacto</span>
+                    <span style="display:block; font-size:11pt; font-weight:bold; color:#1F1A16; line-height:1.4;">
+                        <t t-esc="p.get('email', 'No disponible')"/>
+                    </span>
+                </td>
+                <td width="34%" style="padding:18px 20px; vertical-align:top;">
+                    <span style="display:block; font-size:7pt; font-weight:bold; text-transform:uppercase; letter-spacing:1px; color:#A3968C; margin-bottom:6px;">Generado Por</span>
+                    <span style="display:block; font-size:11pt; font-weight:bold; color:#1F1A16; line-height:1.4;">
+                        <t t-esc="p.get('requestedBy', 'Administrador')"/>
+                    </span>
+                </td>
+            </tr>
+        </table>
+
+        <!-- === NOTAS EJECUTIVAS ================================= -->
+        <t t-if="p.get('note') and p.get('note') != 'No additional notes.'">
+            <div style="font-size:8pt; font-weight:bold; text-transform:uppercase; letter-spacing:2px; color:#D94F10; border-bottom:2px solid #F0E8E1; padding-bottom:8px; margin-bottom:14px;">
+                Observaciones
+            </div>
+            <div style="background:#FFFBF8; border:1px solid #FDDCC9; border-left:4px solid #D94F10; border-radius:6px; padding:14px 20px; font-size:10pt; font-style:italic; font-weight:600; color:#4E4640; line-height:1.5; margin-bottom:30px;">
+                <t t-esc="p.get('note')"/>
+            </div>
+        </t>
+
+        <!-- === TABLA DE REGISTROS ================================ -->
+        <div style="font-size:8pt; font-weight:bold; text-transform:uppercase; letter-spacing:2px; color:#D94F10; border-bottom:2px solid #F0E8E1; padding-bottom:8px; margin-bottom:14px;">
+            Registro Detallado
+        </div>
+        <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #E6D9CD; margin-bottom:10px;">
+            <thead>
+                <tr style="background-color:#F8F4F0;">
+                    <t t-if="p.get('columns')">
+                        <th t-foreach="p.get('columns', [])" t-as="col"
+                            style="font-size:8pt; font-weight:bold; text-transform:uppercase; letter-spacing:1px; color:#4E4640; padding:12px 16px; text-align:left; border-bottom:2px solid #E6D9CD;"
+                            t-esc="col.get('label', '')"/>
+                    </t>
+                    <t t-else="">
+                        <th style="font-size:8pt; font-weight:bold; text-transform:uppercase; letter-spacing:1px; color:#4E4640; padding:12px 16px; text-align:left; border-bottom:2px solid #E6D9CD;">Descripcion</th>
+                        <th style="font-size:8pt; font-weight:bold; text-transform:uppercase; letter-spacing:1px; color:#4E4640; padding:12px 16px; text-align:left; border-bottom:2px solid #E6D9CD;">Fecha</th>
+                        <th style="font-size:8pt; font-weight:bold; text-transform:uppercase; letter-spacing:1px; color:#4E4640; padding:12px 16px; text-align:left; border-bottom:2px solid #E6D9CD;">Monto</th>
+                        <th style="font-size:8pt; font-weight:bold; text-transform:uppercase; letter-spacing:1px; color:#4E4640; padding:12px 16px; text-align:left; border-bottom:2px solid #E6D9CD;">Estado</th>
+                    </t>
+                </tr>
+            </thead>
+            <tbody>
+                <t t-if="p.get('rows')">
+                    <tr t-foreach="p.get('rows', [])" t-as="row">
+                        <td t-foreach="p.get('columns', [])" t-as="col"
+                            style="font-size:10pt; font-weight:600; color:#2D2620; padding:12px 16px; border-bottom:1px solid #F0E8E1;"
+                            t-esc="row.get(col.get('key', ''), '-')"/>
+                    </tr>
+                </t>
+                <t t-else="">
+                    <tr>
+                        <td colspan="4" style="text-align:center; padding:36px; color:#A3968C; font-style:italic; font-size:10pt;">
+                            No se encontraron registros para este periodo.
+                        </td>
+                    </tr>
+                </t>
+            </tbody>
+        </table>
+
+    </div><!-- /contenido -->
+
+    <!-- ============================================================
+         FOOTER
+    ============================================================= -->
+    <div style="border-top:2px solid #F0E8E1; margin:30px 40px 0 40px; padding:16px 0 24px 0; text-align:center;">
+        <div style="font-size:9pt; font-weight:bold; color:#6D625A; margin-bottom:4px;">
+            <t t-esc="p.get('footerNote', 'Documento confidencial para uso administrativo.')"/>
+        </div>
+        <div style="font-size:8pt; color:#A3968C;">
+            Generado y verificado por el sistema Condome
+        </div>
+    </div>
+
+</div><!-- /page -->
+</t>
+</t>
+</template>
+
+<record id="action_report_financial" model="ir.actions.report">
+    <field name="name">Condome Administrative Report</field>
+    <field name="model">condome.report.export</field>
+    <field name="report_type">qweb-pdf</field>
+    <field name="report_name">condome_reporting.report_financial_document</field>
+    <field name="report_file">condome_reporting.report_financial_document</field>
+    <field name="print_report_name">'Condome_Report_%s' % (object.id)</field>
+    <field name="binding_model_id" ref="model_condome_report_export"/>
+    <field name="binding_type">report</field>
+</record>
 </odoo>

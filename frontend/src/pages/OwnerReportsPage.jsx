@@ -42,6 +42,13 @@ const STATUS_LABELS = {
   failed: "Fallido",
 };
 
+const TYPE_LABELS = {
+  cobros: "Financiero",
+  operativo: "Operativo",
+  comunidad: "Comunidad",
+  auditoria: "Auditoría",
+};
+
 export default function OwnerReportsPage() {
   const { condominio } = useCondominio();
   const { user } = useAuth();
@@ -53,6 +60,9 @@ export default function OwnerReportsPage() {
   const [saving, setSaving] = useState(false);
   const [downloadingId, setDownloadingId] = useState(null);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
+  
   const [form, setForm] = useState({
     reportType: "cobros",
     exportFormat: "pdf",
@@ -108,6 +118,16 @@ export default function OwnerReportsPage() {
     return () => clearInterval(interval);
   }, [exports, loadReports]);
 
+  useEffect(() => {
+    if (success || error) {
+      const timer = setTimeout(() => {
+        setSuccess("");
+        setError("");
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [success, error]);
+
   if (!condominio?.id && !isSystemAdmin) {
     return <MissingCondominioState />;
   }
@@ -120,6 +140,7 @@ export default function OwnerReportsPage() {
     }
 
     setError("");
+    setSuccess("");
     setSaving(true);
     try {
       await adminService.createReportExport({
@@ -127,6 +148,7 @@ export default function OwnerReportsPage() {
         ...form,
       });
       setForm((current) => ({ ...current, note: "" }));
+      setSuccess("¡Reporte generado con éxito!");
       await loadReports();
     } catch (saveError) {
       setError(saveError.message || "No se pudo solicitar la exportación.");
@@ -148,6 +170,20 @@ export default function OwnerReportsPage() {
     }
   };
 
+  const handleDeleteExport = async () => {
+    if (!deleteConfirm) return;
+    setSaving(true);
+    try {
+      await adminService.deleteReportExport(deleteConfirm.id);
+      setDeleteConfirm(null);
+      await loadReports();
+    } catch (err) {
+      setError(err.message || "No se pudo eliminar el reporte del historial.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <div className="space-y-6 md:space-y-7">
       <section
@@ -164,28 +200,28 @@ export default function OwnerReportsPage() {
               Reporting Workspace
             </p>
             <h1 className="mt-3 max-w-3xl text-3xl font-semibold text-white md:text-[2.6rem] md:leading-[1.1]">
-              Genera reportes con branding, control tenant y descarga real desde el panel de propietarios.
+              Genera reportes con branding, control tenant y descarga desde el panel.
             </h1>
             <p className="mt-4 max-w-2xl text-sm leading-7 text-white/72">
-              El flujo ya integra reporte financiero, operacional, comunidad y auditoría con descarga autenticada
-              y un historial visible para seguimiento del condominio.
+              El flujo integra reportes financiero, operacional y comunidad con descarga autenticada
+              y un historial visible para trazabilidad administrativa.
             </p>
 
             <div className="mt-6 grid gap-3 sm:grid-cols-3">
               <HeroInfoTile
-                label="Condominio Activo"
+                label="Unidad Seleccionada"
                 value={condominio?.name || "Vista global"}
-                helper={condominio?.direccion || "Selecciona un condominio para exportar."}
+                helper={condominio?.direccion || "Exportación activa para Odoo."}
               />
               <HeroInfoTile
-                label="Reporte Principal"
+                label="Tipo de Salida"
                 value={activeReportType.label}
                 helper={activeReportType.helper}
               />
               <HeroInfoTile
-                label="Formato"
+                label="Layout & Format"
                 value={form.exportFormat.toUpperCase()}
-                helper="PDF con branding o exportación tabular."
+                helper="Documento estructurado con logo corporativo."
               />
             </div>
           </div>
@@ -195,44 +231,42 @@ export default function OwnerReportsPage() {
               <SummaryCard key={card.key || card.label} card={card} index={index} />
             ))}
             <HighlightTile
-              label="Exportaciones"
+              label="Historial Total"
               value={summary?.exports || 0}
-              helper="Solicitudes registradas en el historial."
+              helper="Registros guardados en el servidor."
             />
             <HighlightTile
-              label="Disponibilidad"
-              value={loading ? "..." : "Online"}
-              helper="El módulo responde con render y descarga."
+               label="Engine State"
+               value={loading ? "..." : "Online"}
+               color="text-emerald-300"
+               helper="El generador de PDFs está funcionando."
             />
           </div>
         </div>
       </section>
 
       {error ? <ErrorBanner message={error} /> : null}
+      {success ? <SuccessBanner message={success} /> : null}
 
       <section className="grid gap-6 xl:grid-cols-[0.95fr_1.18fr]">
-        <div className={`${SURFACE} p-6 md:p-7`}>
+        <div className={`${SURFACE} p-6 md:p-8 h-fit sticky top-6`}>
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-[11px] uppercase tracking-[0.24em] font-bold text-[var(--condome-orange)]">
-                Nueva exportación
+                Configurador
               </p>
-              <h2 className="mt-2 text-[1.8rem] leading-none font-semibold text-[var(--fg-primary)]">
-                Diseña la salida
+              <h2 className="mt-2 text-[1.8rem] leading-none font-bold text-[var(--fg-primary)] tracking-tight">
+                Emitir Documento
               </h2>
-              <p className="mt-3 text-sm leading-7 text-[var(--fg-secondary)]">
-                Escoge el tipo de reporte, define el formato y agrega una nota operativa para dejar contexto al
-                historial.
-              </p>
             </div>
-            <span className="px-3 py-2 rounded-full bg-[var(--surface-0)] border border-[var(--border-standard)] text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--fg-tertiary)]">
-              {canRequestExport ? "Ready" : "Select Condo"}
+            <span className="px-3 py-2 rounded-xl bg-[var(--surface-0)] border border-[var(--border-standard)] text-[10px] font-black uppercase tracking-widest text-[var(--fg-tertiary)]">
+              Auth: Admin
             </span>
           </div>
 
-          <form className="mt-6 space-y-5" onSubmit={requestExport}>
-            <div className="space-y-3">
-              <FieldLabel label="Tipo de reporte" />
+          <form className="mt-8 space-y-6" onSubmit={requestExport}>
+            <div className="space-y-4">
+              <p className="text-[10px] font-black uppercase tracking-widest text-[var(--fg-tertiary)]">Objetivo del reporte</p>
               <div className="grid gap-3">
                 {REPORT_TYPE_OPTIONS.map((option) => {
                   const active = option.value === form.reportType;
@@ -241,24 +275,20 @@ export default function OwnerReportsPage() {
                       key={option.value}
                       type="button"
                       onClick={() => setForm((current) => ({ ...current, reportType: option.value }))}
-                      className={`rounded-[22px] border px-4 py-4 text-left transition-all ${
+                      className={`rounded-[24px] border px-4 py-4 text-left transition-all group relative cursor-pointer ${
                         active
-                          ? "border-[var(--condome-orange)] bg-[linear-gradient(135deg,rgba(217,79,16,0.10),rgba(255,255,255,0.98))] shadow-[0_16px_36px_rgba(91,53,32,0.08)]"
+                          ? "border-[var(--condome-orange)] bg-[var(--surface-1)] shadow-xl"
                           : "border-[var(--border-standard)] bg-[var(--surface-0)] hover:border-[var(--border-emphasis)]"
                       }`}
                     >
                       <div className="flex items-start justify-between gap-4">
                         <div>
-                          <p className="text-sm font-bold text-[var(--fg-primary)]">{option.label}</p>
-                          <p className="mt-1 text-sm leading-6 text-[var(--fg-secondary)]">{option.helper}</p>
+                          <p className={`text-sm font-bold ${active ? "text-[var(--condome-orange)]" : "text-[var(--fg-primary)]"}`}>{option.label}</p>
+                          <p className="mt-1 text-xs leading-6 text-[var(--fg-tertiary)] font-medium">{option.helper}</p>
                         </div>
-                        <span
-                          className={`mt-1 h-3.5 w-3.5 rounded-full border ${
-                            active
-                              ? "border-[var(--condome-orange)] bg-[var(--condome-orange)]"
-                              : "border-[var(--border-emphasis)] bg-transparent"
-                          }`}
-                        />
+                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${active ? "border-[var(--condome-orange)]" : "border-[var(--border-standard)]"}`}>
+                           {active && <div className="w-2.5 h-2.5 bg-[var(--condome-orange)] rounded-full"></div>}
+                        </div>
                       </div>
                     </button>
                   );
@@ -266,9 +296,9 @@ export default function OwnerReportsPage() {
               </div>
             </div>
 
-            <div className="space-y-3">
-              <FieldLabel label="Formato" />
-              <div className="flex flex-wrap gap-3">
+            <div className="space-y-4">
+               <p className="text-[10px] font-black uppercase tracking-widest text-[var(--fg-tertiary)]">Formatos Disponibles</p>
+              <div className="flex flex-wrap gap-2">
                 {EXPORT_FORMAT_OPTIONS.map((option) => {
                   const active = option.value === form.exportFormat;
                   return (
@@ -276,10 +306,10 @@ export default function OwnerReportsPage() {
                       key={option.value}
                       type="button"
                       onClick={() => setForm((current) => ({ ...current, exportFormat: option.value }))}
-                      className={`px-4 py-2.5 rounded-full text-xs font-black uppercase tracking-[0.18em] transition-all ${
+                      className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all cursor-pointer ${
                         active
-                          ? "bg-[var(--condome-orange)] text-white shadow-[0_18px_32px_rgba(217,79,16,0.22)]"
-                          : "bg-[var(--surface-0)] text-[var(--fg-secondary)] border border-[var(--border-standard)]"
+                          ? "bg-[var(--condome-orange)] text-white shadow-lg"
+                          : "bg-[var(--surface-0)] text-[var(--fg-tertiary)] border border-[var(--border-standard)] hover:bg-[var(--surface-2)]"
                       }`}
                     >
                       {option.label}
@@ -290,107 +320,104 @@ export default function OwnerReportsPage() {
             </div>
 
             <label className="block">
-              <FieldLabel label="Nota interna" />
+               <p className="text-[10px] font-black uppercase tracking-widest text-[var(--fg-tertiary)] mb-2">Comentario de trazabilidad</p>
               <textarea
                 value={form.note}
                 onChange={(event) => setForm((current) => ({ ...current, note: event.target.value }))}
-                className="mt-2 min-h-[120px] w-full rounded-[22px] border border-[var(--border-standard)] bg-[var(--surface-0)] px-4 py-3 text-sm leading-7 text-[var(--fg-primary)] outline-none transition-all focus:border-[var(--condome-orange)] focus:ring-4 focus:ring-[var(--condome-orange)]/10 resize-none"
-                placeholder="Ejemplo: Reporte solicitado para la reunión del consejo del viernes."
+                className="w-full rounded-[24px] border border-[var(--border-standard)] bg-[var(--surface-0)] px-5 py-4 text-sm leading-7 text-[var(--fg-primary)] outline-none transition-all focus:border-[var(--condome-orange)] focus:shadow-sm resize-none min-h-[100px]"
+                placeholder="Indica la razón de esta exportación..."
               />
             </label>
-
-            <div className="rounded-[24px] border border-[var(--border-standard)] bg-[var(--canvas)] px-4 py-4">
-              <p className="text-[10px] font-black uppercase tracking-[0.24em] text-[var(--fg-tertiary)]">
-                Estado del flujo
-              </p>
-              <p className="mt-2 text-sm leading-7 text-[var(--fg-secondary)]">
-                {canRequestExport
-                  ? `La exportación se generará para ${condominio?.name}. El archivo quedará disponible en el historial al completarse.`
-                  : "Selecciona un condominio para habilitar la solicitud del reporte."}
-              </p>
-            </div>
 
             <button
               type="submit"
               disabled={!canRequestExport || saving}
-              className="w-full rounded-[22px] border-none px-5 py-4 text-xs font-black uppercase tracking-[0.22em] text-white transition-all disabled:opacity-60"
+              className="w-full rounded-2xl border-none px-5 py-4 text-[11px] font-black uppercase tracking-[0.25em] text-white transition-all disabled:opacity-60 cursor-pointer shadow-xl active:scale-[0.98]"
               style={{
-                background: "linear-gradient(135deg, #FF7A30 0%, #D94F10 64%, #8F2F00 100%)",
-                boxShadow: "0 22px 40px rgba(217, 79, 16, 0.24)",
+                background: "linear-gradient(135deg, #FF7A30 0%, #D94F10 64%)",
               }}
             >
-              {saving ? "Solicitando..." : "Generar exportación"}
+              {saving ? "Solicitando..." : "Registrar y Generar"}
             </button>
           </form>
         </div>
 
-        <div className={`${SURFACE} p-6 md:p-7`}>
-          <div className="flex items-center justify-between gap-4 flex-wrap">
-            <div>
-              <p className="text-[11px] uppercase tracking-[0.24em] font-bold text-[var(--fg-tertiary)]">
-                Historial
+        <div className={`${SURFACE} p-6 md:p-8 flex flex-col`}>
+          <div className="flex items-center justify-between gap-4 flex-wrap mb-8">
+            <div className="flex-1">
+              <p className="text-[11px] font-black uppercase tracking-widest text-[var(--fg-tertiary)] opacity-60">
+                Log Histórico
               </p>
-              <h2 className="mt-2 text-[1.8rem] leading-none font-semibold text-[var(--fg-primary)]">
-                Exportaciones listas para seguimiento
+              <h2 className="mt-1 text-2xl font-bold text-[var(--fg-primary)] tracking-tight">
+                Consolidado de Archivos
               </h2>
             </div>
-            <span className="px-3 py-2 rounded-full bg-[var(--surface-0)] border border-[var(--border-standard)] text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--fg-secondary)]">
-              {summary?.exports || 0} solicitudes
-            </span>
+            <div className="px-4 py-2 rounded-xl bg-[var(--surface-0)] border border-[var(--border-standard)] text-[11px] font-black uppercase tracking-widest text-[var(--fg-tertiary)]">
+              {exports.length} Registros
+            </div>
           </div>
 
-          <div className="mt-6 space-y-4">
+          <div className="space-y-4">
             {loading ? (
               <LoaderState />
             ) : exports.length ? (
               exports.map((item, index) => (
                 <article
                   key={item.id}
-                  className="rounded-[26px] border border-[var(--border-standard)] bg-[var(--surface-0)] p-5 animate-slide-up transition-all hover:border-[var(--condome-orange)]/20 hover:shadow-[var(--shadow-card)]"
-                  style={{ animationDelay: `${index * 80}ms` }}
+                  className="rounded-[28px] border border-[var(--border-standard)] bg-[var(--surface-0)] p-6 transition-all hover:border-[var(--condome-orange)]/30 group animate-reveal"
+                  style={{ animationDelay: `${index * 50}ms` }}
                 >
-                  <div className="flex items-start justify-between gap-4 flex-wrap">
-                    <div className="flex-1 min-w-[220px]">
-                      <div className="flex flex-wrap gap-2">
-                        <StatusBadge value={item.reportType} tone="strong" />
+                  <div className="flex items-start justify-between gap-6 flex-wrap">
+                    <div className="flex-1">
+                      <div className="flex flex-wrap gap-2 mb-4">
+                        <StatusBadge value={TYPE_LABELS[item.reportType] || item.reportType} tone="strong" />
                         <StatusBadge value={item.exportFormat.toUpperCase()} />
                         <StatusBadge value={STATUS_LABELS[item.state] || item.state} state={item.state} />
                       </div>
-                      <h3 className="mt-4 text-lg font-semibold text-[var(--fg-primary)]">
-                        {item.fileName || "Exportación pendiente"}
+                      <h3 className="text-lg font-bold text-[var(--fg-primary)] group-hover:text-[var(--condome-orange)] transition-colors">
+                        {item.fileName || "Snaphot Operativo #" + item.id}
                       </h3>
-                      <p className="mt-1 text-sm text-[var(--fg-secondary)]">{item.condominioNombre}</p>
-                      <p className="mt-3 text-sm leading-7 text-[var(--fg-tertiary)]">
-                        {item.note || "Sin observaciones adicionales."}
+                      <p className="mt-1 text-xs font-bold text-[var(--fg-tertiary)] tracking-wide uppercase">{item.condominioNombre}</p>
+                      <p className="mt-4 text-sm leading-7 text-[var(--fg-secondary)] italic">
+                        "{item.note || "Sin nota técnica registrada."}"
                       </p>
                     </div>
 
-                    <div className="min-w-[170px] text-left md:text-right">
-                      <p className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--fg-tertiary)]">
-                        Solicitado por
+                    <div className="text-right border-l border-[var(--border-standard)]/50 pl-6 hidden md:block">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-[var(--fg-tertiary)] mb-1">
+                        Autor
                       </p>
-                      <p className="mt-1 text-sm font-semibold text-[var(--fg-primary)]">
-                        {item.requestedBy || "Sistema"}
+                      <p className="text-xs font-bold text-[var(--fg-primary)]">
+                        {item.requestedBy || "Admin"}
                       </p>
-                      <p className="mt-2 text-xs text-[var(--fg-tertiary)]">
+                      <p className="mt-3 text-[10px] text-[var(--fg-tertiary)] font-medium">
                         {formatDateTime(item.requestedAt)}
                       </p>
                     </div>
                   </div>
 
-                  <div className="mt-5 flex flex-wrap items-center gap-3">
-                    <button
-                      type="button"
-                      onClick={() => handleDownload(item)}
-                      disabled={item.state !== "ready" || downloadingId === item.id}
-                      className="inline-flex items-center gap-2 rounded-full border-none bg-[var(--condome-orange)] px-4 py-2.5 text-xs font-black uppercase tracking-[0.16em] text-white transition-all disabled:opacity-55"
-                    >
-                      <IconDownload />
-                      {downloadingId === item.id ? "Descargando..." : "Descargar"}
-                    </button>
-
-                    <span className="text-xs text-[var(--fg-tertiary)]">
-                      {item.generatedAt ? `Generado ${formatDateTime(item.generatedAt)}` : "Pendiente de generación"}
+                  <div className="mt-6 pt-5 border-t border-[var(--border-standard)] flex items-center justify-between gap-4">
+                     <div className="flex gap-2">
+                        <button
+                           type="button"
+                           onClick={() => handleDownload(item)}
+                           disabled={item.state !== "ready" || downloadingId === item.id}
+                           className="inline-flex items-center gap-2 rounded-xl border-none bg-[var(--condome-orange)] px-5 py-2.5 text-[10px] font-black uppercase tracking-[0.16em] text-white transition-all cursor-pointer shadow-md disabled:opacity-40"
+                        >
+                           <IconDownload />
+                           {downloadingId === item.id ? "..." : "Descargar"}
+                        </button>
+                        <button
+                           type="button"
+                           onClick={() => setDeleteConfirm(item)}
+                           className="p-2.5 rounded-xl border border-red-500/20 bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-all cursor-pointer"
+                           title="Eliminar de historial"
+                        >
+                           🗑️
+                        </button>
+                     </div>
+                    <span className="text-[10px] font-bold text-[var(--fg-tertiary)] uppercase tracking-widest">
+                      {item.generatedAt ? `Done: ${formatDateTime(item.generatedAt)}` : "En cola de Odoo"}
                     </span>
                   </div>
                 </article>
@@ -401,6 +428,27 @@ export default function OwnerReportsPage() {
           </div>
         </div>
       </section>
+
+      {/* Modal Confirmación Delete */}
+      {deleteConfirm && (
+         <div className="fixed inset-0 bg-black/70 z-[100] flex items-center justify-center p-4 backdrop-blur-md" onClick={() => setDeleteConfirm(null)}>
+            <div className="bg-[var(--surface-1)] rounded-[32px] w-full max-w-sm p-9 text-center border border-[var(--border-standard)] shadow-2xl animate-scale-up" onClick={e => e.stopPropagation()}>
+               <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl">🗑️</div>
+               <h2 className="text-xl font-bold text-[var(--fg-primary)] mb-3">Limpiar historial</h2>
+               <p className="text-sm text-[var(--fg-secondary)] leading-7 font-medium mb-8">
+                  ¿Estás seguro de eliminar el registro del reporte "<strong>{deleteConfirm.fileName || 'Snapshot'}</strong>"? Esta acción eliminará el archivo del servidor y no podrá recuperarse.
+               </p>
+               <div className="flex gap-4">
+                  <button onClick={() => setDeleteConfirm(null)} className="flex-1 py-3.5 rounded-2xl border border-[var(--border-standard)] bg-transparent text-[11px] font-black uppercase tracking-widest text-[var(--fg-tertiary)] cursor-pointer hover:bg-[var(--surface-0)]">
+                     Cancelar
+                  </button>
+                  <button onClick={handleDeleteExport} disabled={saving} className="flex-1 py-3.5 rounded-2xl border-none bg-red-600 text-white text-[11px] font-black uppercase tracking-widest cursor-pointer hover:bg-red-700 shadow-xl disabled:opacity-50">
+                     {saving ? "..." : "Eliminar"}
+                  </button>
+               </div>
+            </div>
+         </div>
+      )}
     </div>
   );
 }
@@ -418,13 +466,12 @@ function triggerBrowserDownload(blob, filename) {
 
 function MissingCondominioState() {
   return (
-    <div className="flex items-center justify-center min-h-[60vh]">
-      <div className={`${SURFACE} max-w-xl p-8 text-center`}>
-        <p className="text-sm font-semibold text-[var(--fg-primary)]">Primero selecciona un condominio</p>
-        <p className="mt-2 text-sm leading-7 text-[var(--fg-secondary)]">
-          Los reportes administrativos necesitan un contexto activo para generar exportaciones por condominio.
-        </p>
-      </div>
+    <div className="flex flex-col items-center justify-center min-h-[60vh] p-8 text-center bg-[var(--canvas)] rounded-[40px] border-2 border-dashed border-[var(--border-standard)]">
+      <div className="w-24 h-24 bg-orange-500/10 rounded-full flex items-center justify-center mb-8 text-4xl shadow-inner">📊</div>
+      <h1 className="text-3xl font-bold text-[var(--fg-primary)] tracking-tight">Acceso a Reportes Administrativos</h1>
+      <p className="mt-4 text-sm leading-8 text-[var(--fg-secondary)] max-w-lg font-medium">
+        Para auditar la gestión o exportar datos en PDF/Excel, debes seleccionar un condominio activo desde el selector superior.
+      </p>
     </div>
   );
 }
@@ -432,60 +479,66 @@ function MissingCondominioState() {
 function SummaryCard({ card, index }) {
   return (
     <div
-      className="rounded-[24px] border border-white/12 bg-white/8 p-4 backdrop-blur-md"
+      className="rounded-[24px] border border-white/12 bg-white/8 p-4 backdrop-blur-md shadow-sm"
       style={{ animationDelay: `${index * 80}ms` }}
     >
       <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/46">{card.label}</p>
-      <p className="mt-3 text-[2rem] font-black text-white">{card.value}</p>
-      <p className="mt-2 text-xs leading-6 text-white/62">{card.description}</p>
+      <p className="mt-2 text-[2.2rem] font-bold text-white tracking-tighter">{card.value}</p>
+      <p className="mt-1 text-[10px] leading-5 text-white/50 font-medium">{card.helper || card.description}</p>
     </div>
   );
 }
 
-function HighlightTile({ label, value, helper }) {
+function HighlightTile({ label, value, helper, color = "text-white" }) {
   return (
-    <div className="rounded-[24px] border border-white/12 bg-white/8 p-4 backdrop-blur-md">
+    <div className="rounded-[24px] border border-white/12 bg-white/5 p-4 backdrop-blur-md">
       <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/46">{label}</p>
-      <p className="mt-3 text-[1.8rem] font-black text-white">{value}</p>
-      <p className="mt-2 text-xs leading-6 text-white/62">{helper}</p>
+      <p className={`mt-2 text-[1.8rem] font-bold tracking-tighter ${color}`}>{value}</p>
+      <p className="mt-1 text-[10px] leading-5 text-white/40 font-medium">{helper}</p>
     </div>
   );
 }
 
 function HeroInfoTile({ label, value, helper }) {
   return (
-    <div className="rounded-[22px] border border-white/12 bg-white/8 px-4 py-4 backdrop-blur-md">
-      <p className="text-[10px] font-black uppercase tracking-[0.22em] text-white/46">{label}</p>
-      <p className="mt-2 text-sm font-bold tracking-wide text-white">{value}</p>
-      <p className="mt-2 text-xs leading-6 text-white/62">{helper}</p>
+    <div className="rounded-[22px] border border-white/10 bg-white/5 px-4 py-4 backdrop-blur-sm shadow-inner group transition-all hover:bg-white/10">
+      <p className="text-[9px] font-black uppercase tracking-widest text-[#F5D2BC] opacity-70 group-hover:opacity-100 transition-opacity">{label}</p>
+      <p className="mt-2 text-[13px] font-bold tracking-tight text-white">{value}</p>
+      <p className="mt-1.5 text-[10px] leading-5 text-white/40 line-clamp-2">{helper}</p>
     </div>
   );
-}
-
-function FieldLabel({ label }) {
-  return <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--fg-tertiary)]">{label}</p>;
 }
 
 function StatusBadge({ value, tone = "soft", state = "" }) {
   const variant =
     state === "ready"
-      ? "bg-emerald-50 text-emerald-700 border border-emerald-100"
+      ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]"
       : state === "failed"
-        ? "bg-red-50 text-red-600 border border-red-100"
+        ? "bg-red-500/10 text-red-500 border border-red-500/20"
         : tone === "strong"
-          ? "bg-[var(--condome-orange)]/12 text-[var(--condome-orange)]"
-          : "bg-[var(--canvas)] text-[var(--fg-secondary)] border border-[var(--border-standard)]";
+          ? "bg-[var(--condome-orange)]/10 text-[var(--condome-orange)]"
+          : "bg-[var(--surface-2)] text-[var(--fg-tertiary)] border border-[var(--border-standard)]";
 
   return (
-    <span className={`px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-[0.14em] ${variant}`}>
+    <span className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest shadow-sm ${variant}`}>
       {value}
     </span>
   );
 }
 
+function SuccessBanner({ message }) {
+  return (
+    <div className="rounded-[22px] border border-emerald-200 bg-emerald-50 px-6 py-4 text-sm font-bold text-emerald-700 shadow-sm flex items-center gap-3">
+      <div className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center text-white text-[10px]">✓</div>
+      {message}
+    </div>
+  );
+}
+
 function ErrorBanner({ message }) {
   return (
-    <div className="rounded-[24px] border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+    <div className="rounded-[22px] border border-red-200 bg-red-50 px-6 py-4 text-sm font-bold text-red-600 shadow-sm flex items-center gap-3">
+       <div className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-white text-[10px]">!</div>
       {message}
     </div>
   );
@@ -493,21 +546,21 @@ function ErrorBanner({ message }) {
 
 function LoaderState() {
   return (
-    <div className="rounded-[24px] border border-dashed border-[var(--border-standard)] bg-[var(--surface-0)] p-10 text-center">
-      <p className="text-sm font-semibold text-[var(--fg-primary)]">Cargando exportaciones...</p>
-      <p className="mt-2 text-sm text-[var(--fg-secondary)]">
-        Estamos consultando el historial y el estado actual de generación.
-      </p>
+    <div className="rounded-[30px] border border-dashed border-[var(--border-standard)] bg-[var(--surface-0)] p-16 text-center shadow-inner">
+      <div className="w-10 h-10 border-4 border-[var(--condome-orange)] border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
+      <p className="text-sm font-bold text-[var(--fg-primary)] uppercase tracking-widest">Sincronizando Historial</p>
+      <p className="mt-3 text-xs text-[var(--fg-tertiary)] font-medium">Consultando registros generados en el servidor de Odoo...</p>
     </div>
   );
 }
 
 function EmptyState() {
   return (
-    <div className="rounded-[24px] border border-dashed border-[var(--border-standard)] bg-[var(--surface-0)] p-10 text-center">
-      <h3 className="text-lg font-semibold text-[var(--fg-primary)]">Todavía no hay exportaciones</h3>
-      <p className="mt-2 text-sm leading-7 text-[var(--fg-secondary)] max-w-md mx-auto">
-        Las solicitudes que hagas desde este panel quedarán registradas aquí para trazabilidad, descarga y seguimiento.
+    <div className="rounded-[30px] border border-dashed border-[var(--border-standard)] bg-[var(--surface-0)] p-16 text-center shadow-inner">
+      <div className="text-4xl mb-6 opacity-20">📂</div>
+      <h3 className="text-xl font-bold text-[var(--fg-primary)]">Historial de Reportes Vacío</h3>
+      <p className="mt-3 text-sm leading-8 text-[var(--fg-secondary)] max-w-sm mx-auto font-medium">
+        Aquí aparecerán todos los documentos PDF y Excel solicitados para este condominio con fecha y autor.
       </p>
     </div>
   );
@@ -526,7 +579,7 @@ function formatDateTime(value) {
 
 function IconDownload() {
   return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
       <polyline points="7 10 12 15 17 10" />
       <line x1="12" y1="15" x2="12" y2="3" />

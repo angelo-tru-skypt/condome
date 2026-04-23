@@ -111,7 +111,7 @@ export function CondominioProvider({ children }) {
   }, []);
 
   const refreshCondominio = useCallback(async () => {
-    if (!isAuth || !ENABLE_CONDOMINIO_API || isResidentRole(user?.role || user?.rol)) {
+    if (!isAuth || !ENABLE_CONDOMINIO_API) {
       setCondominios([]);
       setCondominio(null);
       setEdificios([]);
@@ -187,6 +187,54 @@ export function CondominioProvider({ children }) {
     return result;
   }, [refreshCondominio]);
 
+  const actualizarEdificio = useCallback(async (edificioId, payload) => {
+    if (!condominio?.id) {
+      throw new Error("No hay condominio activo");
+    }
+    const result = await condominioService.actualizarEdificio(condominio.id, edificioId, payload);
+    await refreshCondominio();
+    return result;
+  }, [condominio?.id, refreshCondominio]);
+
+  const eliminarEdificio = useCallback(async (edificioId) => {
+    if (!condominio?.id) {
+      throw new Error("No hay condominio activo");
+    }
+    const result = await condominioService.eliminarEdificio(condominio.id, edificioId);
+    await refreshCondominio();
+    return result;
+  }, [condominio?.id, refreshCondominio]);
+
+  const actualizarApartamento = useCallback(async (apartamentoId, payload) => {
+    if (!condominio?.id) {
+      throw new Error("No hay condominio activo");
+    }
+    const result = await condominioService.actualizarApartamento(condominio.id, apartamentoId, payload);
+    await refreshCondominio();
+    return result;
+  }, [condominio?.id, refreshCondominio]);
+
+  const eliminarApartamento = useCallback(async (apartamentoId) => {
+    if (!condominio?.id) {
+      throw new Error("No hay condominio activo");
+    }
+    const result = await condominioService.eliminarApartamento(condominio.id, apartamentoId);
+    await refreshCondominio();
+    return result;
+  }, [condominio?.id, refreshCondominio]);
+
+  const actualizarResidente = useCallback(async (residenteId, payload) => {
+    const result = await condominioService.actualizarResidente(residenteId, payload);
+    await refreshCondominio();
+    return result;
+  }, [refreshCondominio]);
+
+  const eliminarResidente = useCallback(async (residenteId) => {
+    const result = await condominioService.eliminarResidente(residenteId);
+    await refreshCondominio();
+    return result;
+  }, [refreshCondominio]);
+
   const setCondominioActivo = useCallback(async (condominioId) => {
     const nextId = condominioId ? String(condominioId) : "";
     persistActiveCondominioId(nextId);
@@ -225,8 +273,14 @@ export function CondominioProvider({ children }) {
       crearCondominio,
       actualizarCondominio,
       crearEdificio,
+      actualizarEdificio,
+      eliminarEdificio,
       crearApartamento,
+      actualizarApartamento,
+      eliminarApartamento,
       crearResidente,
+      actualizarResidente,
+      eliminarResidente,
     }}>
       {children}
     </CondominioContext.Provider>

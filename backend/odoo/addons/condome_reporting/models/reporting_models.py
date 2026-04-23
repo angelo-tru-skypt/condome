@@ -23,6 +23,12 @@ class CondomeReportExport(models.Model):
     }
 
     condominio_id = fields.Many2one("condome.condominio", required=True, ondelete="cascade")
+    company_id = fields.Many2one(
+        "res.company",
+        related="condominio_id.company_id",
+        store=True,
+        readonly=True,
+    )
     requested_by = fields.Many2one(
         "res.users",
         required=True,

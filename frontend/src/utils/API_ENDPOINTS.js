@@ -67,7 +67,7 @@ export const CONDOMINIO_ENDPOINTS = {
  */
 export const ADMIN_ENDPOINTS = {
   // Dashboard
-  getDashboard: `${API_PREFIX}/owner/summary/`,
+  getDashboard: `${API_PREFIX}/owner/dashboard/summary/`,
   // Roles
   roles: `${API_PREFIX}/owner/roles/`,
 
@@ -177,11 +177,13 @@ export const BILLING_ENDPOINTS = {
   ownerPagos: `${API_PREFIX}/propietario/pagos/`,
   createOwnerPago: `${API_PREFIX}/propietario/pagos/`,
   ownerHistorialPagos: `${API_PREFIX}/propietario/historial-pagos/`,
+  ownerTemplates: `${API_PREFIX}/propietario/cuotas/plantillas/`,
 
   // Residente
   residentPagos: `${API_PREFIX}/resident/pagos/`,
   createResidentPago: `${API_PREFIX}/resident/pagos/`,
   residentHistorialPagos: `${API_PREFIX}/resident/historial-pagos/`,
+  residentTemplates: `${API_PREFIX}/resident/cuotas/plantillas/`,
 };
 
 /**

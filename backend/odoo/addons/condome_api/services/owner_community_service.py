@@ -103,6 +103,29 @@ class OwnerCommunityService(BaseApiService):
             _logger.exception("Owner community announcement update failed")
             return self.error_response(error, status=400)
 
+    def handle_announcement_delete(self, comunicado_id):
+        try:
+            if self.is_preflight_request(): return self.build_response({"ok": True})
+            user = self.require_owner_session()
+            record = self.get_owner_comunicado(comunicado_id, user)
+            
+            self.create_audit_entry(
+                record.condominio_id,
+                "avisos",
+                _("Comunicado eliminado"),
+                record.name,
+                actor=self.clean_str(user.name or user.login) or "Administracion",
+                severity="danger",
+            )
+            record.unlink()
+            return self.build_response({"data": {"id": comunicado_id}})
+        except PermissionError as error:
+            return self.error_response(error, status=403)
+        except Exception as error:  # pragma: no cover
+            _logger.exception("Owner community announcement delete failed")
+            return self.error_response(error, status=400)
+
+
     def handle_common_areas(self):
         try:
             if self.is_preflight_request():

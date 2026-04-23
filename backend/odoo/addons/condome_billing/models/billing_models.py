@@ -79,19 +79,20 @@ class CondomeCharge(models.Model):
             ("tarjeta", "Tarjeta"),
             ("efectivo", "Efectivo"),
             ("portal", "Portal"),
+            ("stripe", "Stripe / Tarjeta"),
         ],
         default=False,
     )
     payment_reference = fields.Char()
-    payment_provider = fields.Selection(
-        [
-            ("manual", "Manual"),
-            ("stripe", "Stripe"),
-            ("paypal", "PayPal"),
-        ],
-        default="manual"
-    )
-    stripe_payment_intent = fields.Char(string="Stripe Payment Intent ID")
+    # payment_provider = fields.Selection(
+    #     [
+    #         ("manual", "Manual"),
+    #         ("stripe", "Stripe"),
+    #         ("paypal", "PayPal"),
+    #     ],
+    #     default="manual"
+    # )
+    # stripe_payment_intent = fields.Char(string="Stripe Payment Intent ID")
     paid_at = fields.Datetime()
     note = fields.Text()
     owner_user_id = fields.Many2one(related="condominio_id.owner_user_id", store=True, readonly=True)

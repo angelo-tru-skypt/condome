@@ -96,6 +96,9 @@ class AuthApiService:
                     "apartamento": resident.apartamento_id.name,
                     "edificio": resident.edificio_id.name,
                     "condominio": resident.condominio_id.name,
+                    "billing_name": resident.billing_name or "",
+                    "tax_id": resident.tax_id or "",
+                    "billing_address": resident.billing_address or "",
                 }
             )
         return profile
@@ -176,6 +179,9 @@ class AuthApiService:
                         "apellido": self.clean_str(payload.get("apellido")) or resident.apellido,
                         "email": email,
                         "telefono": self.clean_str(payload.get("telefono")) or resident.telefono,
+                        "billing_name": self.clean_str(payload.get("billing_name")) or resident.billing_name,
+                        "tax_id": self.clean_str(payload.get("tax_id")) or resident.tax_id,
+                        "billing_address": self.clean_str(payload.get("billing_address")) or resident.billing_address,
                     }
                 )
                 user = resident.user_id.sudo() or user

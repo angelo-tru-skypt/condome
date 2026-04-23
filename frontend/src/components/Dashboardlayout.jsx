@@ -496,150 +496,53 @@ export default function DashboardLayout() {
   const isSystemAdmin = isSystemAdminRole(roleValue);
   const isCondoAdmin = isCondoAdminRole(roleValue);
   const isPropertyOwner = isPropertyOwnerRole(roleValue);
+  const hasRegisteredCondominio = Boolean(condominio?.id || activeCondominioId || condominios.length);
 
-  const nav = isSystemAdmin
-    ? SYSTEM_MONITOR_NAV
-    : isCondoAdmin
-      ? ADMIN_NAV
-      : isResident
-        ? RESIDENT_NAV
-        : PROPERTY_OWNER_NAV;
+  const nav = useMemo(() => {
+    const baseNav = isSystemAdmin
+      ? SYSTEM_MONITOR_NAV
+      : isCondoAdmin
+        ? ADMIN_NAV
+        : isResident
+          ? RESIDENT_NAV
+          : PROPERTY_OWNER_NAV;
 
-  const theme = isSystemAdmin
+    if (!isPropertyOwner) return baseNav;
+
+    return baseNav
+      .map((group) => ({
+        ...group,
+        items: group.items.filter((item) => {
+          if (item.to === "/condominio/nuevo") {
+            return !hasRegisteredCondominio;
+          }
+          return true;
+        }),
+      }))
+      .filter((group) => group.items.length > 0);
+  }, [hasRegisteredCondominio, isCondoAdmin, isPropertyOwner, isResident, isSystemAdmin]);
+  const shellMeta = isSystemAdmin
     ? {
-        sidebar: "#080808",
-        brand: "linear-gradient(135deg, #FF7A30, #D94F10)",
-        activeBg: "rgba(217,79,16,0.16)",
-        badgeBg: "rgba(217,79,16,0.16)",
-        badgeText: "#FFB184",
-        mainBg: "#060606",
-        shellBackground: "radial-gradient(circle at top left, rgba(255,122,48,0.08), transparent 28%), #060606",
-        mainTextColor: "#F7F2EC",
-        mutedTextColor: "#B2A497",
-        headerBg: "rgba(10,10,10,0.94)",
-        headerBorder: "#241D18",
-        headerLabelColor: "#FF9A63",
-        panelLabel: "System Monitor",
-        panelCopy: "Monitorea todos los condominios, movimientos y alertas del ecosistema sin perder trazabilidad.",
-        pageChip: "Vista de monitoreo global del sistema",
-        panelLabelColor: "#FFBE98",
-        panelCopyColor: "#CDBFB2",
-        panelBg: "#121212",
-        panelBorder: "#2B231E",
-        sidebarText: "#A8998E",
-        sidebarTextActive: "#F8F2EC",
-        navSectionText: "#7C7169",
-        navDivider: "#211B17",
-        userPanelBg: "#111111",
-        userPanelBorder: "#29211C",
-        controlBg: "#111111",
-        controlHoverBg: "#181411",
-        controlBorder: "#29211C",
-        headerChipBg: "#131313",
-        headerChipText: "#DDD0C3",
-        surfaceShadow: "0 18px 42px rgba(0,0,0,0.28)",
+        panelLabel: "Monitoreo global",
+        panelCopy: "Supervisa condominios, movimientos y alertas con una vista clara y ejecutiva.",
+        pageChip: "Supervisor del sistema",
       }
     : isCondoAdmin
       ? {
-          sidebar: "#0F0F0F",
-          brand: "linear-gradient(135deg, #FF7A30, #D94F10)",
-          activeBg: "rgba(217,79,16,0.15)",
-          badgeBg: "rgba(217,79,16,0.14)",
-          badgeText: "#FFAA79",
-          mainBg: "#090909",
-          shellBackground: "radial-gradient(circle at top left, rgba(255,122,48,0.07), transparent 24%), #090909",
-          mainTextColor: "#F6F0E9",
-          mutedTextColor: "#B5A79B",
-          headerBg: "rgba(16,16,16,0.94)",
-          headerBorder: "#28201B",
-          headerLabelColor: "#FF8B4A",
-          panelLabel: "Administracion del condominio",
-          panelCopy: "Organiza la operacion del condominio con un panel mas legible, ordenado y centrado en decisiones rapidas.",
-          pageChip: "Panel administrativo de condominio",
-          panelLabelColor: "#FFB184",
-          panelCopyColor: "#CDBFB2",
-          panelBg: "#151515",
-          panelBorder: "#2A221C",
-          sidebarText: "#A99B90",
-          sidebarTextActive: "#F6F0E9",
-          navSectionText: "#7D7269",
-          navDivider: "#231D18",
-          userPanelBg: "#121212",
-          userPanelBorder: "#2A221C",
-          controlBg: "#131313",
-          controlHoverBg: "#1A1612",
-          controlBorder: "#2A221C",
-          headerChipBg: "#151515",
-          headerChipText: "#D9CBBF",
-          surfaceShadow: "0 18px 42px rgba(0,0,0,0.24)",
+          panelLabel: "Administracion activa",
+          panelCopy: "Organiza operacion, finanzas y comunidad desde un panel mas estructurado.",
+          pageChip: "Administrador de condominio",
         }
       : isResident
         ? {
-            sidebar: "#FBF6F0",
-            brand: "linear-gradient(135deg, #1FA7A0, #1A6B9A)",
-            activeBg: "rgba(26,107,154,0.10)",
-            badgeBg: "rgba(26,107,154,0.11)",
-            badgeText: "#16616B",
-            mainBg: "#F5F1EA",
-            shellBackground: "radial-gradient(circle at top left, rgba(26,107,154,0.06), transparent 28%), #F5F1EA",
-            mainTextColor: "#1F1A16",
-            mutedTextColor: "#6A6A67",
-            headerBg: "rgba(255,252,248,0.96)",
-            headerBorder: "#E3D9CF",
-            headerLabelColor: "#16616B",
-            panelLabel: "Centro del residente",
-            panelCopy: "Resuelve visitas, pagos y reservas desde una interfaz mas clara y descansada visualmente.",
-            pageChip: "Modo residente",
-            panelLabelColor: "#16616B",
-            panelCopyColor: "#5F5B56",
-            panelBg: "#FFFBF8",
-            panelBorder: "#E5DAD0",
-            sidebarText: "#5E5750",
-            sidebarTextActive: "#1F1A16",
-            navSectionText: "#8A8178",
-            navDivider: "#E6DBD2",
-            userPanelBg: "#FFF9F3",
-            userPanelBorder: "#E5DAD0",
-            controlBg: "#FFF9F3",
-            controlHoverBg: "#F1E9E1",
-            controlBorder: "#E5DAD0",
-            headerChipBg: "#EEF6F5",
-            headerChipText: "#355654",
-            surfaceShadow: "0 18px 42px rgba(71,52,38,0.08)",
+            panelLabel: "Portal residencial",
+            panelCopy: "Resuelve visitas, pagos y soporte desde una experiencia mas limpia y directa.",
+            pageChip: "Experiencia del residente",
           }
         : {
-            sidebar: "linear-gradient(180deg, #050505 0%, #1A1612 85%, #D94F10 160%)",
-            brand: "linear-gradient(135deg, #FF7A30 0%, #D94F10 100%)",
-            activeBg: "linear-gradient(90deg, #D94F10 0%, #FF7A30 100%)",
-            badgeBg: "rgba(217,79,16,0.12)",
-            badgeText: "#D94F10",
-            mainBg: "#F6F1EB",
-            shellBackground:
-              "radial-gradient(circle at top left, rgba(217,79,16,0.08), transparent 28%), radial-gradient(circle at 82% 12%, rgba(26,107,154,0.06), transparent 32%), #F6F1EB",
-            mainTextColor: "#1F1A16",
-            mutedTextColor: "#6D625A",
-            headerBg: "rgba(255,252,249,0.96)",
-            headerBorder: "#E4D7CB",
-            headerLabelColor: "#B15A27",
-            panelLabel: "Propietario encargado",
-            panelCopy: "Administra el arranque, la operacion y la supervision de tu condominio desde un entorno claro y profesional.",
-            pageChip: "Gestion del condominio",
-            panelLabelColor: "#D94F10",
-            panelCopyColor: "#6D625A",
-            panelBg: "#FFFFFF",
-            panelBorder: "#E6D9CD",
-            sidebarText: "#8C8177",
-            sidebarTextActive: "#FFFFFF",
-            navSectionText: "#4E4640",
-            navDivider: "rgba(255,255,255,0.05)",
-            userPanelBg: "rgba(255,255,255,0.05)",
-            userPanelBorder: "rgba(255,255,255,0.1)",
-            controlBg: "#FFFFFF",
-            controlHoverBg: "#F8F1EA",
-            controlBorder: "#E6D9CD",
-            headerChipBg: "#F4ECE4",
-            headerChipText: "#5E5248",
-            surfaceShadow: "0 18px 42px rgba(71,52,38,0.08)",
+            panelLabel: "Gestion del propietario",
+            panelCopy: "Controla estructura, comunidad y seguimiento del condominio con mejor jerarquia visual.",
+            pageChip: "Propietario gestor",
           };
 
   const currentPage = useMemo(() => {
@@ -653,11 +556,11 @@ export default function DashboardLayout() {
           (normalizedTarget !== "/" && normalizedPath.endsWith(normalizedTarget));
 
         if (matchesRoot || matchesPath) {
-          return item;
+          return { ...item, section: group.section };
         }
       }
     }
-    return nav[0].items[0];
+    return { ...nav[0].items[0], section: nav[0].section };
   }, [location.pathname, nav]);
 
   const handleLogout = async () => {
@@ -671,58 +574,56 @@ export default function DashboardLayout() {
     (isResident ? "Residente" : isSystemAdmin ? "Admin" : isCondoAdmin ? "Admin" : isPropertyOwner ? "Propietario" : "Usuario");
 
   return (
-    <div className="flex h-screen overflow-hidden" style={{ background: theme.shellBackground, color: theme.mainTextColor }}>
+    <div className="relative flex min-h-screen overflow-hidden text-[var(--fg-primary)]">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute left-[-12rem] top-[-10rem] h-[28rem] w-[28rem] rounded-full bg-[radial-gradient(circle,_rgba(255,122,48,0.16),_transparent_68%)]" />
+        <div className="absolute right-[-10rem] top-[5rem] h-[24rem] w-[24rem] rounded-full bg-[radial-gradient(circle,_rgba(217,79,16,0.12),_transparent_68%)]" />
+        <div className="absolute bottom-[-10rem] right-[8%] h-[20rem] w-[20rem] rounded-full bg-[radial-gradient(circle,_rgba(18,17,16,0.06),_transparent_70%)]" />
+      </div>
+
       {mobileOpen && (
         <div
-          className="fixed inset-0 bg-black/40 z-20 lg:hidden"
+          className="fixed inset-0 z-30 bg-[#121110]/35 backdrop-blur-sm lg:hidden"
           onClick={() => setMobileOpen(false)}
         />
       )}
 
       <aside
         className={`
-          flex flex-col z-30 flex-shrink-0
-          transition-all duration-300 ease-in-out fixed lg:relative h-full
+          fixed inset-y-0 left-0 z-40 flex h-screen flex-col overflow-hidden
+          transition-all duration-300 ease-in-out lg:relative lg:h-screen
           ${mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
-          ${collapsed ? "w-[78px]" : "w-[294px]"}
+          ${collapsed ? "w-[92px]" : "w-[332px]"}
         `}
         style={{
-          background: theme.sidebar,
-          borderRight: `1px solid ${theme.headerBorder}`,
-          boxShadow: theme.surfaceShadow,
+          background: "linear-gradient(180deg, #080808 0%, #17120F 52%, #D94F10 165%)",
+          borderRight: "1px solid rgba(255,255,255,0.08)",
+          boxShadow: "18px 0 48px rgba(18,17,16,0.18)",
         }}
       >
         <div
-          className={`flex items-center min-h-[72px] px-4 ${collapsed ? "justify-center" : "justify-between"}`}
-          style={{ borderBottom: `1px solid ${theme.headerBorder}` }}
+          className={`flex min-h-[82px] items-center border-b border-white/10 px-4 ${collapsed ? "justify-center" : "justify-between"}`}
         >
           {!collapsed ? (
             <div className="flex items-center gap-3">
               <div
-                className="w-10 h-10 rounded-[18px] flex items-center justify-center flex-shrink-0 shadow-sm"
-                style={{ background: theme.brand }}
+                className="signal-ring flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-[18px] bg-[linear-gradient(135deg,#FF7A30,#D94F10)] text-white"
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
                   <path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z" fill="white" />
                 </svg>
               </div>
               <div>
-                <p
-                  className="text-[15px] font-semibold tracking-wide"
-                  style={{ fontFamily: "'Playfair Display', serif", color: theme.mainTextColor }}
-                >
+                <p className="text-[1.05rem] font-semibold tracking-wide text-white" style={{ fontFamily: "'Playfair Display', serif" }}>
                   Condome
                 </p>
-                <p className="text-[10px] uppercase tracking-[0.24em]" style={{ color: theme.mutedTextColor }}>
-                  Workspace
+                <p className="text-[10px] uppercase tracking-[0.26em] text-white/45">
+                  Navegacion principal
                 </p>
               </div>
             </div>
           ) : (
-            <div
-              className="w-10 h-10 rounded-[18px] flex items-center justify-center shadow-sm"
-              style={{ background: theme.brand }}
-            >
+            <div className="signal-ring flex h-11 w-11 items-center justify-center rounded-[18px] bg-[linear-gradient(135deg,#FF7A30,#D94F10)] text-white">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
                 <path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z" fill="white" />
               </svg>
@@ -732,14 +633,7 @@ export default function DashboardLayout() {
           {!collapsed && (
             <button
               onClick={() => setCollapsed(true)}
-              className="p-2 rounded-xl transition-colors bg-transparent border-none cursor-pointer"
-              style={{ color: theme.mutedTextColor }}
-              onMouseEnter={(event) => {
-                event.currentTarget.style.backgroundColor = theme.controlHoverBg;
-              }}
-              onMouseLeave={(event) => {
-                event.currentTarget.style.backgroundColor = "transparent";
-              }}
+              className="cursor-pointer rounded-2xl border-none bg-transparent p-2.5 text-white/58 transition-colors hover:bg-white/10 hover:text-white"
             >
               <IconChevronLeft />
             </button>
@@ -747,39 +641,30 @@ export default function DashboardLayout() {
         </div>
 
         {!collapsed && (
-          <div className="px-4 py-4" style={{ borderBottom: `1px solid ${theme.headerBorder}` }}>
-            <div
-              className="rounded-[24px] p-4"
-              style={{
-                backgroundColor: theme.panelBg,
-                border: `1px solid ${theme.panelBorder}`,
-              }}
-            >
-              <p
-                className="text-[10px] uppercase tracking-[0.24em] font-semibold"
-                style={{ color: theme.panelLabelColor }}
-              >
-                {theme.panelLabel}
-              </p>
-              <p className="mt-2 text-sm leading-6" style={{ color: theme.panelCopyColor }}>
-                {theme.panelCopy}
-              </p>
-            </div>
+          <div className="border-b border-white/10 px-4 py-3">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#FFB184]">
+              {shellMeta.panelLabel}
+            </p>
+            <p className="mt-2 text-[13px] leading-6 text-white/70">
+              {currentPage.section} · {currentPage.label}
+            </p>
           </div>
         )}
 
-        <nav className="flex-1 overflow-y-auto py-4 px-2.5 space-y-2 scrollbar-hide">
+        <nav className="scrollbar-hide flex-1 space-y-3 overflow-y-auto px-3 py-3">
           {nav.map((group) => (
-            <div key={group.section}>
+            <section
+              key={group.section}
+              className={`rounded-[20px] border border-white/8 bg-white/[0.04] p-2 ${
+                collapsed ? "px-1.5" : ""
+              }`}
+            >
               {!collapsed ? (
-                <p
-                  className="text-[10px] font-semibold tracking-[0.18em] uppercase px-3 py-2 mt-1"
-                  style={{ color: theme.navSectionText }}
-                >
+                <p className="mt-0.5 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.22em] text-[#FFB184]">
                   {group.section}
                 </p>
               ) : (
-                <div className="h-px mx-2 my-3" style={{ backgroundColor: theme.navDivider }} />
+                <div className="mx-3 my-2.5 h-px bg-white/10" />
               )}
 
               {group.items.map((item) => (
@@ -788,82 +673,59 @@ export default function DashboardLayout() {
                   to={item.to}
                   end={item.to === "/"}
                   className={({ isActive }) =>
-                    `
-                    flex items-center gap-3 px-3.5 py-3.5 rounded-[22px] transition-all duration-150 group relative
-                    ${collapsed ? "justify-center" : ""}
-                  `
-                  }
-                  style={({ isActive }) =>
-                    isActive
-                      ? {
-                          background: theme.activeBg,
-                          color: theme.sidebarTextActive,
-                          boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.04)",
-                        }
-                      : { backgroundColor: "transparent", color: theme.sidebarText }
+                    [
+                      "group relative flex items-center gap-3 rounded-[18px] border px-3 py-2.5 transition-all duration-200 hover-glow-orange",
+                      collapsed ? "justify-center" : "",
+                      isActive
+                        ? "translate-x-1 border-white/12 bg-[linear-gradient(135deg,rgba(255,122,48,0.24),rgba(217,79,16,0.34))] text-white shadow-[0_14px_28px_rgba(0,0,0,0.18)]"
+                        : "border-transparent text-white hover:border-white/10 hover:bg-white/8 hover:text-white",
+                    ].join(" ")
                   }
                   onClick={() => setMobileOpen(false)}
                 >
-                  <span className="flex-shrink-0 w-4 h-4">{item.icon}</span>
+                  <span
+                    className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-2xl ${
+                      collapsed ? "" : "shadow-sm"
+                    } bg-white/10 text-white group-hover:bg-[rgba(255,122,48,0.16)] group-hover:text-white`}
+                  >
+                    {item.icon}
+                  </span>
                   {!collapsed && (
                     <div className="min-w-0">
-                      <p className="text-[13px] font-semibold truncate">{item.label}</p>
-                      <p className="mt-0.5 text-[11px] leading-5 truncate text-current/65">{item.description}</p>
+                      <p className="truncate text-[14px] font-semibold">{item.label}</p>
+                      <p className="mt-0.5 truncate text-[11px] leading-5 text-white/68">{item.description}</p>
                     </div>
                   )}
                   {collapsed && (
                     <span
-                      className="absolute left-full ml-2 px-2.5 py-1.5 text-xs rounded-xl opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap transition-opacity z-50 shadow-lg"
-                      style={{
-                        backgroundColor: theme.userPanelBg,
-                        border: `1px solid ${theme.userPanelBorder}`,
-                        color: theme.mainTextColor,
-                      }}
+                      className="pointer-events-none absolute left-full z-50 ml-2 whitespace-nowrap rounded-2xl border border-white/10 bg-[#121110] px-3 py-2 text-xs text-white opacity-0 shadow-[0_14px_28px_rgba(0,0,0,0.2)] transition-opacity group-hover:opacity-100"
                     >
                       {item.label}
                     </span>
                   )}
                 </NavLink>
               ))}
-            </div>
+            </section>
           ))}
         </nav>
 
-        <div className={`p-3 ${collapsed ? "flex justify-center" : ""}`} style={{ borderTop: `1px solid ${theme.headerBorder}` }}>
+        <div className={`border-t border-white/10 p-3 ${collapsed ? "flex justify-center" : ""}`}>
           {!collapsed ? (
-            <div
-              className="rounded-[22px] p-3 shadow-sm"
-              style={{
-                backgroundColor: theme.userPanelBg,
-                border: `1px solid ${theme.userPanelBorder}`,
-              }}
-            >
+            <div className="rounded-[22px] border border-white/10 bg-white/[0.06] p-3">
               <div className="flex items-center gap-2.5">
-                <div
-                  className="w-10 h-10 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0 shadow-sm"
-                  style={{ background: theme.brand }}
-                >
+                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-[linear-gradient(135deg,#FF7A30,#D94F10)] text-xs font-bold text-white shadow-[0_10px_20px_rgba(217,79,16,0.18)]">
                   {user?.name?.charAt(0)?.toUpperCase() || "U"}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[13px] font-semibold truncate" style={{ color: theme.mainTextColor }}>
+                  <p className="truncate text-[13px] font-semibold text-white">
                     {user?.name || "Usuario"}
                   </p>
-                  <p className="text-[10px] truncate" style={{ color: theme.mutedTextColor }}>{safeRole}</p>
+                  <p className="truncate text-[10px] text-white/52">{safeRole}</p>
                 </div>
                 <button
                   onClick={handleLogout}
-                  className="p-2 rounded-xl transition-colors bg-transparent border-none cursor-pointer flex-shrink-0"
+                  className="flex-shrink-0 cursor-pointer rounded-2xl border-none bg-transparent p-2 text-white/60 transition-colors hover:bg-white/10 hover:text-white"
                   title="Cerrar sesion"
-                  style={{ color: theme.mutedTextColor }}
-                  onMouseEnter={(event) => {
-                    event.currentTarget.style.backgroundColor = theme.controlHoverBg;
-                    event.currentTarget.style.color = theme.headerLabelColor;
-                  }}
-                  onMouseLeave={(event) => {
-                    event.currentTarget.style.backgroundColor = "transparent";
-                    event.currentTarget.style.color = theme.mutedTextColor;
-                  }}
                 >
                   <IconLogout />
                 </button>
@@ -872,17 +734,8 @@ export default function DashboardLayout() {
           ) : (
             <button
               onClick={handleLogout}
-              className="p-2 rounded-xl transition-colors bg-transparent border-none cursor-pointer"
+              className="cursor-pointer rounded-2xl border-none bg-transparent p-2 text-white/60 transition-colors hover:bg-white/10 hover:text-white"
               title="Cerrar sesion"
-              style={{ color: theme.mutedTextColor }}
-              onMouseEnter={(event) => {
-                event.currentTarget.style.backgroundColor = theme.controlHoverBg;
-                event.currentTarget.style.color = theme.headerLabelColor;
-              }}
-              onMouseLeave={(event) => {
-                event.currentTarget.style.backgroundColor = "transparent";
-                event.currentTarget.style.color = theme.mutedTextColor;
-              }}
             >
               <IconLogout />
             </button>
@@ -892,137 +745,100 @@ export default function DashboardLayout() {
         {collapsed && (
           <button
             onClick={() => setCollapsed(false)}
-            className="absolute -right-3 top-20 w-7 h-7 rounded-full flex items-center justify-center shadow-lg border-none cursor-pointer transition-colors"
-            style={{
-              backgroundColor: theme.userPanelBg,
-              color: theme.headerLabelColor,
-              border: `1px solid ${theme.userPanelBorder}`,
-            }}
+            className="absolute -right-3 top-24 flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-[#121110] text-white shadow-[0_14px_28px_rgba(0,0,0,0.18)] transition-colors hover:bg-[#1D1A18]"
           >
             <IconChevronRight />
           </button>
         )}
       </aside>
 
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <header
-          className="h-[96px] flex items-center px-5 md:px-6 xl:px-8 gap-4 flex-shrink-0 backdrop-blur-sm"
-          style={{
-            background: theme.headerBg,
-            borderBottom: `1px solid ${theme.headerBorder}`,
-            boxShadow: theme.surfaceShadow,
-          }}
-        >
+      <div className="relative flex min-w-0 flex-1 flex-col overflow-hidden">
+        <div className="z-20 px-3 pt-3 md:px-5 xl:pl-8 xl:pr-8">
+          <header className="architectural-panel flex min-h-[104px] items-center gap-4 rounded-[30px] px-5 py-4 md:px-6 xl:px-8">
           <button
             onClick={() => setMobileOpen(true)}
-            className="lg:hidden p-2.5 rounded-xl bg-transparent border-none cursor-pointer"
-            style={{ color: theme.mutedTextColor }}
-            onMouseEnter={(event) => {
-              event.currentTarget.style.backgroundColor = theme.controlHoverBg;
-            }}
-            onMouseLeave={(event) => {
-              event.currentTarget.style.backgroundColor = "transparent";
-            }}
+            className="cursor-pointer rounded-2xl border-none bg-transparent p-2.5 text-[var(--fg-secondary)] transition-colors hover:bg-[var(--surface-3)] hover:text-[var(--fg-primary)] lg:hidden"
           >
             <IconMenu />
           </button>
 
           <div className="flex-1 min-w-0">
-            <p
-              className="text-[11px] uppercase tracking-[0.22em] font-semibold"
-              style={{ color: theme.headerLabelColor }}
-            >
+            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--condome-orange)]">
               {currentPage.label}
             </p>
-            <h2 className="mt-1 text-[1.35rem] md:text-[1.55rem] leading-tight font-semibold" style={{ color: theme.mainTextColor }}>
+            <h2 className="mt-1 text-[1.35rem] font-semibold leading-tight text-[var(--fg-primary)] md:text-[1.7rem]">
               Bienvenido, {firstName}
             </h2>
-            <p className="mt-1 text-sm truncate" style={{ color: `${theme.mutedTextColor}E6` }}>
+            <p className="mt-1 truncate text-sm text-[var(--fg-secondary)]">
               {currentPage.description}
             </p>
           </div>
 
-          <div className="hidden md:flex items-center gap-2.5">
+          <div className="hidden items-center gap-2.5 md:flex">
             {!isResident && condominios.length ? (
               <label
-                className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-full"
-                style={{ backgroundColor: theme.controlBg, border: `1px solid ${theme.controlBorder}` }}
+                className="flex items-center gap-2.5 rounded-full border border-[var(--border-standard)] bg-white px-3.5 py-2.5 shadow-[var(--shadow-whisper)]"
               >
-                <span className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: theme.mutedTextColor }}>
+                <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--fg-tertiary)]">
                   Condominio
                 </span>
                 {condominios.length > 1 ? (
                   <select
                     value={activeCondominioId || ""}
                     onChange={(event) => setCondominioActivo(event.target.value)}
-                    className="bg-transparent text-sm font-semibold border-none outline-none"
-                    style={{ color: theme.mainTextColor }}
+                    className="border-none bg-transparent pr-8 text-sm font-semibold outline-none"
+                    style={{
+                      backgroundImage:
+                        "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%238C8076' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E\")",
+                      backgroundPosition: "right 0.2rem center",
+                      backgroundRepeat: "no-repeat",
+                    }}
                   >
                     {condominios.map((item) => (
-                      <option key={item.id} value={item.id} style={{ backgroundColor: theme.controlBg, color: theme.mainTextColor }}>
+                      <option key={item.id} value={item.id}>
                         {item.nombre}
                       </option>
                     ))}
                   </select>
                 ) : (
-                  <span className="text-sm font-semibold" style={{ color: theme.mainTextColor }}>
+                  <span className="text-sm font-semibold text-[var(--fg-primary)]">
                     {condominio?.nombre || condominios[0]?.nombre}
                   </span>
                 )}
               </label>
-                ) : null}
+            ) : null}
             {!isResident && !condominios.length ? (
               <NavLink
                 to="/condominio/nuevo"
-                className="px-3.5 py-2 rounded-full text-xs font-semibold no-underline"
-                style={{
-                  backgroundColor: theme.badgeBg,
-                  color: theme.badgeText,
-                  border: `1px solid ${theme.controlBorder}`,
-                }}
+                className="rounded-full border border-[var(--control-border-strong)] bg-[var(--signal-orange-fog)] px-3.5 py-2 text-xs font-semibold text-[var(--condome-orange)] no-underline"
               >
                 Registrar condominio
               </NavLink>
             ) : null}
-            <span
-              className="px-3.5 py-2 rounded-full text-xs font-semibold"
-              style={{ backgroundColor: theme.badgeBg, color: theme.badgeText }}
-            >
+            <span className="rounded-full bg-[var(--signal-orange-fog)] px-3.5 py-2 text-xs font-semibold text-[var(--condome-orange)]">
               {safeRole}
             </span>
-            <span
-              className="px-3.5 py-2 rounded-full text-xs font-semibold"
-              style={{ backgroundColor: theme.headerChipBg, color: theme.headerChipText }}
-            >
-              {theme.pageChip}
+            <span className="rounded-full border border-[var(--border-standard)] bg-white px-3.5 py-2 text-xs font-semibold text-[var(--fg-secondary)]">
+              {shellMeta.pageChip}
             </span>
           </div>
 
           <div className="flex items-center gap-2.5">
             <button
-              className="relative p-2.5 rounded-xl bg-transparent border-none cursor-pointer transition-colors"
-              style={{ color: theme.mutedTextColor }}
-              onMouseEnter={(event) => {
-                event.currentTarget.style.backgroundColor = theme.controlHoverBg;
-              }}
-              onMouseLeave={(event) => {
-                event.currentTarget.style.backgroundColor = "transparent";
-              }}
+              className="relative cursor-pointer rounded-2xl border-none bg-transparent p-2.5 text-[var(--fg-secondary)] transition-colors hover:bg-[var(--surface-3)] hover:text-[var(--fg-primary)]"
             >
               <IconBell />
               <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-[#D94F10] rounded-full" />
             </button>
-            <div
-              className="w-10 h-10 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-sm"
-              style={{ background: theme.brand }}
-            >
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[linear-gradient(135deg,#FF7A30,#D94F10)] text-xs font-bold text-white shadow-[0_10px_20px_rgba(217,79,16,0.18)]">
               {user?.name?.charAt(0)?.toUpperCase() || "U"}
             </div>
           </div>
         </header>
+        </div>
 
-        <main className="flex-1 overflow-y-auto px-4 py-5 md:px-6 md:py-6 xl:px-8" style={{ color: theme.mainTextColor }}>
-          <div key={location.pathname} className="mx-auto w-full max-w-[1480px] animate-reveal">
+        <main className="flex-1 overflow-y-auto px-3 pb-6 pt-4 md:px-5 md:pb-8 md:pt-5 xl:px-8">
+          <div key={location.pathname} className="mx-auto w-full max-w-[1480px] animate-soft-pop">
             <Outlet />
           </div>
         </main>

@@ -82,6 +82,15 @@ class CondomeConfiguracion(models.Model):
     support_email = fields.Char()
     automatic_access_validation = fields.Boolean(default=True)
 
+    # Información Bancaria para Pagos Manuales (Transferencias)
+    bank_name = fields.Char(string="Nombre del Banco")
+    bank_account_number = fields.Char(string="Número de Cuenta")
+    bank_account_type = fields.Selection([
+        ("ahorros", "Cuenta de Ahorros"),
+        ("corriente", "Cuenta Corriente")
+    ], string="Tipo de Cuenta", default="corriente")
+    bank_account_holder = fields.Char(string="Titular de la Cuenta")
+
     _sql_constraints = [
         ("condome_config_unique_condominio", "unique(condominio_id)", "Solo puede existir una configuracion por condominio."),
     ]

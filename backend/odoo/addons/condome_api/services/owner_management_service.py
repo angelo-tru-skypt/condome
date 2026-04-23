@@ -224,6 +224,10 @@ class OwnerManagementService(BaseApiService):
                     "incident_sla_hours": int(payload.get("incidentSlaHours") or settings.incident_sla_hours),
                     "late_fee_grace_days": int(payload.get("lateFeeGraceDays") or settings.late_fee_grace_days),
                     "support_email": self.clean_str(payload.get("supportEmail")) if "supportEmail" in payload else settings.support_email,
+                    "bank_name": self.clean_str(payload.get("bankName")) if "bankName" in payload else settings.bank_name,
+                    "bank_account_number": self.clean_str(payload.get("bankAccountNumber")) if "bankAccountNumber" in payload else settings.bank_account_number,
+                    "bank_account_type": self.clean_str(payload.get("bankAccountType")) if "bankAccountType" in payload else settings.bank_account_type,
+                    "bank_account_holder": self.clean_str(payload.get("bankAccountHolder")) if "bankAccountHolder" in payload else settings.bank_account_holder,
                     "automatic_access_validation": payload.get("automaticAccessValidation", settings.automatic_access_validation),
                 }
             )

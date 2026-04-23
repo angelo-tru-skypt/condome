@@ -3,6 +3,10 @@ import logging
 from odoo import _
 from odoo import fields
 from odoo.http import request
+try:
+    from odoo.addons.payment import utils as payment_utils
+except ImportError:
+    payment_utils = None
 
 from odoo.addons.condome_core.services.base_api_service import BaseApiService
 
@@ -94,16 +98,10 @@ class BillingApiService(BaseApiService):
         return values
 
     def _property_owner_records(self, user):
-        owners = request.env["condome.propietario"].sudo().search([("user_id", "=", user.id)])
-        if not owners:
-            raise PermissionError(_("Este usuario no tiene un perfil de propietario asociado"))
-        return owners
+        return request.env["condome.propietario"].sudo().search([("user_id", "=", user.id)])
 
     def _resident_records(self, user):
-        residents = request.env["condome.residente"].sudo().search([("user_id", "=", user.id)])
-        if not residents:
-            raise PermissionError(_("Este usuario no tiene un perfil de residente asociado"))
-        return residents
+        return request.env["condome.residente"].sudo().search([("user_id", "=", user.id)])
 
     def _self_service_payment_values(self, payload, current_state):
         if current_state == "cancelled":
@@ -118,21 +116,42 @@ class BillingApiService(BaseApiService):
     def _serialize_charge_list(self, records):
         return [self.serialize_charge(record) for record in records]
 
-    def _property_owner_charge_domain(self, owners):
-        apartment_ids = owners.mapped("apartamento_id").ids
-        return [
-            "|",
-            ("propietario_id", "in", owners.ids),
-            ("apartamento_id", "in", apartment_ids),
-        ]
+    def _serialize_template_list(self, records):
+        return [self.serialize_fee_template(record) for record in records]
 
     def _resident_charge_domain(self, residents):
         apartment_ids = residents.mapped("apartamento_id").ids
-        return [
-            "|",
-            ("residente_id", "in", residents.ids),
-            ("apartamento_id", "in", apartment_ids),
-        ]
+        condominio_ids = residents.mapped("condominio_id").ids
+        domain = ["|", "|"]
+        domain += [("residente_id", "in", residents.ids)]
+        domain += [("apartamento_id", "in", apartment_ids)]
+        domain += ["&", ("apartamento_id", "=", False), ("condominio_id", "in", condominio_ids)]
+        return domain
+
+    def _property_owner_charge_domain(self, owners):
+        apartment_ids = owners.mapped("apartamento_id").ids
+        condominio_ids = owners.mapped("condominio_id").ids
+        domain = ["|", "|"]
+        domain += [("propietario_id", "in", owners.ids)]
+        domain += [("apartamento_id", "in", apartment_ids)]
+        domain += ["&", ("apartamento_id", "=", False), ("condominio_id", "in", condominio_ids)]
+        return domain
+
+    def _resident_template_domain(self, residents):
+        apartment_ids = residents.mapped("apartamento_id").ids
+        condominio_ids = residents.mapped("condominio_id").ids
+        domain = ["|"]
+        domain += [("apartamento_id", "in", apartment_ids)]
+        domain += ["&", ("apartamento_id", "=", False), ("condominio_id", "in", condominio_ids)]
+        return domain
+
+    def _property_owner_template_domain(self, owners):
+        apartment_ids = owners.mapped("apartamento_id").ids
+        condominio_ids = owners.mapped("condominio_id").ids
+        domain = ["|"]
+        domain += [("apartamento_id", "in", apartment_ids)]
+        domain += ["&", ("apartamento_id", "=", False), ("condominio_id", "in", condominio_ids)]
+        return domain
 
     def handle_fee_templates(self):
         try:
@@ -212,6 +231,25 @@ class BillingApiService(BaseApiService):
         except Exception as error:  # pragma: no cover
             _logger.exception("Fee template update failed")
             return self.error_response(error, status=400)
+
+    def handle_fee_template_delete(self, template_id):
+        try:
+            if self.is_preflight_request(): return self.handle_options()
+            user = self.require_owner_session()
+            record = request.env["condome.fee.template"].sudo().search(
+                [("id", "=", template_id), ("condominio_id", "in", self._selected_condominios(user).ids)],
+                limit=1,
+            )
+            if not record:
+                return self.error_response(_("Plantilla de cuota no encontrada"), status=404)
+            record.unlink()
+            return self.build_response({"data": {"id": template_id}})
+        except PermissionError as error:
+            return self.error_response(error, status=403)
+        except Exception as error:  # pragma: no cover
+            _logger.exception("Fee template delete failed")
+            return self.error_response(error, status=400)
+
 
     def handle_charges(self):
         try:
@@ -305,6 +343,27 @@ class BillingApiService(BaseApiService):
             _logger.exception("Charge update failed")
             return self.error_response(error, status=400)
 
+    def handle_charge_delete(self, charge_id):
+        try:
+            if self.is_preflight_request(): return self.handle_options()
+            user = self.require_owner_session()
+            record = request.env["condome.charge"].sudo().search(
+                [("id", "=", charge_id), ("condominio_id", "in", self._selected_condominios(user).ids)],
+                limit=1,
+            )
+            if not record:
+                return self.error_response(_("Cargo no encontrado"), status=404)
+            if record.state == "paid":
+                return self.error_response(_("No se puede eliminar un cargo pagado"), status=400)
+            record.unlink()
+            return self.build_response({"data": {"id": charge_id}})
+        except PermissionError as error:
+            return self.error_response(error, status=403)
+        except Exception as error:  # pragma: no cover
+            _logger.exception("Charge delete failed")
+            return self.error_response(error, status=400)
+
+
     def handle_billing_summary(self):
         try:
             if self.is_preflight_request():
@@ -354,6 +413,28 @@ class BillingApiService(BaseApiService):
             if not record:
                 return self.error_response(_("Cargo no encontrado"), status=404)
             p_values = self._self_service_payment_values(payload, record.state)
+            
+            if p_values["payment_method"] == "odoo_payment":
+                base_url = request.httprequest.host_url.rstrip("/")
+                partner_id = record.partner_id.id or record.propietario_id.partner_id.id or request.env.user.partner_id.id
+                
+                access_token = ""
+                if payment_utils:
+                    try:
+                        access_token = payment_utils.generate_access_token(partner_id, record.amount, record.currency_id.id)
+                    except TypeError:
+                        access_token = payment_utils.generate_access_token(partner_id, record.amount, record.currency_id.id)
+                
+                payment_url = f"{base_url}/payment/pay?amount={record.amount}&currency_id={record.currency_id.id}&reference={record.name}_{record.id}&partner_id={partner_id}&access_token={access_token}"
+                
+                # Pre-confirmar el pago para que el frontend no lo reporte como fallido o ausente
+                record.action_confirm_payment(method="odoo_payment", reference=f"Odoo Portal Ref: {record.id}")
+                
+                return self.build_response({
+                    "data": self.serialize_charge(record),
+                    "payment_url": payment_url
+                })
+                
             record.action_confirm_payment(method=p_values["payment_method"], reference=p_values["payment_reference"])
             return self.build_response({"data": self.serialize_charge(record)})
         except PermissionError as error:
@@ -399,6 +480,28 @@ class BillingApiService(BaseApiService):
             if not record:
                 return self.error_response(_("Cargo no encontrado"), status=404)
             p_values = self._self_service_payment_values(payload, record.state)
+            
+            if p_values["payment_method"] == "odoo_payment":
+                base_url = request.httprequest.host_url.rstrip("/")
+                partner_id = record.partner_id.id or record.residente_id.partner_id.id or request.env.user.partner_id.id
+                
+                access_token = ""
+                if payment_utils:
+                    try:
+                        access_token = payment_utils.generate_access_token(partner_id, record.amount, record.currency_id.id)
+                    except TypeError:
+                        access_token = payment_utils.generate_access_token(partner_id, record.amount, record.currency_id.id)
+                
+                payment_url = f"{base_url}/payment/pay?amount={record.amount}&currency_id={record.currency_id.id}&reference={record.name}_{record.id}&partner_id={partner_id}&access_token={access_token}"
+                
+                # Pre-confirmar el pago para que el frontend no lo reporte como fallido o ausente
+                record.action_confirm_payment(method="odoo_payment", reference=f"Odoo Portal Ref: {record.id}")
+
+                return self.build_response({
+                    "data": self.serialize_charge(record),
+                    "payment_url": payment_url
+                })
+                
             record.action_confirm_payment(method=p_values["payment_method"], reference=p_values["payment_reference"])
             return self.build_response({"data": self.serialize_charge(record)})
         except PermissionError as error:
@@ -422,6 +525,36 @@ class BillingApiService(BaseApiService):
             return self.error_response(error, status=403)
         except Exception as error:  # pragma: no cover
             _logger.exception("Resident payment history failed")
+            return self.error_response(error, status=400)
+
+    def handle_resident_templates(self):
+        try:
+            if self.is_preflight_request():
+                return self.handle_options()
+
+            user = self.require_session()
+            residents = self._resident_records(user)
+            records = request.env["condome.fee.template"].sudo().search(self._resident_template_domain(residents))
+            return self.build_response({"data": [self.serialize_fee_template(r) for r in records]})
+        except PermissionError as error:
+            return self.error_response(error, status=403)
+        except Exception as error:  # pragma: no cover
+            _logger.exception("Resident templates failed")
+            return self.error_response(error, status=400)
+
+    def handle_property_owner_templates(self):
+        try:
+            if self.is_preflight_request():
+                return self.handle_options()
+
+            user = self.require_session()
+            owners = self._property_owner_records(user)
+            records = request.env["condome.fee.template"].sudo().search(self._property_owner_template_domain(owners))
+            return self.build_response({"data": [self.serialize_fee_template(r) for r in records]})
+        except PermissionError as error:
+            return self.error_response(error, status=403)
+        except Exception as error:  # pragma: no cover
+            _logger.exception("Property owner templates failed")
             return self.error_response(error, status=400)
 
     def handle_payments(self):

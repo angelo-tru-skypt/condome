@@ -61,7 +61,25 @@ const billingPortalService = {
       const response = await apiClient.get(BILLING_ENDPOINTS.residentHistorialPagos);
       return response;
     } catch (error) {
-      throw new Error(error.message || "Error al listar historial de pagos");
+      throw new Error(error.message || "Error al listar historial de pagos (residente)");
+    }
+  },
+
+  async listResidentTemplates() {
+    try {
+      const response = await apiClient.get(BILLING_ENDPOINTS.residentTemplates);
+      return response;
+    } catch (error) {
+      throw new Error(error.message || "Error al listar plantillas de cuotas (residente)");
+    }
+  },
+
+  async listPropertyOwnerTemplates() {
+    try {
+      const response = await apiClient.get(BILLING_ENDPOINTS.ownerTemplates);
+      return response;
+    } catch (error) {
+      throw new Error(error.message || "Error al listar plantillas de cuotas (propietario)");
     }
   },
 };

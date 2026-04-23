@@ -1,6 +1,6 @@
 services:
   web:
-    image: odoo:17.0
+    build: ./backend
     restart: unless-stopped
     depends_on:
       mydb:
@@ -19,6 +19,8 @@ services:
       - DB_PORT=5432
       - DB_USER=odoo
       - DB_PASSWORD=myodoo
+    env_file:
+      - ./backend/.env
     command:
       - odoo
       - -c

@@ -38,7 +38,7 @@ export default function MiCondominio() {
           className="rounded-[34px] overflow-hidden border border-[#E6D9CD]"
           style={{
             background:
-              "linear-gradient(140deg, #1A1612 0%, #4E2C1D 42%, #1A6B9A 100%)",
+              "linear-gradient(140deg, #1A1612 0%, #4E2C1D 42%, #121110 100%)",
             boxShadow: "0 24px 60px rgba(37,24,15,0.16)",
           }}
         >
@@ -106,7 +106,7 @@ export default function MiCondominio() {
       label: "Apartamentos",
       value: condominio.totales?.apartamentos ?? 0,
       helper: "Unidades bajo gestion",
-      color: "#1A6B9A",
+      color: "#B86A2D",
     },
     {
       label: "Residentes activos",
@@ -127,9 +127,15 @@ export default function MiCondominio() {
 
   const quickActions = [
     { to: "/edificios", title: "Edificios", description: "Ordena la estructura vertical del condominio.", color: "#D94F10" },
-    { to: "/apartamentos", title: "Apartamentos", description: "Gestiona unidades, estados y asignaciones.", color: "#1A6B9A" },
-    { to: "/residentes", title: "Residentes", description: "Activa la comunidad y sus relaciones operativas.", color: "#2E7D52" },
-    { to: "/configuracion", title: "Configuracion", description: "Ajusta reglas base y parametros generales.", color: "#6C4BA8" },
+    { to: "/apartamentos", title: "Apartamentos", description: "Gestiona unidades, estados y asignaciones.", color: "#B86A2D" },
+    { to: "/residentes", title: "Residentes", description: "Activa la comunidad y sus relaciones operativas.", color: "#C56A1C" },
+    { to: "/configuracion", title: "Configuracion", description: "Ajusta reglas base y parametros generales.", color: "#8F5A26" },
+  ];
+
+  const condoBars = [
+    { label: "Edificios", value: condominio.totales?.edificios ?? 0, color: "#D94F10" },
+    { label: "Apartamentos", value: condominio.totales?.apartamentos ?? 0, color: "#B86A2D" },
+    { label: "Residentes", value: condominio.totales?.residentes ?? 0, color: "#C56A1C" },
   ];
 
   return (
@@ -138,7 +144,7 @@ export default function MiCondominio() {
         className="rounded-[34px] overflow-hidden border border-[#E6D9CD]"
         style={{
           background:
-            "linear-gradient(140deg, #1A1612 0%, #4E2C1D 42%, #1A6B9A 100%)",
+            "linear-gradient(140deg, #1A1612 0%, #4E2C1D 42%, #121110 100%)",
           boxShadow: "0 24px 60px rgba(37,24,15,0.16)",
         }}
       >
@@ -147,7 +153,7 @@ export default function MiCondominio() {
             className="absolute inset-y-0 right-0 w-[45%] opacity-32 pointer-events-none"
             style={{
               background:
-                "radial-gradient(circle at 70% 30%, rgba(255,160,112,0.92) 0, rgba(255,160,112,0) 56%), radial-gradient(circle at 74% 68%, rgba(115,188,255,0.56) 0, rgba(115,188,255,0) 48%)",
+                "radial-gradient(circle at 70% 30%, rgba(255,160,112,0.92) 0, rgba(255,160,112,0) 56%), radial-gradient(circle at 74% 68%, rgba(217,79,16,0.22) 0, rgba(217,79,16,0) 48%)",
             }}
           />
 
@@ -206,13 +212,19 @@ export default function MiCondominio() {
                   </div>
                 ))}
               </div>
+              <div className="mt-5 rounded-[22px] border border-white/10 bg-black/10 p-4">
+                <p className="text-[10px] uppercase tracking-[0.18em] text-white/46">Grafico del condominio</p>
+                <div className="mt-3">
+                  <CondoBarsChart items={condoBars} />
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
       <section className="grid gap-6 xl:grid-cols-[1.35fr_1fr]">
-        <div className={`${SURFACE} p-6 md:p-7`}>
+        <div className={`${SURFACE} hover-glow-orange p-6 md:p-7 animate-soft-pop`}>
           <p className="text-[10px] uppercase tracking-[0.24em] font-black text-[var(--condome-orange)]">
             Datos base
           </p>
@@ -235,7 +247,7 @@ export default function MiCondominio() {
           </div>
         </div>
 
-        <div className={`${SURFACE} p-6 md:p-7`}>
+        <div className={`${SURFACE} hover-glow-orange p-6 md:p-7 animate-soft-pop`}>
           <p className="text-[10px] uppercase tracking-[0.24em] font-black text-[var(--condome-orange)]">
             Siguientes movimientos
           </p>
@@ -406,5 +418,32 @@ function ArrowIcon() {
       <path d="M5 12h14" />
       <path d="M13 6l6 6-6 6" />
     </svg>
+  );
+}
+
+function CondoBarsChart({ items }) {
+  const maxValue = Math.max(...items.map((item) => item.value), 1);
+
+  return (
+    <div className="flex items-end gap-4 h-32">
+      {items.map((item) => (
+        <div key={item.label} className="flex flex-1 flex-col items-center gap-3">
+          <div className="flex h-24 w-full items-end rounded-[18px] bg-white/5 px-2 py-2">
+            <div
+              className="w-full rounded-[14px] transition-all duration-700"
+              style={{
+                height: `${Math.max((item.value / maxValue) * 100, item.value ? 18 : 0)}%`,
+                background: `linear-gradient(180deg, #FFB184, ${item.color})`,
+                boxShadow: `0 12px 24px ${item.color}33`,
+              }}
+            />
+          </div>
+          <div className="text-center">
+            <p className="text-[10px] uppercase tracking-[0.18em] text-white/46">{item.label}</p>
+            <p className="mt-1 text-sm font-semibold text-white">{item.value}</p>
+          </div>
+        </div>
+      ))}
+    </div>
   );
 }

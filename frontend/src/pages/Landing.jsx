@@ -1,399 +1,354 @@
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import logo from "../public/img/logo.svg";
 
-/* ══════════════════════════════════════════════════════════════════
-   CONDOME — Landing Page
-   Dirigida a administradores de condominios
-   Paleta: naranja #D94F10 / #FF7A30 sobre crema #F7F5F2 y blanco
-══════════════════════════════════════════════════════════════════ */
+const FEATURES = [
+  {
+    title: "Cobros y trazabilidad",
+    description: "Centraliza cuotas, historial y seguimiento financiero sin depender de hojas dispersas.",
+    points: ["Pagos en linea", "Estado de cuenta claro", "Alertas de mora y conciliacion"],
+  },
+  {
+    title: "Operaciones del condominio",
+    description: "Organiza reservas, incidencias, avisos y documentos desde una misma consola administrativa.",
+    points: ["Tablones y publicaciones", "Incidencias con seguimiento", "Biblioteca documental"],
+  },
+  {
+    title: "Accesos y comunidad",
+    description: "Mantiene propietarios, residentes, visitas y vehiculos dentro de un flujo mucho mas ordenado.",
+    points: ["Visitas autorizadas", "Roles y permisos", "Registro por unidad"],
+  },
+];
 
-/* ── Hook para animación al entrar en viewport ── */
-function useInView(threshold = 0.15) {
+const STATS = [
+  { value: "1 panel", label: "para estructura, comunidad y finanzas" },
+  { value: "3 roles", label: "con experiencia clara para cada usuario" },
+  { value: "100%", label: "centrado en control y trazabilidad" },
+];
+
+const PLANS = [
+  {
+    name: "Base",
+    price: "$12",
+    description: "Para condominios que quieren ordenar la operacion principal.",
+    features: ["Hasta 50 unidades", "Pagos y residentes", "Avisos y documentos"],
+  },
+  {
+    name: "Profesional",
+    price: "$20",
+    description: "Para comunidades que necesitan una capa operativa mas completa.",
+    features: ["Hasta 200 unidades", "Reservas e incidencias", "Reportes y automatizaciones"],
+    featured: true,
+  },
+  {
+    name: "Escala",
+    price: "$35",
+    description: "Para administradores con operaciones multi-condominio o alta demanda.",
+    features: ["Unidades ilimitadas", "Multi-condominio", "Soporte prioritario"],
+  },
+];
+
+function useInView(threshold = 0.12) {
   const ref = useRef(null);
   const [visible, setVisible] = useState(false);
+
   useEffect(() => {
-    const obs = new IntersectionObserver(
-      ([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect(); } },
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisible(true);
+          observer.disconnect();
+        }
+      },
       { threshold }
     );
-    if (ref.current) obs.observe(ref.current);
-    return () => obs.disconnect();
+
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
   }, [threshold]);
+
   return [ref, visible];
 }
 
-/* ── Componente de sección animada ── */
 function Reveal({ children, delay = 0, className = "" }) {
   const [ref, visible] = useInView();
+
   return (
-    <div ref={ref} className={className} style={{
-      opacity:    visible ? 1 : 0,
-      transform:  visible ? "translateY(0)" : "translateY(32px)",
-      transition: `opacity 0.7s ease ${delay}s, transform 0.7s ease ${delay}s`,
-    }}>
+    <div
+      ref={ref}
+      className={className}
+      style={{
+        opacity: visible ? 1 : 0,
+        transform: visible ? "translateY(0)" : "translateY(26px)",
+        transition: `opacity 700ms ease ${delay}s, transform 700ms ease ${delay}s`,
+      }}
+    >
       {children}
     </div>
   );
 }
 
-/* ══════════════════════════════════════════════════════════════════
-   NAVBAR
-══════════════════════════════════════════════════════════════════ */
 function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
-    const fn = () => setScrolled(window.scrollY > 60);
-    window.addEventListener("scroll", fn);
-    return () => window.removeEventListener("scroll", fn);
+    const onScroll = () => setScrolled(window.scrollY > 36);
+    window.addEventListener("scroll", onScroll);
+    return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Sobre el hero oscuro → links blancos | tras scroll → links oscuros
-  const linkColor    = scrolled ? "#6B6158" : "rgba(255,255,255,0.85)";
-  const linkHover    = "#FF7A30";
-  const loginColor   = scrolled ? "#6B6158" : "rgba(255,255,255,0.75)";
-
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 transition-all duration-400"
+    <nav
+      className="fixed inset-x-0 top-0 z-50 transition-all duration-300"
       style={{
-        background:     scrolled ? "rgba(255,255,255,0.95)" : "rgba(0,0,0,0.15)",
-        backdropFilter: "blur(14px)",
-        borderBottom:   scrolled ? "1px solid rgba(229,224,216,0.6)" : "1px solid rgba(255,255,255,0.06)",
-        boxShadow:      scrolled ? "0 2px 20px rgba(26,22,18,0.08)" : "none",
-      }}>
-      <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-
-        {/* Logo — texto blanco sobre hero oscuro, naranja tras scroll */}
-        <Link to="/" className="flex items-center gap-2.5">
-          {scrolled ? (
-            <img src={logo} alt="Condome" className="h-9 w-auto" />
-          ) : (
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-                style={{ background: "linear-gradient(135deg, #FF7A30, #D94F10)" }}>
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
-                  <path d="M3 9.5L12 3L21 9.5V20C21 20.55 20.55 21 20 21H15V15H9V21H4C3.45 21 3 20.55 3 20V9.5Z" fill="white"/>
-                </svg>
-              </div>
-              <span className="text-white font-bold text-xl tracking-tight"
-                style={{ fontFamily: "'Playfair Display', serif" }}>
-                Condome
-              </span>
-            </div>
-          )}
+        background: scrolled ? "rgba(255, 253, 250, 0.84)" : "rgba(18, 17, 16, 0.2)",
+        backdropFilter: "blur(18px)",
+        borderBottom: scrolled ? "1px solid rgba(30, 26, 23, 0.08)" : "1px solid rgba(255,255,255,0.08)",
+      }}
+    >
+      <div className="mx-auto flex h-[74px] max-w-7xl items-center justify-between px-5 md:px-8">
+        <Link to="/landing" className="flex items-center gap-3 no-underline">
+          <div className="flex h-11 w-11 items-center justify-center rounded-[18px] bg-[linear-gradient(135deg,#FF7A30,#D94F10)] shadow-[0_14px_28px_rgba(217,79,16,0.22)]">
+            <img src={logo} alt="Condome" className="h-6 w-6 object-contain" />
+          </div>
+          <div>
+            <p className={`text-[1.05rem] font-semibold tracking-wide ${scrolled ? "text-[#1E1A17]" : "text-white"}`} style={{ fontFamily: "'Playfair Display', serif" }}>
+              Condome
+            </p>
+            <p className={`text-[10px] uppercase tracking-[0.24em] ${scrolled ? "text-[#8C8076]" : "text-white/50"}`}>
+              Condominios con orden
+            </p>
+          </div>
         </Link>
 
-        {/* Nav links — desktop */}
-        <div className="hidden md:flex items-center gap-8">
-          {[["#features", "Características"], ["#precios", "Precios"]].map(([href, label]) => (
-            <a key={href} href={href}
-              className="text-sm font-medium transition-colors duration-200"
-              style={{ color: linkColor }}
-              onMouseEnter={e => e.target.style.color = linkHover}
-              onMouseLeave={e => e.target.style.color = linkColor}>
-              {label}
-            </a>
-          ))}
-        </div>
-
-        {/* CTA buttons */}
-        <div className="hidden md:flex items-center gap-3">
-          <Link to="/login"
-            className="px-4 py-2 text-sm font-medium transition-colors duration-200"
-            style={{ color: loginColor }}>
-            Iniciar sesión
+        <div className="hidden items-center gap-7 md:flex">
+          <a href="#producto" className={`text-sm no-underline transition-colors hover:text-[#D94F10] ${scrolled ? "text-[#5F554D]" : "text-white/76"}`}>
+            Producto
+          </a>
+          <a href="#planes" className={`text-sm no-underline transition-colors hover:text-[#D94F10] ${scrolled ? "text-[#5F554D]" : "text-white/76"}`}>
+            Planes
+          </a>
+          <Link to="/login" className={`text-sm font-medium no-underline transition-colors hover:text-[#D94F10] ${scrolled ? "text-[#5F554D]" : "text-white/80"}`}>
+            Iniciar sesion
           </Link>
-          <Link to="/register"
-            className="px-5 py-2.5 text-sm font-semibold text-white rounded-xl transition-all duration-200 hover:opacity-90 hover:-translate-y-px"
-            style={{ background: "linear-gradient(135deg, #FF7A30, #D94F10)", boxShadow: "0 4px 14px rgba(217,79,16,0.35)" }}>
-            Empezar gratis
+          <Link
+            to="/register"
+            className="rounded-full bg-[linear-gradient(135deg,#FF7A30,#D94F10)] px-5 py-2.5 text-sm font-semibold text-white no-underline shadow-[0_14px_28px_rgba(217,79,16,0.2)] transition-transform hover:translate-y-[-1px]"
+          >
+            Empezar
           </Link>
         </div>
 
-        {/* Mobile menu button */}
-        <button className="md:hidden p-2 transition-colors"
-          style={{ color: scrolled ? "#6B6158" : "white" }}
-          onClick={() => setMenuOpen(o => !o)}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-            {menuOpen
-              ? <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-              : <path d="M3 12h18M3 6h18M3 18h18" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-            }
-          </svg>
+        <button
+          type="button"
+          className={`rounded-2xl border-none bg-transparent p-2 md:hidden ${scrolled ? "text-[#1E1A17]" : "text-white"}`}
+          onClick={() => setMenuOpen((open) => !open)}
+        >
+          <IconMenu />
         </button>
       </div>
 
-      {/* Mobile menu */}
       {menuOpen && (
-        <div className="md:hidden bg-white border-t border-[#E5E0D8] px-6 py-4 space-y-3">
-          <a href="#features" className="block text-sm text-[#6B6158]" onClick={() => setMenuOpen(false)}>Características</a>
-          <a href="#precios"  className="block text-sm text-[#6B6158]" onClick={() => setMenuOpen(false)}>Precios</a>
-          <hr className="border-[#E5E0D8]" />
-          <Link to="/login"    className="block text-sm text-[#6B6158]">Iniciar sesión</Link>
-          <Link to="/register" className="block text-sm font-semibold text-[#D94F10]">Empezar gratis →</Link>
+        <div className="border-t border-[rgba(30,26,23,0.08)] bg-[#fffdfa] px-5 py-4 md:hidden">
+          <div className="flex flex-col gap-3">
+            <a href="#producto" className="text-sm text-[#5F554D] no-underline" onClick={() => setMenuOpen(false)}>
+              Producto
+            </a>
+            <a href="#planes" className="text-sm text-[#5F554D] no-underline" onClick={() => setMenuOpen(false)}>
+              Planes
+            </a>
+            <Link to="/login" className="text-sm text-[#5F554D] no-underline" onClick={() => setMenuOpen(false)}>
+              Iniciar sesion
+            </Link>
+            <Link to="/register" className="text-sm font-semibold text-[#D94F10] no-underline" onClick={() => setMenuOpen(false)}>
+              Empezar
+            </Link>
+          </div>
         </div>
       )}
     </nav>
   );
 }
 
-/* ══════════════════════════════════════════════════════════════════
-   HERO
-══════════════════════════════════════════════════════════════════ */
 function Hero() {
   return (
-    <section className="relative min-h-screen flex items-center overflow-hidden"
-      style={{ background: "linear-gradient(160deg, #1A1612 0%, #2D2318 50%, #1A1612 100%)" }}>
+    <section className="relative overflow-hidden bg-[linear-gradient(150deg,#121110_0%,#241B16_48%,#121110_100%)] px-5 pb-20 pt-32 text-white md:px-8 md:pb-24 md:pt-36">
+      <div className="pointer-events-none absolute inset-0 opacity-60" style={{ backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px)", backgroundSize: "30px 30px" }} />
+      <div className="pointer-events-none absolute left-[-10rem] top-12 h-[28rem] w-[28rem] rounded-full bg-[radial-gradient(circle,_rgba(255,122,48,0.28),_transparent_68%)]" />
+      <div className="pointer-events-none absolute bottom-[-10rem] right-[-6rem] h-[24rem] w-[24rem] rounded-full bg-[radial-gradient(circle,_rgba(217,79,16,0.18),_transparent_68%)]" />
 
-      {/* Fondo — patrón de puntos */}
-      <div className="absolute inset-0 pointer-events-none"
-        style={{
-          backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px)",
-          backgroundSize:  "32px 32px",
-        }} />
+      <div className="relative mx-auto grid max-w-7xl gap-12 lg:grid-cols-[1.2fr_0.88fr] lg:items-center">
+        <Reveal>
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3.5 py-1.5">
+              <span className="h-2 w-2 rounded-full bg-[#FF7A30]" />
+              <span className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#FFB184]">
+                Software para condominios
+              </span>
+            </div>
 
-      {/* Glow naranja izquierda */}
-      <div className="absolute -left-40 top-1/4 w-[600px] h-[600px] rounded-full pointer-events-none"
-        style={{ background: "radial-gradient(circle, rgba(217,79,16,0.18) 0%, transparent 65%)" }} />
+            <h1 className="mt-7 max-w-3xl text-[2.9rem] font-semibold leading-[1.02] md:text-[4.5rem]" style={{ fontFamily: "'Playfair Display', serif" }}>
+              Un panel mas serio, claro y elegante para administrar tu comunidad.
+            </h1>
 
-      {/* Glow naranja derecha */}
-      <div className="absolute -right-40 bottom-1/4 w-[400px] h-[400px] rounded-full pointer-events-none"
-        style={{ background: "radial-gradient(circle, rgba(255,122,48,0.1) 0%, transparent 65%)" }} />
+            <p className="mt-6 max-w-xl text-[15px] leading-7 text-white/72 md:text-lg">
+              Condome reorganiza la gestion de condominios en una sola experiencia: estructura, comunidad,
+              accesos, incidencias y cobros con una interfaz mas agradable para trabajar todos los dias.
+            </p>
 
-      {/* Línea decorativa diagonal */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-0 right-1/3 w-px h-full opacity-10"
-          style={{ background: "linear-gradient(to bottom, transparent, #FF7A30, transparent)" }} />
-      </div>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Link
+                to="/register"
+                className="rounded-full bg-[linear-gradient(135deg,#FF7A30,#D94F10)] px-7 py-4 text-sm font-semibold uppercase tracking-[0.12em] text-white no-underline shadow-[0_16px_32px_rgba(217,79,16,0.24)] transition-transform hover:translate-y-[-1px]"
+              >
+                Crear cuenta
+              </Link>
+              <Link
+                to="/login"
+                className="rounded-full border border-white/12 bg-white/6 px-7 py-4 text-sm font-medium text-white no-underline transition-colors hover:bg-white/10"
+              >
+                Ver plataforma
+              </Link>
+            </div>
 
-      <div className="relative z-10 max-w-6xl mx-auto px-6 pt-28 pb-20 grid md:grid-cols-2 gap-16 items-center">
-
-        {/* Copy */}
-        <div>
-          {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full mb-8 border"
-            style={{ background: "rgba(217,79,16,0.1)", borderColor: "rgba(217,79,16,0.25)" }}>
-            <span className="w-1.5 h-1.5 rounded-full bg-[#FF7A30] animate-pulse" />
-            <span className="text-[11px] font-semibold tracking-[0.15em] uppercase text-[#FF7A30]">
-              SaaS para condominios
-            </span>
+            <div className="mt-10 grid gap-4 sm:grid-cols-3">
+              {STATS.map((item) => (
+                <div key={item.label} className="rounded-[24px] border border-white/10 bg-white/6 p-4 backdrop-blur-sm">
+                  <p className="text-2xl font-semibold text-white" style={{ fontFamily: "'Playfair Display', serif" }}>
+                    {item.value}
+                  </p>
+                  <p className="mt-1 text-sm leading-6 text-white/60">{item.label}</p>
+                </div>
+              ))}
+            </div>
           </div>
+        </Reveal>
 
-          <h1 className="mb-6 leading-[1.1]"
-            style={{ fontFamily: "'Playfair Display', serif" }}>
-            <span className="block text-[52px] md:text-[64px] font-bold text-white">
-              Gestiona tu
-            </span>
-            <span className="block text-[52px] md:text-[64px] font-bold"
-              style={{ WebkitTextStroke: "2px #D94F10", color: "transparent" }}>
-              condominio
-            </span>
-            <span className="block text-[52px] md:text-[64px] font-bold text-white">
-              sin caos.
-            </span>
-          </h1>
-
-          <p className="text-[#A89E94] text-lg leading-relaxed mb-10 max-w-md"
-            style={{ fontFamily: "'DM Sans', sans-serif" }}>
-            La plataforma todo-en-uno que simplifica la administración de residencias.
-            Pagos, reservas, visitantes y más — desde un solo lugar.
-          </p>
-
-          {/* CTA buttons */}
-          <div className="flex flex-wrap gap-4">
-            <Link to="/register"
-              className="inline-flex items-center gap-2 px-7 py-4 rounded-xl text-white font-semibold text-sm tracking-wide transition-all duration-200 hover:opacity-90 hover:-translate-y-0.5"
-              style={{ background: "linear-gradient(135deg, #FF7A30, #D94F10)", boxShadow: "0 8px 24px rgba(217,79,16,0.4)" }}>
-              Empezar gratis
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </Link>
-            <a href="#features"
-              className="inline-flex items-center gap-2 px-7 py-4 rounded-xl text-[#C8C0B4] font-medium text-sm border border-white/10 hover:border-white/20 hover:text-white transition-all duration-200">
-              Ver características
-            </a>
-          </div>
-
-
-        </div>
-
-        {/* Dashboard mockup */}
-        <div className="hidden md:block relative">
-          <DashboardMockup />
-        </div>
-      </div>
-
-      {/* Wave bottom */}
-      <div className="absolute bottom-0 left-0 right-0">
-        <svg viewBox="0 0 1440 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M0 80V40C240 0 480 60 720 40C960 20 1200 60 1440 40V80H0Z" fill="#F7F5F2"/>
-        </svg>
+        <Reveal delay={0.08}>
+          <DashboardPreview />
+        </Reveal>
       </div>
     </section>
   );
 }
 
-/* ── Mockup del dashboard ── */
-function DashboardMockup() {
+function DashboardPreview() {
   return (
-    <div className="relative" style={{ perspective: "1000px" }}>
-      <div style={{ transform: "rotateY(-8deg) rotateX(4deg)", transformStyle: "preserve-3d" }}>
-
-        {/* Ventana principal */}
-        <div className="rounded-2xl overflow-hidden border border-white/10"
-          style={{ background: "rgba(255,255,255,0.04)", backdropFilter: "blur(10px)", boxShadow: "0 40px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.05)" }}>
-
-          {/* Barra de título */}
-          <div className="flex items-center gap-2 px-4 py-3 border-b border-white/8">
-            <div className="flex gap-1.5">
-              <div className="w-3 h-3 rounded-full bg-red-500/60" />
-              <div className="w-3 h-3 rounded-full bg-yellow-500/60" />
-              <div className="w-3 h-3 rounded-full bg-green-500/60" />
+    <div className="relative">
+      <div className="rounded-[32px] border border-white/10 bg-white/6 p-4 shadow-[0_26px_60px_rgba(0,0,0,0.28)] backdrop-blur-xl">
+        <div className="rounded-[28px] border border-white/10 bg-[#FAF7F2] p-4 text-[#1E1A17]">
+          <div className="flex items-center justify-between rounded-[24px] bg-[#121110] px-4 py-4 text-white">
+            <div>
+              <p className="text-[10px] uppercase tracking-[0.24em] text-white/46">Panel activo</p>
+              <p className="mt-1 text-lg font-semibold" style={{ fontFamily: "'Playfair Display', serif" }}>
+                Torre A · Vista general
+              </p>
             </div>
-            <div className="flex-1 mx-4 h-5 rounded bg-white/5 flex items-center px-3">
-              <span className="text-[10px] text-white/30">condome.app/dashboard</span>
-            </div>
+            <span className="rounded-full bg-[rgba(255,122,48,0.12)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#FFB184]">
+              En linea
+            </span>
           </div>
 
-          {/* Contenido del mockup */}
-          <div className="p-5 space-y-4">
-
-            {/* Header */}
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="h-3 w-32 rounded bg-white/20 mb-1.5" />
-                <div className="h-2 w-20 rounded bg-white/10" />
-              </div>
-              <div className="h-8 w-24 rounded-lg"
-                style={{ background: "linear-gradient(135deg, #FF7A30, #D94F10)" }} />
-            </div>
-
-            {/* Stat cards */}
-            <div className="grid grid-cols-3 gap-3">
-              {[
-                { label: "Residentes", value: "248", color: "#FF7A30" },
-                { label: "Pagos",      value: "$12K", color: "#4CAF82" },
-                { label: "Alertas",    value: "3",    color: "#E8A838" },
-              ].map(s => (
-                <div key={s.label} className="rounded-xl p-3 border border-white/8"
-                  style={{ background: "rgba(255,255,255,0.04)" }}>
-                  <div className="text-[10px] text-white/40 mb-1">{s.label}</div>
-                  <div className="text-lg font-bold" style={{ color: s.color, fontFamily: "'Playfair Display', serif" }}>
-                    {s.value}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Lista de items */}
-            {[85, 65, 90, 45].map((w, i) => (
-              <div key={i} className="flex items-center gap-3 py-2 border-b border-white/5">
-                <div className="w-7 h-7 rounded-lg flex-shrink-0"
-                  style={{ background: i === 0 ? "rgba(217,79,16,0.3)" : "rgba(255,255,255,0.06)" }} />
-                <div className="flex-1">
-                  <div className="h-2 rounded mb-1.5" style={{ width: `${w}%`, background: "rgba(255,255,255,0.15)" }} />
-                  <div className="h-1.5 rounded w-1/2" style={{ background: "rgba(255,255,255,0.07)" }} />
-                </div>
-                <div className="h-5 w-12 rounded-full"
-                  style={{ background: i % 2 === 0 ? "rgba(76,175,130,0.2)" : "rgba(232,168,56,0.2)" }} />
+          <div className="mt-4 grid gap-4 sm:grid-cols-3">
+            {[
+              ["Ingresos", "$48.2K"],
+              ["Incidencias", "12"],
+              ["Pagos hoy", "26"],
+            ].map(([label, value]) => (
+              <div key={label} className="rounded-[22px] border border-[rgba(30,26,23,0.08)] bg-white p-4 shadow-[0_12px_26px_rgba(26,20,14,0.06)]">
+                <p className="text-[11px] uppercase tracking-[0.18em] text-[#8C8076]">{label}</p>
+                <p className="mt-3 text-[1.8rem] font-semibold text-[#1E1A17]" style={{ fontFamily: "'Playfair Display', serif" }}>
+                  {value}
+                </p>
               </div>
             ))}
           </div>
-        </div>
 
-        {/* Card flotante — notificación */}
-        <div className="absolute -right-8 -bottom-6 rounded-xl px-4 py-3 border border-white/10 flex items-center gap-3"
-          style={{ background: "rgba(26,22,18,0.9)", backdropFilter: "blur(16px)", boxShadow: "0 20px 40px rgba(0,0,0,0.4)" }}>
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-            style={{ background: "rgba(76,175,130,0.2)" }}>
-            <span className="text-sm">✅</span>
-          </div>
-          <div>
-            <div className="text-[11px] font-semibold text-white">Pago recibido</div>
-            <div className="text-[10px] text-white/40">Apt. 4B · $850.00</div>
+          <div className="mt-4 grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
+            <div className="rounded-[24px] border border-[rgba(30,26,23,0.08)] bg-white p-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-[#8C8076]">Operacion</p>
+                  <p className="mt-1 text-lg font-semibold text-[#1E1A17]">Actividad reciente</p>
+                </div>
+                <span className="rounded-full bg-[rgba(217,79,16,0.12)] px-3 py-1 text-[11px] font-semibold text-[#D94F10]">
+                  Hoy
+                </span>
+              </div>
+              <div className="mt-4 space-y-3">
+                {[
+                  "Pago conciliado para Apt. 4B",
+                  "Visita autorizada para Torre Norte",
+                  "Nueva incidencia registrada en lobby",
+                ].map((item, index) => (
+                  <div key={item} className="flex items-center gap-3 rounded-[18px] bg-[#F7F2EC] px-4 py-3">
+                    <span className={`h-9 w-9 rounded-2xl ${index === 0 ? "bg-[#121110]" : "bg-[rgba(217,79,16,0.12)]"} flex items-center justify-center text-sm font-semibold ${index === 0 ? "text-white" : "text-[#D94F10]"}`}>
+                      0{index + 1}
+                    </span>
+                    <p className="text-sm leading-6 text-[#5F554D]">{item}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="rounded-[24px] border border-[rgba(30,26,23,0.08)] bg-[linear-gradient(145deg,#FFF8F1,#FFFFFF)] p-5">
+              <p className="text-[11px] uppercase tracking-[0.18em] text-[#D94F10]">Jerarquia clara</p>
+              <p className="mt-2 text-lg font-semibold text-[#1E1A17]">Espacios diseñados para decidir rapido</p>
+              <div className="mt-4 space-y-3">
+                {["Cobros y balance", "Comunidad y accesos", "Bitacora y seguimiento"].map((item) => (
+                  <div key={item} className="rounded-[18px] border border-[rgba(30,26,23,0.08)] bg-white px-4 py-3">
+                    <p className="text-sm font-semibold text-[#1E1A17]">{item}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
+      </div>
+
+      <div className="absolute -bottom-6 -left-4 rounded-[24px] border border-white/12 bg-[#121110]/92 px-4 py-3 text-white shadow-[0_18px_40px_rgba(0,0,0,0.28)] backdrop-blur-xl">
+        <p className="text-[10px] uppercase tracking-[0.18em] text-[#FFB184]">Nueva estetica</p>
+        <p className="mt-1 text-sm text-white/74">Mas claridad visual, mas estructura, menos ruido.</p>
       </div>
     </div>
   );
 }
 
-/* ══════════════════════════════════════════════════════════════════
-   FEATURES
-══════════════════════════════════════════════════════════════════ */
-const FEATURES = [
-  {
-    icon: "💳",
-    title: "Gestión de Pagos",
-    desc: "Cobra cuotas de mantenimiento, genera recibos automáticos y lleva el control de morosos en tiempo real.",
-    items: ["Pagos en línea", "Historial completo", "Alertas de mora"],
-  },
-  {
-    icon: "🏊",
-    title: "Reservas de Áreas",
-    desc: "Permite a los residentes reservar amenidades como piscina, salón de eventos o gym sin conflictos.",
-    items: ["Calendario visual", "Confirmación automática", "Límite por unidad"],
-  },
-  {
-    icon: "🚗",
-    title: "Control de Visitantes",
-    desc: "Registra entradas y salidas de visitantes y vehículos. Autorización digital desde el celular.",
-    items: ["QR de acceso", "Registro fotográfico", "Historial de ingresos"],
-  },
-  {
-    icon: "📢",
-    title: "Comunicación",
-    desc: "Envía anuncios, circulares y notificaciones a todos los residentes o por áreas específicas.",
-    items: ["Notificaciones push", "Tablón digital", "Segmentación por torre"],
-  },
-  {
-    icon: "📊",
-    title: "Reportes y Finanzas",
-    desc: "Dashboards en tiempo real con ingresos, gastos, ocupación y estado financiero del condominio.",
-    items: ["Exportar a PDF/Excel", "Gráficas interactivas", "Cierre mensual"],
-  },
-  {
-    icon: "🔧",
-    title: "Incidencias y Mantenimiento",
-    desc: "Los residentes reportan problemas, tú los asignas y das seguimiento hasta resolución.",
-    items: ["Ticket por incidencia", "Asignación a técnicos", "Estado en tiempo real"],
-  },
-];
-
-function Features() {
+function ProductSection() {
   return (
-    <section id="features" className="py-28 bg-[#F7F5F2] relative overflow-hidden">
-
-      {/* Decoración fondo */}
-      <div className="absolute top-0 right-0 w-96 h-96 rounded-full pointer-events-none"
-        style={{ background: "radial-gradient(circle, rgba(217,79,16,0.05) 0%, transparent 70%)" }} />
-
-      <div className="max-w-6xl mx-auto px-6">
-
-        {/* Header */}
-        <Reveal className="text-center mb-20">
-          <span className="inline-block text-[11px] font-semibold tracking-[0.2em] uppercase text-[#D94F10] mb-4">
-            Todo lo que necesitas
-          </span>
-          <h2 className="text-[42px] md:text-[52px] font-bold text-[#1A1612] leading-tight mb-5"
-            style={{ fontFamily: "'Playfair Display', serif" }}>
-            Una plataforma,<br />
-            <span className="text-[#D94F10]">todo el control.</span>
+    <section id="producto" className="px-5 py-20 md:px-8 md:py-24">
+      <div className="mx-auto max-w-7xl">
+        <Reveal className="mx-auto max-w-2xl text-center">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.26em] text-[#D94F10]">Producto</p>
+          <h2 className="mt-4 text-[2.4rem] font-semibold leading-tight text-[#1E1A17] md:text-[3.3rem]" style={{ fontFamily: "'Playfair Display', serif" }}>
+            Una interfaz pensada como panel operativo, no como plantilla genérica.
           </h2>
-          <p className="text-[#6B6158] text-lg max-w-xl mx-auto leading-relaxed">
-            Diseñada específicamente para administradores que quieren orden,
-            transparencia y residentes satisfechos.
+          <p className="mt-4 text-[15px] leading-7 text-[#5F554D]">
+            Todo el lenguaje visual se apoya en blanco, negro y naranja para comunicar orden, foco y autoridad.
           </p>
         </Reveal>
 
-        {/* Grid de features */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {FEATURES.map((f, i) => (
-            <Reveal key={f.title} delay={i * 0.08}>
-              <FeatureCard {...f} />
+        <div className="mt-12 grid gap-6 lg:grid-cols-3">
+          {FEATURES.map((feature, index) => (
+            <Reveal key={feature.title} delay={index * 0.08}>
+              <article className="architectural-panel h-full rounded-[30px] p-7">
+                <div className="flex h-12 w-12 items-center justify-center rounded-[18px] bg-[rgba(217,79,16,0.12)] text-[#D94F10]">
+                  <IconPanel />
+                </div>
+                <h3 className="mt-6 text-[1.45rem] font-semibold text-[#1E1A17]" style={{ fontFamily: "'Playfair Display', serif" }}>
+                  {feature.title}
+                </h3>
+                <p className="mt-3 text-sm leading-7 text-[#5F554D]">{feature.description}</p>
+                <ul className="mt-5 space-y-2">
+                  {feature.points.map((point) => (
+                    <li key={point} className="flex items-center gap-3 text-sm text-[#3F3832]">
+                      <span className="h-2 w-2 rounded-full bg-[#D94F10]" />
+                      {point}
+                    </li>
+                  ))}
+                </ul>
+              </article>
             </Reveal>
           ))}
         </div>
@@ -402,303 +357,139 @@ function Features() {
   );
 }
 
-function FeatureCard({ icon, title, desc, items }) {
-  const [hovered, setHovered] = useState(false);
-
+function PricingSection() {
   return (
-    <div
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      className="group relative bg-white rounded-2xl p-7 cursor-default transition-all duration-300"
-      style={{
-        boxShadow: hovered
-          ? "0 20px 60px rgba(217,79,16,0.12), 0 4px 16px rgba(26,22,18,0.06)"
-          : "0 2px 4px rgba(26,22,18,0.04), 0 8px 24px rgba(26,22,18,0.06)",
-        transform: hovered ? "translateY(-4px)" : "translateY(0)",
-        border: hovered ? "1px solid rgba(217,79,16,0.15)" : "1px solid rgba(229,224,216,0.8)",
-      }}>
-
-      {/* Icono */}
-      <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl mb-5 transition-all duration-300"
-        style={{
-          background: hovered ? "rgba(217,79,16,0.1)" : "#F7F5F2",
-        }}>
-        {icon}
-      </div>
-
-      {/* Línea naranja al hover */}
-      <div className="absolute top-0 left-7 right-7 h-[2px] rounded-full transition-all duration-300"
-        style={{
-          background: "linear-gradient(90deg, #FF7A30, #D94F10)",
-          opacity: hovered ? 1 : 0,
-          transform: hovered ? "scaleX(1)" : "scaleX(0)",
-          transformOrigin: "left",
-        }} />
-
-      <h3 className="text-[17px] font-semibold text-[#1A1612] mb-2"
-        style={{ fontFamily: "'Playfair Display', serif" }}>
-        {title}
-      </h3>
-      <p className="text-sm text-[#6B6158] leading-relaxed mb-5">{desc}</p>
-
-      {/* Items */}
-      <ul className="space-y-2">
-        {items.map(item => (
-          <li key={item} className="flex items-center gap-2 text-xs text-[#6B6158]">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#D94F10] flex-shrink-0" />
-            {item}
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-/* ══════════════════════════════════════════════════════════════════
-   PRECIOS
-══════════════════════════════════════════════════════════════════ */
-const PLANES = [
-  {
-    name:     "Básico",
-    price:    "12",
-    period:   "/mes",
-    desc:     "Ideal para condominios pequeños que están comenzando.",
-    highlight: false,
-    features: [
-      "Hasta 50 unidades",
-      "Gestión de pagos",
-      "Control de visitantes",
-      "Anuncios básicos",
-      "Soporte por email",
-    ],
-    cta: "Empezar gratis",
-  },
-  {
-    name:      "Profesional",
-    price:     "20",
-    period:    "/mes",
-    desc:      "Para condominios medianos que necesitan todo bajo control.",
-    highlight:  true,
-    badge:     "Más popular",
-    features: [
-      "Hasta 200 unidades",
-      "Todo del plan Básico",
-      "Reservas de amenidades",
-      "Reportes financieros",
-      "App para residentes",
-      "Soporte prioritario",
-    ],
-    cta: "Empezar gratis",
-  },
-  {
-    name:     "Enterprise",
-    price:    "35",
-    period:   "/mes",
-    desc:     "Para grandes desarrollos o empresas administradoras.",
-    highlight: false,
-    features: [
-      "Unidades ilimitadas",
-      "Todo del plan Pro",
-      "Multi-condominio",
-      "API personalizada",
-      "Gerente de cuenta",
-      "SLA garantizado",
-    ],
-    cta: "Contactar ventas",
-  },
-];
-
-function Pricing() {
-  return (
-    <section id="precios" className="py-28 relative overflow-hidden"
-      style={{ background: "linear-gradient(180deg, #F7F5F2 0%, #EFEDE9 100%)" }}>
-
-      <div className="max-w-6xl mx-auto px-6">
-
-        {/* Header */}
-        <Reveal className="text-center mb-16">
-          <span className="inline-block text-[11px] font-semibold tracking-[0.2em] uppercase text-[#D94F10] mb-4">
-            Planes y precios
-          </span>
-          <h2 className="text-[42px] md:text-[52px] font-bold text-[#1A1612] leading-tight mb-5"
-            style={{ fontFamily: "'Playfair Display', serif" }}>
-            Simple y transparente.
+    <section id="planes" className="border-y border-[rgba(30,26,23,0.06)] bg-[linear-gradient(180deg,#FFF9F3_0%,#F6F1EA_100%)] px-5 py-20 md:px-8 md:py-24">
+      <div className="mx-auto max-w-7xl">
+        <Reveal className="mx-auto max-w-2xl text-center">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.26em] text-[#D94F10]">Planes</p>
+          <h2 className="mt-4 text-[2.4rem] font-semibold leading-tight text-[#1E1A17] md:text-[3.2rem]" style={{ fontFamily: "'Playfair Display', serif" }}>
+            Una estructura simple para crecer sin ruido.
           </h2>
-          <p className="text-[#6B6158] text-lg max-w-lg mx-auto">
-            Sin costos ocultos. Cancela cuando quieras. 14 días de prueba gratis en todos los planes.
+          <p className="mt-4 text-[15px] leading-7 text-[#5F554D]">
+            La plataforma mantiene el mismo lenguaje de trabajo en todos los planes: claridad, control y una experiencia mas agradable.
           </p>
         </Reveal>
 
-        {/* Cards */}
-        <div className="grid md:grid-cols-3 gap-6 items-center">
-          {PLANES.map((plan, i) => (
-            <Reveal key={plan.name} delay={i * 0.1}>
-              <PlanCard {...plan} />
+        <div className="mt-12 grid gap-6 lg:grid-cols-3">
+          {PLANS.map((plan, index) => (
+            <Reveal key={plan.name} delay={index * 0.08}>
+              <article
+                className={`h-full rounded-[30px] p-7 ${plan.featured ? "bg-[#121110] text-white shadow-[0_28px_60px_rgba(18,17,16,0.18)]" : "architectural-panel"}`}
+              >
+                <div className="flex items-center justify-between">
+                  <p className={`text-[11px] font-semibold uppercase tracking-[0.24em] ${plan.featured ? "text-[#FFB184]" : "text-[#D94F10]"}`}>
+                    {plan.name}
+                  </p>
+                  {plan.featured ? (
+                    <span className="rounded-full bg-[rgba(255,122,48,0.12)] px-3 py-1 text-[11px] font-semibold text-[#FFB184]">
+                      Recomendado
+                    </span>
+                  ) : null}
+                </div>
+                <p className={`mt-5 text-[3rem] font-semibold ${plan.featured ? "text-white" : "text-[#1E1A17]"}`} style={{ fontFamily: "'Playfair Display', serif" }}>
+                  {plan.price}
+                </p>
+                <p className={`mt-3 text-sm leading-7 ${plan.featured ? "text-white/66" : "text-[#5F554D]"}`}>{plan.description}</p>
+                <div className={`my-6 h-px ${plan.featured ? "bg-white/10" : "bg-[rgba(30,26,23,0.08)]"}`} />
+                <ul className="space-y-3">
+                  {plan.features.map((feature) => (
+                    <li key={feature} className={`flex items-center gap-3 text-sm ${plan.featured ? "text-white/74" : "text-[#3F3832]"}`}>
+                      <span className={`flex h-5 w-5 items-center justify-center rounded-full ${plan.featured ? "bg-[rgba(255,122,48,0.16)] text-[#FFB184]" : "bg-[rgba(217,79,16,0.12)] text-[#D94F10]"}`}>
+                        <IconCheck />
+                      </span>
+                      {feature}
+                    </li>
+                  ))}
+                </ul>
+                <Link
+                  to="/register"
+                  className={`mt-8 block rounded-full px-5 py-3 text-center text-sm font-semibold no-underline transition-transform hover:translate-y-[-1px] ${
+                    plan.featured
+                      ? "bg-[linear-gradient(135deg,#FF7A30,#D94F10)] text-white"
+                      : "border border-[rgba(217,79,16,0.2)] bg-white text-[#D94F10]"
+                  }`}
+                >
+                  Empezar ahora
+                </Link>
+              </article>
             </Reveal>
           ))}
         </div>
-
-        {/* Nota */}
-        <Reveal className="text-center mt-12">
-          <p className="text-sm text-[#A89E94]">
-            ¿Tienes más de 500 unidades?{" "}
-            <a href="mailto:ventas@condome.com" className="text-[#D94F10] hover:underline font-medium">
-              Contáctanos para un plan personalizado
-            </a>
-          </p>
-        </Reveal>
       </div>
     </section>
   );
 }
 
-function PlanCard({ name, price, period, desc, highlight, badge, features, cta }) {
-  return (
-    <div className="relative rounded-2xl p-8 transition-all duration-300"
-      style={highlight ? {
-        background:   "linear-gradient(160deg, #2D2318 0%, #1A1612 100%)",
-        boxShadow:    "0 32px 64px rgba(26,22,18,0.25), 0 0 0 1px rgba(217,79,16,0.2)",
-        transform:    "scale(1.04)",
-      } : {
-        background:   "#FFFFFF",
-        boxShadow:    "0 2px 4px rgba(26,22,18,0.04), 0 8px 24px rgba(26,22,18,0.07)",
-        border:       "1px solid rgba(229,224,216,0.8)",
-      }}>
-
-      {/* Badge */}
-      {badge && (
-        <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-[11px] font-bold tracking-wider uppercase text-white"
-          style={{ background: "linear-gradient(135deg, #FF7A30, #D94F10)", boxShadow: "0 4px 12px rgba(217,79,16,0.4)" }}>
-          {badge}
-        </div>
-      )}
-
-      {/* Plan name */}
-      <div className="mb-6">
-        <h3 className={`text-sm font-semibold tracking-[0.1em] uppercase mb-1 ${highlight ? "text-[#FF7A30]" : "text-[#D94F10]"}`}>
-          {name}
-        </h3>
-        <div className="flex items-end gap-1">
-          <span className={`text-[48px] font-bold leading-none ${highlight ? "text-white" : "text-[#1A1612]"}`}
-            style={{ fontFamily: "'Playfair Display', serif" }}>
-            ${price}
-          </span>
-          <span className={`text-sm mb-2 ${highlight ? "text-white/40" : "text-[#A89E94]"}`}>{period}</span>
-        </div>
-        <p className={`text-sm mt-2 leading-relaxed ${highlight ? "text-white/50" : "text-[#6B6158]"}`}>
-          {desc}
-        </p>
-      </div>
-
-      {/* Divider */}
-      <div className={`h-px mb-6 ${highlight ? "bg-white/10" : "bg-[#E5E0D8]"}`} />
-
-      {/* Features */}
-      <ul className="space-y-3 mb-8">
-        {features.map(f => (
-          <li key={f} className="flex items-start gap-3 text-sm">
-            <span className="flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center mt-0.5"
-              style={{ background: highlight ? "rgba(217,79,16,0.3)" : "rgba(217,79,16,0.1)" }}>
-              <svg width="8" height="8" viewBox="0 0 10 8" fill="none">
-                <path d="M1 4L3.5 6.5L9 1" stroke={highlight ? "#FF7A30" : "#D94F10"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </span>
-            <span className={highlight ? "text-white/70" : "text-[#6B6158]"}>{f}</span>
-          </li>
-        ))}
-      </ul>
-
-      {/* CTA */}
-      <Link to="/register"
-        className="block text-center py-3.5 rounded-xl text-sm font-semibold tracking-wide transition-all duration-200 hover:opacity-90 hover:-translate-y-px"
-        style={highlight ? {
-          background:  "linear-gradient(135deg, #FF7A30, #D94F10)",
-          color:       "white",
-          boxShadow:   "0 8px 20px rgba(217,79,16,0.4)",
-        } : {
-          background:  "transparent",
-          color:       "#D94F10",
-          border:      "1.5px solid #D94F10",
-        }}>
-        {cta}
-      </Link>
-    </div>
-  );
-}
-
-/* ══════════════════════════════════════════════════════════════════
-   FOOTER
-══════════════════════════════════════════════════════════════════ */
 function Footer() {
   return (
-    <footer className="bg-[#1A1612] py-16">
-      <div className="max-w-6xl mx-auto px-6">
-        <div className="grid md:grid-cols-4 gap-10 pb-12 border-b border-white/8">
-
-          {/* Brand */}
-          <div className="md:col-span-2">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-                style={{ background: "linear-gradient(135deg, #FF7A30, #D94F10)" }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                  <path d="M3 9.5L12 3L21 9.5V20C21 20.55 20.55 21 20 21H15V15H9V21H4C3.45 21 3 20.55 3 20V9.5Z"
-                    fill="white"/>
-                </svg>
-              </div>
-              <span className="text-white font-bold text-xl tracking-tight"
-                style={{ fontFamily: "'Playfair Display', serif" }}>
-                Condome
-              </span>
+    <footer className="bg-[#121110] px-5 py-14 text-white md:px-8">
+      <div className="mx-auto flex max-w-7xl flex-col gap-10 md:flex-row md:items-end md:justify-between">
+        <div>
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-[18px] bg-[linear-gradient(135deg,#FF7A30,#D94F10)]">
+              <img src={logo} alt="Condome" className="h-6 w-6 object-contain" />
             </div>
-            <p className="text-sm text-white/40 leading-relaxed max-w-xs">
-              La plataforma SaaS diseñada para simplificar la gestión de condominios en Latinoamérica.
-            </p>
+            <div>
+              <p className="text-[1.05rem] font-semibold" style={{ fontFamily: "'Playfair Display', serif" }}>
+                Condome
+              </p>
+              <p className="text-[10px] uppercase tracking-[0.24em] text-white/44">Gestion estructurada</p>
+            </div>
           </div>
-
-          {/* Links */}
-          <div>
-            <h4 className="text-xs font-semibold tracking-[0.15em] uppercase text-white/30 mb-4">Producto</h4>
-            <ul className="space-y-2.5">
-              {["Características", "Precios", "Seguridad", "Actualizaciones"].map(l => (
-                <li key={l}><a href="#" className="text-sm text-white/50 hover:text-white transition-colors">{l}</a></li>
-              ))}
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="text-xs font-semibold tracking-[0.15em] uppercase text-white/30 mb-4">Empresa</h4>
-            <ul className="space-y-2.5">
-              {["Acerca de", "Blog", "Contacto", "Términos"].map(l => (
-                <li key={l}><a href="#" className="text-sm text-white/50 hover:text-white transition-colors">{l}</a></li>
-              ))}
-            </ul>
-          </div>
+          <p className="mt-5 max-w-md text-sm leading-7 text-white/60">
+            Diseñado para que propietarios, administradores y residentes interactuen con una experiencia mas clara, consistente y agradable.
+          </p>
         </div>
 
-        <div className="pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-xs text-white/25">© 2025 Condome · Todos los derechos reservados</p>
-          <div className="flex items-center gap-1 text-xs text-white/25">
-            <span>Hecho con</span>
-            <span className="text-[#D94F10]">♥</span>
-            <span>para administradores</span>
-          </div>
+        <div className="flex flex-col gap-3 text-sm text-white/58 md:items-end">
+          <Link to="/login" className="text-white/68 no-underline transition-colors hover:text-white">
+            Iniciar sesion
+          </Link>
+          <Link to="/register" className="text-white/68 no-underline transition-colors hover:text-white">
+            Crear cuenta
+          </Link>
+          <p>© 2026 Condome</p>
         </div>
       </div>
     </footer>
   );
 }
 
-/* ══════════════════════════════════════════════════════════════════
-   PÁGINA PRINCIPAL
-══════════════════════════════════════════════════════════════════ */
 export default function Landing() {
   return (
-    <div style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+    <div className="min-h-screen bg-[#F7F3EE] text-[#1E1A17]">
       <Navbar />
       <Hero />
-      <Features />
-      <Pricing />
+      <ProductSection />
+      <PricingSection />
       <Footer />
     </div>
+  );
+}
+
+function IconMenu() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5">
+      <path d="M3 12h18M3 6h18M3 18h18" />
+    </svg>
+  );
+}
+
+function IconPanel() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5">
+      <path d="M4 6h16" />
+      <path d="M4 12h16" />
+      <path d="M4 18h10" />
+    </svg>
+  );
+}
+
+function IconCheck() {
+  return (
+    <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-3 w-3">
+      <path d="M2 6.2 4.5 8.5 10 3.5" />
+    </svg>
   );
 }

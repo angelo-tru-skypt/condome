@@ -19,16 +19,18 @@ export default function DashboardHome() {
   const role = normalizeRole(user?.role || user?.rol);
 
   if (loading && !hasCondominio) {
-    <div className="flex items-center justify-center min-h-[60vh]">
-      <div className="flex flex-col items-center gap-4">
-        <div
-          className="w-12 h-12 rounded-full border-2 border-[var(--border-standard)] border-t-[var(--condome-orange)]"
-          style={{ animation: "spin 0.8s linear infinite" }}
-        />
-        <p className="text-sm font-bold uppercase tracking-widest text-[var(--fg-tertiary)]">Iniciando Workspace...</p>
-        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="flex flex-col items-center gap-4">
+          <div
+            className="w-12 h-12 rounded-full border-2 border-[var(--border-standard)] border-t-[var(--condome-orange)]"
+            style={{ animation: "spin 0.8s linear infinite" }}
+          />
+          <p className="text-sm font-bold uppercase tracking-widest text-[var(--fg-tertiary)]">Iniciando Workspace...</p>
+          <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+        </div>
       </div>
-    </div>
+    );
   }
 
   const heroStats = [
@@ -83,6 +85,13 @@ export default function DashboardHome() {
       to: "/cuotas",
       ready: false,
     },
+  ];
+
+  const condoPulse = [
+    { label: "Edificios", value: edificios.length, color: "#D94F10" },
+    { label: "Unidades", value: apartamentos.length, color: "#FF7A30" },
+    { label: "Disponibles", value: disponibles, color: "#C56A1C" },
+    { label: "Ocupadas", value: ocupados, color: "#7A3A16" },
   ];
 
   return (
@@ -173,7 +182,7 @@ export default function DashboardHome() {
         {heroStats.map((stat, idx) => (
           <article
             key={stat.label}
-            className={`${SURFACE} p-6 animate-slide-up hover:border-[var(--condome-orange)]/30 hover:shadow-xl transition-all duration-300 group`}
+            className={`${SURFACE} hover-glow-orange p-6 animate-slide-up hover:border-[var(--condome-orange)]/30 hover:shadow-xl transition-all duration-300 group`}
             style={{ animationDelay: `${idx * 100}ms` }}
           >
             <div
@@ -187,6 +196,93 @@ export default function DashboardHome() {
             <p className="mt-3 text-xs leading-relaxed text-[var(--fg-secondary)] font-medium">{stat.helper}</p>
           </article>
         ))}
+      </section>
+
+      <section className="grid gap-6 xl:grid-cols-[1.28fr_0.92fr]">
+        <div className={`${SURFACE} hover-glow-orange p-6 md:p-7 animate-soft-pop`}>
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div>
+              <p className={EYEBROW}>Pulso del condominio</p>
+              <h2 className={SECTION_TITLE}>Lectura visual de estructura y ocupacion</h2>
+            </div>
+            <span className="px-3 py-1.5 rounded-full bg-[var(--signal-orange-fog)] text-[var(--condome-orange)] text-xs font-bold">
+              Actualizacion en tiempo real
+            </span>
+          </div>
+
+          <div className="mt-6 grid gap-6 lg:grid-cols-[1.25fr_0.75fr]">
+            <div className="rounded-[26px] border border-[var(--border-subtle)] bg-[linear-gradient(180deg,#FFFDFC,#FFF5EC)] p-5 shadow-[var(--shadow-whisper)]">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-[11px] uppercase tracking-[0.18em] font-bold text-[var(--condome-orange)]">
+                    Distribucion general
+                  </p>
+                  <p className="mt-2 text-sm text-[var(--fg-secondary)]">
+                    Compara rapidamente estructura y estado de las unidades.
+                  </p>
+                </div>
+                <div className="animate-float-soft rounded-[20px] bg-[rgba(217,79,16,0.08)] px-4 py-3 text-right">
+                  <p className="text-[10px] uppercase tracking-[0.18em] text-[var(--fg-tertiary)]">Ocupacion</p>
+                  <p className="mt-1 text-2xl font-semibold text-[var(--fg-primary)]">
+                    {apartamentos.length ? `${Math.round((ocupados / apartamentos.length) * 100)}%` : "0%"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-6">
+                <CondoPulseChart items={condoPulse} />
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              {condoPulse.map((item) => (
+                <div key={item.label} className={`${SOFT_PANEL} hover-glow-orange p-4 transition-all duration-300`}>
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-sm font-semibold text-[var(--fg-primary)]">{item.label}</p>
+                    <p className="text-lg font-semibold" style={{ color: item.color }}>{item.value}</p>
+                  </div>
+                  <div className="mt-3 h-2 overflow-hidden rounded-full bg-white">
+                    <div
+                      className="h-full rounded-full transition-all duration-700"
+                      style={{
+                        width: `${Math.max((item.value / Math.max(...condoPulse.map((entry) => entry.value), 1)) * 100, item.value ? 16 : 0)}%`,
+                        background: `linear-gradient(90deg, ${item.color}, #FFB184)`,
+                      }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className={`${INK_CARD} hover-glow-orange p-7 animate-soft-pop`}>
+          <p className="text-[10px] uppercase tracking-[0.22em] font-black text-[var(--condome-orange-soft)]">
+            Avance del sistema
+          </p>
+          <h2 className="mt-3 text-2xl font-bold text-white tracking-tight">
+            Profundidad operativa
+          </h2>
+          <p className="mt-3 text-sm leading-7 text-white/64">
+            Estos indicadores muestran que tan completo esta el condominio para operar sin friccion.
+          </p>
+
+          <div className="mt-6 space-y-4">
+            {startupPlan.map((step, index) => (
+              <div key={step.title} className="rounded-[22px] border border-white/10 bg-white/5 p-4 backdrop-blur-sm">
+                <div className="flex items-center gap-3">
+                  <div className={`flex h-10 w-10 items-center justify-center rounded-2xl text-sm font-bold ${step.ready ? "bg-[rgba(255,122,48,0.18)] text-white" : "bg-white/8 text-white/70"}`}>
+                    {step.ready ? "OK" : String(index + 1).padStart(2, "0")}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-white">{step.title}</p>
+                    <p className="mt-1 text-xs leading-6 text-white/56">{step.description}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </section>
 
       <section className="grid gap-6 xl:grid-cols-[1.5fr_1fr]">
@@ -209,12 +305,12 @@ export default function DashboardHome() {
             {OWNER_WORKSPACES.map((workspace) => (
               <article
                 key={workspace.title}
-                className="rounded-[24px] border border-[#E8DDD3] bg-[#FAF9F7] p-5 shadow-sm"
+                className="hover-glow-orange rounded-[24px] border border-[#E8DDD3] bg-[#FAF9F7] p-5 shadow-sm transition-all duration-300"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <h3 className="text-lg font-semibold text-[#E5E5E5]">{workspace.title}</h3>
-                    <p className="mt-2 text-sm leading-6 text-[#A3A3A3]">
+                    <h3 className="text-lg font-semibold text-[var(--fg-primary)]">{workspace.title}</h3>
+                    <p className="mt-2 text-sm leading-6 text-[var(--fg-secondary)]">
                       {workspace.description}
                     </p>
                   </div>
@@ -240,7 +336,7 @@ export default function DashboardHome() {
           </div>
         </div>
 
-        <div className={`${SURFACE} p-6`}>
+        <div className={`${SURFACE} hover-glow-orange p-6 animate-soft-pop`}>
           <p className="text-[11px] uppercase tracking-[0.22em] font-bold text-[#D94F10]">
             Ruta sugerida
           </p>
@@ -386,6 +482,48 @@ function MetricIcon() {
       <path d="M12 19V5" />
       <path d="M19 19v-7" />
     </svg>
+  );
+}
+
+function CondoPulseChart({ items }) {
+  const width = 320;
+  const height = 156;
+  const maxValue = Math.max(...items.map((item) => item.value), 1);
+  const points = items.map((item, index) => {
+    const x = 24 + (index * (width - 48)) / Math.max(items.length - 1, 1);
+    const y = height - 24 - (item.value / maxValue) * (height - 56);
+    return { ...item, x, y };
+  });
+
+  const path = points
+    .map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`)
+    .join(" ");
+
+  return (
+    <div>
+      <svg viewBox={`0 0 ${width} ${height}`} className="w-full">
+        {[0.25, 0.5, 0.75].map((line) => (
+          <line
+            key={line}
+            x1="16"
+            x2={width - 16}
+            y1={height - 24 - line * (height - 56)}
+            y2={height - 24 - line * (height - 56)}
+            stroke="rgba(30,26,23,0.08)"
+            strokeDasharray="4 6"
+          />
+        ))}
+        <path d={path} fill="none" stroke="#D94F10" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+        {points.map((point) => (
+          <g key={point.label}>
+            <circle cx={point.x} cy={point.y} r="6" fill="white" stroke={point.color} strokeWidth="3" />
+            <text x={point.x} y={height - 6} textAnchor="middle" fontSize="10" fill="#8c8076" style={{ textTransform: "uppercase", letterSpacing: "0.12em" }}>
+              {point.label}
+            </text>
+          </g>
+        ))}
+      </svg>
+    </div>
   );
 }
 

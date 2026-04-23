@@ -120,13 +120,13 @@ export default function ResidentDashboardHome() {
       helper: solvedIncidents.length
         ? `${solvedIncidents.length} ya fueron resueltas o cerradas.`
         : "Todavia no hay incidencias cerradas.",
-      color: "#6C4BA8",
+      color: "#8F5A26",
     },
     {
       label: "Mi residencia",
       title: context?.apartamento?.nombre || "Sin contexto",
       helper: context?.condominio?.nombre || "No se pudo cargar el contexto del condominio.",
-      color: "#1A6B9A",
+      color: "#B86A2D",
     },
   ];
 
@@ -164,10 +164,10 @@ export default function ResidentDashboardHome() {
   return (
     <div className="space-y-6 md:space-y-7">
       <section
-        className="rounded-[34px] overflow-hidden border border-[#CFE3E3] animate-reveal"
+        className="rounded-[34px] overflow-hidden border border-[rgba(30,26,23,0.08)] animate-reveal"
         style={{
           background:
-            "linear-gradient(145deg, #0E2433 0%, #123244 45%, #1A6B9A 100%)",
+            "linear-gradient(145deg, #121110 0%, #241B16 45%, #121110 100%)",
           boxShadow: "0 24px 60px rgba(14,36,51,0.16)",
         }}
       >
@@ -276,7 +276,7 @@ export default function ResidentDashboardHome() {
               <p className={EYEBROW}>Espacios de trabajo</p>
               <h2 className={SECTION_TITLE}>Todo lo que el residente debe poder resolver</h2>
             </div>
-            <span className="px-3 py-1.5 rounded-full bg-[#EAF7F6] text-[#16616B] text-xs font-semibold">
+            <span className="px-3 py-1.5 rounded-full bg-[rgba(217,79,16,0.1)] text-[var(--condome-orange)] text-xs font-semibold">
               Interfaz dedicada por rol
             </span>
           </div>
@@ -350,7 +350,7 @@ function PageLoader({ label }) {
     <div className="flex items-center justify-center min-h-[60vh]">
       <div className="flex flex-col items-center gap-3">
         <div
-          className="w-10 h-10 rounded-full border-2 border-[#D6E4E4] border-t-[#1A6B9A]"
+          className="w-10 h-10 rounded-full border-2 border-[rgba(30,26,23,0.1)] border-t-[var(--condome-orange)]"
           style={{ animation: "spin 0.8s linear infinite" }}
         />
         <p className="text-sm text-[#5B6B71]">{label}</p>
@@ -371,7 +371,7 @@ function InfoTile({ label, value }) {
 
 function ErrorBanner({ message }) {
   return (
-    <div className="px-4 py-3 rounded-2xl bg-[#F2FAFA] border border-[#CFE3E3] text-sm text-[#16616B]">
+    <div className="px-4 py-3 rounded-2xl bg-[rgba(217,79,16,0.08)] border border-[rgba(217,79,16,0.16)] text-sm text-[var(--condome-orange)]">
       {message}
     </div>
   );

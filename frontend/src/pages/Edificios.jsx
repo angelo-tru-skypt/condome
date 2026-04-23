@@ -7,10 +7,13 @@ const LABEL = "block text-[10px] font-bold tracking-[0.12em] uppercase text-[#B1
 const SURFACE = "bg-[#FFFFFF] border border-[#E8DDD3] rounded-[28px] shadow-sm";
 
 export default function EdificiosPage() {
-  const { condominio, edificios, crearEdificio, hasCondominio } = useCondominio();
+  const { condominio, edificios, crearEdificio, actualizarEdificio, eliminarEdificio, hasCondominio } = useCondominio();
   const [nombre, setNombre] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [editItem, setEditItem] = useState(null);
+  const [editNombre, setEditNombre] = useState("");
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -21,6 +24,39 @@ export default function EdificiosPage() {
       setNombre("");
     } catch (err) {
       setError(err.message || "No se pudo crear el edificio");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleEdit = (ed) => {
+    setEditItem(ed);
+    setEditNombre(ed.nombre);
+  };
+
+  const handleEditSave = async () => {
+    if (!editNombre.trim()) return;
+    setSaving(true);
+    setError("");
+    try {
+      await actualizarEdificio(editItem.id, { nombre: editNombre });
+      setEditItem(null);
+      setEditNombre("");
+    } catch (err) {
+      setError(err.message || "No se pudo actualizar el edificio");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (ed) => {
+    setSaving(true);
+    setError("");
+    try {
+      await eliminarEdificio(ed.id);
+      setDeleteConfirm(null);
+    } catch (err) {
+      setError(err.message || "No se pudo eliminar el edificio");
     } finally {
       setSaving(false);
     }
@@ -100,9 +136,22 @@ export default function EdificiosPage() {
                     </div>
                     <h3 className="text-sm font-bold text-[#1A1A1A] group-hover:text-[#D94F10] transition-colors">{ed.nombre}</h3>
                     <p className="mt-2 text-[11px] text-[#737373] font-medium">ID: #{ed.id.toString().padStart(4, '0')}</p>
-                    <div className="mt-5 pt-4 border-t border-[#FAF9F7] flex items-center justify-between">
+                    <div className="mt-5 pt-4 border-t border-[#FAF9F7] flex items-center justify-between gap-2">
                       <span className="text-[10px] font-bold text-[#B15A27] uppercase tracking-wider">Activo</span>
-                      <button className="text-[10px] font-bold text-[#D94F10] bg-transparent border-none cursor-pointer hover:underline">Ver unidades →</button>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleEdit(ed)}
+                          className="text-[10px] font-bold text-[#D94F10] bg-[#FFF4EE] border border-[#FDDCC9] rounded-lg px-3 py-1.5 cursor-pointer hover:bg-[#FFE8D9] transition-colors"
+                        >
+                          Editar
+                        </button>
+                        <button
+                          onClick={() => setDeleteConfirm(ed)}
+                          className="text-[10px] font-bold text-red-500 bg-red-50 border border-red-200 rounded-lg px-3 py-1.5 cursor-pointer hover:bg-red-100 transition-colors"
+                        >
+                          Eliminar
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -111,6 +160,61 @@ export default function EdificiosPage() {
           </div>
         </div>
       </section>
+
+      {/* Modal Editar Edificio */}
+      {editItem && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-md" onClick={() => setEditItem(null)}>
+          <div className="bg-white rounded-[28px] w-full max-w-md p-8 relative border border-[#E8DDD3] shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <button onClick={() => setEditItem(null)} className="absolute right-6 top-6 text-[#737373] hover:text-[#1A1A1A] border-none bg-transparent cursor-pointer text-xl">✕</button>
+            <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-[#D94F10] mb-2">Editar</p>
+            <h2 style={{ fontFamily: "'Playfair Display', serif" }} className="text-2xl font-bold text-[#1A1A1A] mb-6">
+              {editItem.nombre}
+            </h2>
+            <div className="space-y-4">
+              <div>
+                <label className={LABEL}>Nombre del edificio *</label>
+                <input value={editNombre} onChange={(e) => setEditNombre(e.target.value)} className={INPUT} />
+              </div>
+              <button
+                onClick={handleEditSave}
+                disabled={saving || !editNombre.trim()}
+                className="w-full py-3.5 rounded-xl text-white text-sm font-bold tracking-wide transition-all border-none cursor-pointer disabled:opacity-50 shadow-md"
+                style={{ background: "linear-gradient(135deg, #FF7A30, #D94F10)" }}
+              >
+                {saving ? "Guardando..." : "Guardar cambios"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Confirmar Eliminar */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-md" onClick={() => setDeleteConfirm(null)}>
+          <div className="bg-white rounded-[28px] w-full max-w-sm p-8 text-center relative border border-[#E8DDD3] shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-5 text-2xl border border-red-100">🗑️</div>
+            <h2 className="text-xl font-bold text-[#1A1A1A] mb-2">Eliminar edificio</h2>
+            <p className="text-sm text-[#737373] font-medium mb-6">
+              ¿Estas seguro de eliminar <strong>{deleteConfirm.nombre}</strong>? Esta accion no se puede deshacer y eliminara todos los apartamentos y residentes asociados.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeleteConfirm(null)}
+                className="flex-1 py-3 rounded-xl border border-[#E8DDD3] bg-white text-sm font-bold text-[#737373] cursor-pointer hover:bg-[#FAF9F7] transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => handleDelete(deleteConfirm)}
+                disabled={saving}
+                className="flex-1 py-3 rounded-xl border-none bg-red-500 text-white text-sm font-bold cursor-pointer hover:bg-red-600 disabled:opacity-50 transition-colors"
+              >
+                {saving ? "Eliminando..." : "Eliminar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

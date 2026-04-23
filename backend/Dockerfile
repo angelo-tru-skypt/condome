@@ -1,5 +1,6 @@
-FROM odoo:18.0
+FROM odoo:17.0
 
 USER root
-RUN python3 -m pip install --no-cache-dir --break-system-packages PyJWT==2.8.0
+COPY requirements.txt /requirements.txt
+RUN python3 -m pip install --no-cache-dir -r /requirements.txt
 USER odoo

@@ -17,7 +17,7 @@ const MANAGEMENT_AREAS = [
     routes: [
       { to: "/condominio/nuevo", label: "Registro inicial", color: "#D94F10" },
       { to: "/condominio", label: "Mi condominio", color: "#A45120" },
-      { to: "/configuracion", label: "Configuracion", color: "#1A6B9A" },
+      { to: "/configuracion", label: "Configuracion", color: "#B86A2D" },
     ],
   },
   {
@@ -25,9 +25,9 @@ const MANAGEMENT_AREAS = [
     description: "Luego ordena torres, unidades y personas para que el resto del sistema tenga sentido.",
     routes: [
       { to: "/edificios", label: "Edificios", color: "#B5590A" },
-      { to: "/apartamentos", label: "Apartamentos", color: "#1A6B9A" },
+      { to: "/apartamentos", label: "Apartamentos", color: "#B86A2D" },
       { to: "/residentes", label: "Residentes", color: "#2E7D52" },
-      { to: "/propietarios", label: "Propietarios", color: "#6C4BA8" },
+      { to: "/propietarios", label: "Propietarios", color: "#8F5A26" },
     ],
   },
   {
@@ -35,10 +35,10 @@ const MANAGEMENT_AREAS = [
     description: "Cuando la base este lista, administra accesos, avisos, reservas, incidencias y finanzas.",
     routes: [
       { to: "/avisos", label: "Avisos", color: "#D94F10" },
-      { to: "/visitas", label: "Visitas", color: "#1A6B9A" },
+      { to: "/visitas", label: "Visitas", color: "#B86A2D" },
       { to: "/reservas", label: "Reservas", color: "#2E7D52" },
       { to: "/incidencias", label: "Incidencias", color: "#A45120" },
-      { to: "/cuotas", label: "Cuotas", color: "#6C4BA8" },
+      { to: "/cuotas", label: "Cuotas", color: "#8F5A26" },
       { to: "/pagos", label: "Pagos", color: "#0F766E" },
     ],
   },
@@ -63,6 +63,14 @@ export default function PropertyOwnerDashboardPage() {
 
   const firstName = user?.name?.split(" ")[0] || "Propietario";
   const hasCondominio = Boolean(condominio?.id);
+  const managementAreas = useMemo(
+    () =>
+      MANAGEMENT_AREAS.map((area) => ({
+        ...area,
+        routes: area.routes.filter((route) => (route.to === "/condominio/nuevo" ? !hasCondominio : true)),
+      })),
+    [hasCondominio]
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -146,7 +154,7 @@ export default function PropertyOwnerDashboardPage() {
       complete: Boolean(edificios.length || apartamentos.length),
       to: edificios.length ? "/apartamentos" : "/edificios",
       action: edificios.length ? "Gestionar unidades" : "Crear estructura",
-      color: "#1A6B9A",
+      color: "#B86A2D",
     },
     {
       title: "Activar comunidad",
@@ -158,7 +166,7 @@ export default function PropertyOwnerDashboardPage() {
       action: residentes.length ? "Ver comunidad" : "Registrar residentes",
       color: "#2E7D52",
     },
-  ];
+  ].filter((step) => (step.title === "Registrar condominio" ? !hasCondominio : true));
 
   const setupCompleted = setupSteps.filter((step) => step.complete).length;
   const setupProgress = Math.round((setupCompleted / setupSteps.length) * 100);
@@ -174,7 +182,7 @@ export default function PropertyOwnerDashboardPage() {
       label: "Estructura",
       value: `${totals.edificios ?? edificios.length} / ${totals.apartamentos ?? apartamentos.length}`,
       helper: "Edificios y apartamentos bajo gestion",
-      accent: "#1A6B9A",
+      accent: "#B86A2D",
     },
     {
       label: "Comunidad",
@@ -186,8 +194,15 @@ export default function PropertyOwnerDashboardPage() {
       label: "Operacion",
       value: queues.visitas_pendientes ?? unreadNotifications.length,
       helper: "Señales que hoy piden atencion",
-      accent: "#6C4BA8",
+      accent: "#8F5A26",
     },
+  ];
+
+  const condoGraph = [
+    { label: "Condominios", value: totals.condominios ?? condominios.length, color: "#D94F10" },
+    { label: "Estructura", value: (totals.edificios ?? edificios.length) + (totals.apartamentos ?? apartamentos.length), color: "#B86A2D" },
+    { label: "Comunidad", value: totals.residentes ?? residentes.length, color: "#2E7D52" },
+    { label: "Operacion", value: queues.visitas_pendientes ?? unreadNotifications.length, color: "#8F5A26" },
   ];
 
   const recentSignals = useMemo(() => {
@@ -206,7 +221,7 @@ export default function PropertyOwnerDashboardPage() {
       title: item.incidencia_titulo || "Alerta administrativa",
       detail: item.message,
       timestamp: item.fecha_creacion,
-      color: "#1A6B9A",
+      color: "#B86A2D",
     }));
 
     const auditItems = auditEntries.map((item) => ({
@@ -242,7 +257,7 @@ export default function PropertyOwnerDashboardPage() {
             className="absolute inset-y-0 right-0 w-[50%] opacity-20 pointer-events-none"
             style={{
               background:
-                "radial-gradient(circle at 60% 30%, var(--condome-orange-soft) 0, transparent 70%), radial-gradient(circle at 80% 80%, #1A6B9A 0, transparent 60%)",
+                "radial-gradient(circle at 60% 30%, var(--condome-orange-soft) 0, transparent 70%), radial-gradient(circle at 80% 80%, rgba(217,79,16,0.28) 0, transparent 60%)",
             }}
           />
 
@@ -339,7 +354,7 @@ export default function PropertyOwnerDashboardPage() {
 
       <section className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 md:gap-5">
         {commandCards.map((item) => (
-          <article key={item.label} className={`${SURFACE} p-6 relative overflow-hidden group transition-all hover:translate-y-[-4px]`}>
+          <article key={item.label} className={`${SURFACE} hover-glow-orange p-6 relative overflow-hidden group transition-all hover:translate-y-[-4px]`}>
             <div
               className="absolute top-0 right-0 w-24 h-24 opacity-[0.03] pointer-events-none translate-x-8 translate-y-[-8px]"
               style={{ backgroundColor: item.accent }}
@@ -372,6 +387,65 @@ export default function PropertyOwnerDashboardPage() {
         ))}
       </section>
 
+      <section className="grid gap-7 xl:grid-cols-[1.24fr_0.76fr]">
+        <div className={`${SURFACE} hover-glow-orange p-8 animate-soft-pop`}>
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div>
+              <span className={EYEBROW}>Grafico operativo</span>
+              <h2 className={SECTION_TITLE}>Profundidad visual del estado del condominio</h2>
+            </div>
+            <span className="px-3 py-1.5 rounded-full bg-[var(--signal-orange-fog)] text-[var(--condome-orange)] text-xs font-semibold">
+              Panel en movimiento
+            </span>
+          </div>
+
+          <div className="mt-7 rounded-[28px] border border-[var(--border-subtle)] bg-[linear-gradient(180deg,#FFFDFC,#FFF5EC)] p-6 shadow-[var(--shadow-whisper)]">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-[11px] uppercase tracking-[0.18em] font-bold text-[var(--condome-orange)]">
+                  Lectura consolidada
+                </p>
+                <p className="mt-2 text-sm leading-7 text-[var(--fg-secondary)]">
+                  Estructura, comunidad y operacion resumidas en una sola lectura.
+                </p>
+              </div>
+              <div className="animate-float-soft rounded-[22px] bg-[rgba(217,79,16,0.1)] px-4 py-3 text-right">
+                <p className="text-[10px] uppercase tracking-[0.18em] text-[var(--fg-tertiary)]">Hitos visibles</p>
+                <p className="mt-1 text-2xl font-semibold text-[var(--fg-primary)]">{setupCompleted}/{setupSteps.length}</p>
+              </div>
+            </div>
+
+            <div className="mt-7">
+              <OwnerPulseChart items={condoGraph} />
+            </div>
+          </div>
+        </div>
+
+        <div className={`${SURFACE} hover-glow-orange p-8 animate-soft-pop`}>
+          <span className={EYEBROW}>Capas del sistema</span>
+          <h2 className={SECTION_TITLE}>Profundidad de trabajo</h2>
+          <div className="mt-6 space-y-4">
+            {condoGraph.map((item) => (
+              <div key={item.label} className="rounded-[22px] border border-[var(--border-subtle)] bg-[var(--surface-3)] p-4 shadow-[var(--shadow-whisper)]">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-sm font-semibold text-[var(--fg-primary)]">{item.label}</p>
+                  <p className="text-lg font-semibold" style={{ color: item.color }}>{item.value}</p>
+                </div>
+                <div className="mt-3 h-2 overflow-hidden rounded-full bg-white">
+                  <div
+                    className="h-full rounded-full transition-all duration-700"
+                    style={{
+                      width: `${Math.max((item.value / Math.max(...condoGraph.map((entry) => entry.value), 1)) * 100, item.value ? 18 : 0)}%`,
+                      background: `linear-gradient(90deg, ${item.color}, #FFB184)`,
+                    }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <section className="grid gap-7 xl:grid-cols-[1.5fr_1fr]">
         <div className={`${SURFACE} p-8 md:p-10 flex flex-col`}>
           <div className="flex items-center gap-3">
@@ -384,7 +458,7 @@ export default function PropertyOwnerDashboardPage() {
           </p>
 
           <div className="mt-10 grid gap-6 flex-1">
-            {MANAGEMENT_AREAS.map((area) => (
+            {managementAreas.map((area) => (
               <article key={area.title} className="group p-1 transition-all">
                 <div className="flex items-start gap-4">
                   <div className="w-1.5 h-12 rounded-full bg-[var(--border-emphasis)] group-hover:bg-[var(--condome-orange)] transition-colors" />
@@ -505,6 +579,43 @@ function MetricIcon() {
       <path d="M5 19V9" />
       <path d="M12 19V5" />
       <path d="M19 19v-7" />
+    </svg>
+  );
+}
+
+function OwnerPulseChart({ items }) {
+  const width = 340;
+  const height = 160;
+  const maxValue = Math.max(...items.map((item) => item.value), 1);
+  const points = items.map((item, index) => {
+    const x = 26 + (index * (width - 52)) / Math.max(items.length - 1, 1);
+    const y = height - 24 - (item.value / maxValue) * (height - 54);
+    return { ...item, x, y };
+  });
+  const path = points.map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`).join(" ");
+
+  return (
+    <svg viewBox={`0 0 ${width} ${height}`} className="w-full">
+      {[0.25, 0.5, 0.75].map((line) => (
+        <line
+          key={line}
+          x1="16"
+          x2={width - 16}
+          y1={height - 24 - line * (height - 54)}
+          y2={height - 24 - line * (height - 54)}
+          stroke="rgba(30,26,23,0.08)"
+          strokeDasharray="4 6"
+        />
+      ))}
+      <path d={path} fill="none" stroke="#D94F10" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+      {points.map((point) => (
+        <g key={point.label}>
+          <circle cx={point.x} cy={point.y} r="6" fill="white" stroke={point.color} strokeWidth="3" />
+          <text x={point.x} y={height - 6} textAnchor="middle" fontSize="10" fill="#8c8076" style={{ textTransform: "uppercase", letterSpacing: "0.12em" }}>
+            {point.label}
+          </text>
+        </g>
+      ))}
     </svg>
   );
 }

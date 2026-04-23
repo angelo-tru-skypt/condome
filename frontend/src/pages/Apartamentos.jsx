@@ -14,6 +14,8 @@ export default function ApartamentosPage() {
     edificios,
     apartamentos,
     crearApartamento,
+    actualizarApartamento,
+    eliminarApartamento,
     crearResidente,
     hasCondominio,
   } = useCondominio();
@@ -29,6 +31,9 @@ export default function ApartamentosPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [selectedApartment, setSelectedApartment] = useState(null);
+  const [editItem, setEditItem] = useState(null);
+  const [editForm, setEditForm] = useState({});
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
 
   const resumen = useMemo(() => {
     const disponibles = apartamentos.filter((item) => item.estado === "disponible").length;
@@ -61,6 +66,49 @@ export default function ApartamentosPage() {
       });
     } catch (err) {
       setError(err.message || "No se pudo crear el apartamento");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleEditOpen = (apt) => {
+    setEditItem(apt);
+    setEditForm({
+      nombre: apt.nombre || "",
+      edificio_id: apt.edificio_id || "",
+      piso: apt.piso || "",
+      tipo_unidad: apt.tipo_unidad || "apartamento",
+      metraje: apt.metraje || "",
+      estado: apt.estado || "disponible",
+    });
+  };
+
+  const handleEditSave = async () => {
+    if (!editForm.nombre.trim()) return;
+    setSaving(true);
+    setError("");
+    try {
+      await actualizarApartamento(editItem.id, {
+        ...editForm,
+        edificio_id: Number(editForm.edificio_id),
+        metraje: Number(editForm.metraje || 0),
+      });
+      setEditItem(null);
+    } catch (err) {
+      setError(err.message || "No se pudo actualizar el apartamento");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (apt) => {
+    setSaving(true);
+    setError("");
+    try {
+      await eliminarApartamento(apt.id);
+      setDeleteConfirm(null);
+    } catch (err) {
+      setError(err.message || "No se pudo eliminar el apartamento");
     } finally {
       setSaving(false);
     }
@@ -190,7 +238,9 @@ export default function ApartamentosPage() {
                     key={apt.id}
                     apt={apt}
                     edificio={edificios.find((e) => e.id === apt.edificio_id)}
-                    onClick={() => setSelectedApartment(apt)}
+                    onManage={() => setSelectedApartment(apt)}
+                    onEdit={() => handleEditOpen(apt)}
+                    onDelete={() => setDeleteConfirm(apt)}
                   />
                 ))}
               </div>
@@ -207,6 +257,71 @@ export default function ApartamentosPage() {
           onAddResidente={crearResidente}
         />
       )}
+
+      {/* Modal Editar Apartamento */}
+      {editItem && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-md" onClick={() => setEditItem(null)}>
+          <div className="bg-[var(--surface-1)] rounded-[32px] w-full max-w-lg p-9 relative border border-[var(--border-standard)] shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <button onClick={() => setEditItem(null)} className="absolute right-6 top-6 text-[var(--fg-tertiary)] hover:text-[var(--fg-primary)] border-none bg-transparent cursor-pointer text-xl">✕</button>
+            <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-[var(--condome-orange)] mb-2">Editar unidad</p>
+            <h2 style={{ fontFamily: "'Playfair Display', serif" }} className="text-2xl font-bold text-[var(--fg-primary)] mb-6">
+              {editItem.nombre}
+            </h2>
+            <div className="space-y-4">
+              <div>
+                <label className={LABEL}>Nombre / Numero *</label>
+                <input value={editForm.nombre} onChange={(e) => setEditForm((f) => ({ ...f, nombre: e.target.value }))} className={INPUT} />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={LABEL}>Edificio</label>
+                  <select value={editForm.edificio_id} onChange={(e) => setEditForm((f) => ({ ...f, edificio_id: e.target.value }))} className={INPUT}>
+                    {edificios.map((ed) => (<option key={ed.id} value={ed.id}>{ed.nombre}</option>))}
+                  </select>
+                </div>
+                <div>
+                  <label className={LABEL}>Piso</label>
+                  <input value={editForm.piso} onChange={(e) => setEditForm((f) => ({ ...f, piso: e.target.value }))} className={INPUT} />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={LABEL}>Tipo</label>
+                  <select value={editForm.tipo_unidad} onChange={(e) => setEditForm((f) => ({ ...f, tipo_unidad: e.target.value }))} className={INPUT}>
+                    <option value="apartamento">Apartamento</option>
+                    <option value="local">Local</option>
+                    <option value="oficina">Oficina</option>
+                    <option value="penthouse">Penthouse</option>
+                  </select>
+                </div>
+                <div>
+                  <label className={LABEL}>Metraje (m2)</label>
+                  <input value={editForm.metraje} onChange={(e) => setEditForm((f) => ({ ...f, metraje: e.target.value }))} className={INPUT} />
+                </div>
+              </div>
+              <button
+                onClick={handleEditSave}
+                disabled={saving}
+                className="w-full py-3.5 rounded-xl text-white text-sm font-bold tracking-wide transition-all border-none cursor-pointer disabled:opacity-50 shadow-md"
+                style={{ background: "linear-gradient(135deg, #FF7A30, #D94F10)" }}
+              >
+                {saving ? "Guardando..." : "Guardar cambios"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Confirmar Eliminar */}
+      {deleteConfirm && (
+        <ConfirmDeleteModal
+          title="Eliminar unidad"
+          message={<>¿Estas seguro de eliminar <strong>{deleteConfirm.nombre}</strong>? Se eliminaran los residentes asociados.</>}
+          saving={saving}
+          onCancel={() => setDeleteConfirm(null)}
+          onConfirm={() => handleDelete(deleteConfirm)}
+        />
+      )}
     </div>
   );
 }
@@ -220,16 +335,13 @@ function SummaryTile({ label, value, color }) {
   );
 }
 
-function ApartmentCard({ apt, edificio, onClick }) {
+function ApartmentCard({ apt, edificio, onManage, onEdit, onDelete }) {
   const BADGE = apt.estado === "disponible"
     ? "bg-emerald-50 text-emerald-600 border-emerald-100"
     : "bg-[var(--condome-orange)]/10 text-[var(--condome-orange)] border-[var(--condome-orange)]/20";
 
   return (
-    <div
-      onClick={onClick}
-      className={`${SURFACE} p-4 cursor-pointer border-[var(--border-standard)] hover:border-[var(--condome-orange)] hover:shadow-lg transition-all group`}
-    >
+    <div className={`rounded-[24px] border border-[var(--border-standard)] bg-[var(--surface-1)] shadow-[var(--shadow-card)] p-4 border-[var(--border-standard)] hover:border-[var(--condome-orange)] hover:shadow-lg transition-all group`}>
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="w-10 h-10 rounded-xl bg-[var(--canvas)] flex items-center justify-center text-xl group-hover:bg-[var(--condome-orange)]/10 transition-colors">
           🏢
@@ -242,9 +354,13 @@ function ApartmentCard({ apt, edificio, onClick }) {
       <p className="text-[11px] text-[var(--fg-tertiary)] mt-1 font-medium truncate">
         {edificio?.nombre || "Edificio s/n"} • {apt.piso || "Planta baja"}
       </p>
-      <div className="mt-3 pt-3 border-t border-[var(--border-standard)] flex items-center justify-between">
+      <div className="mt-3 pt-3 border-t border-[var(--border-standard)] flex items-center justify-between gap-1">
         <span className="text-[10px] font-bold text-[var(--fg-tertiary)] uppercase tracking-tight">{apt.metraje} m2</span>
-        <span className="text-[10px] font-bold text-[var(--condome-orange)]">Gestionar →</span>
+        <div className="flex gap-1.5">
+          <button onClick={onManage} className="text-[9px] font-bold text-[var(--condome-orange)] bg-[var(--condome-orange)]/5 border border-[var(--condome-orange)]/20 rounded-lg px-2 py-1 cursor-pointer hover:bg-[var(--condome-orange)]/10 transition-colors">Residentes</button>
+          <button onClick={onEdit} className="text-[9px] font-bold text-blue-600 bg-blue-50 border border-blue-200 rounded-lg px-2 py-1 cursor-pointer hover:bg-blue-100 transition-colors">Editar</button>
+          <button onClick={onDelete} className="text-[9px] font-bold text-red-500 bg-red-50 border border-red-200 rounded-lg px-2 py-1 cursor-pointer hover:bg-red-100 transition-colors">×</button>
+        </div>
       </div>
     </div>
   );
@@ -260,7 +376,6 @@ function ResidentsModal({ apt, onClose, onAddResidente }) {
     setSaving(true);
     try {
       const response = await onAddResidente(apt.id, form);
-      // Suponiendo que la respuesta viene con credenciales
       if (response && response.credenciales) {
         setResult(response.credenciales);
       } else {
@@ -337,6 +452,24 @@ function ResidentsModal({ apt, onClose, onAddResidente }) {
             {saving ? "Registrando..." : "Crear Acceso y Asignar"}
           </button>
         </form>
+      </div>
+    </div>
+  );
+}
+
+function ConfirmDeleteModal({ title, message, saving, onCancel, onConfirm }) {
+  return (
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-md" onClick={onCancel}>
+      <div className="bg-[var(--surface-1)] rounded-[28px] w-full max-w-sm p-8 text-center relative border border-[var(--border-standard)] shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-5 text-2xl border border-red-100">🗑️</div>
+        <h2 className="text-xl font-bold text-[var(--fg-primary)] mb-2">{title}</h2>
+        <p className="text-sm text-[var(--fg-secondary)] font-medium mb-6">{message}</p>
+        <div className="flex gap-3">
+          <button onClick={onCancel} className="flex-1 py-3 rounded-xl border border-[var(--border-standard)] bg-[var(--surface-0)] text-sm font-bold text-[var(--fg-secondary)] cursor-pointer hover:bg-[var(--canvas)] transition-colors">Cancelar</button>
+          <button onClick={onConfirm} disabled={saving} className="flex-1 py-3 rounded-xl border-none bg-red-500 text-white text-sm font-bold cursor-pointer hover:bg-red-600 disabled:opacity-50 transition-colors">
+            {saving ? "Eliminando..." : "Eliminar"}
+          </button>
+        </div>
       </div>
     </div>
   );

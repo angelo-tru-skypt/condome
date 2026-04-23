@@ -209,6 +209,15 @@ const adminService = {
     }
   },
 
+  async deleteCommunication(communicationId) {
+    try {
+      const response = await apiClient.delete(ADMIN_ENDPOINTS.getComunicado(communicationId));
+      return response;
+    } catch (error) {
+      throw new Error(error.message || "Error al eliminar comunicado");
+    }
+  },
+
   // ── Cuotas (facturación) ───────────────────────────────────────────────────
 
   async getBillingSummary(condominioId) {
@@ -249,6 +258,15 @@ const adminService = {
     }
   },
 
+  async deleteFeeTemplate(templateId) {
+    try {
+      const response = await apiClient.delete(ADMIN_ENDPOINTS.getCuotaPlantilla(templateId));
+      return response;
+    } catch (error) {
+      throw new Error(error.message || "Error al eliminar plantilla de cuota");
+    }
+  },
+
   async listCharges(condominioId, extra = {}) {
     try {
       const endpoint = buildUrl(ADMIN_ENDPOINTS.cuotasCargos, {
@@ -277,6 +295,15 @@ const adminService = {
       return response;
     } catch (error) {
       throw new Error(error.message || "Error al actualizar cargo");
+    }
+  },
+
+  async deleteCharge(chargeId) {
+    try {
+      const response = await apiClient.delete(ADMIN_ENDPOINTS.getCuotaCargo(chargeId));
+      return response;
+    } catch (error) {
+      throw new Error(error.message || "Error al eliminar cargo");
     }
   },
 
@@ -461,6 +488,16 @@ const adminService = {
       return response;
     } catch (error) {
       throw new Error(error.message || "Error al crear exportación");
+    }
+  },
+
+  async deleteReportExport(exportId) {
+    try {
+      const endpoint = `${ADMIN_ENDPOINTS.reportesExportaciones}${exportId}/`;
+      const response = await apiClient.delete(endpoint);
+      return response;
+    } catch (error) {
+      throw new Error(error.message || "Error al eliminar exportación");
     }
   },
 

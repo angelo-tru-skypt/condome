@@ -15,6 +15,9 @@ export default function ResidentProfilePage() {
     apellido: "",
     email: "",
     telefono: "",
+    billing_name: "",
+    tax_id: "",
+    billing_address: "",
   });
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: "",
@@ -39,6 +42,9 @@ export default function ResidentProfilePage() {
           apellido: data.profile?.apellido || "",
           email: data.profile?.email || "",
           telefono: data.profile?.telefono || "",
+          billing_name: data.profile?.billing_name || "",
+          tax_id: data.profile?.tax_id || "",
+          billing_address: data.profile?.billing_address || "",
         });
       })
       .catch((error) => {
@@ -72,6 +78,9 @@ export default function ResidentProfilePage() {
         apellido: data.profile?.apellido || "",
         email: data.profile?.email || "",
         telefono: data.profile?.telefono || "",
+        billing_name: data.profile?.billing_name || "",
+        tax_id: data.profile?.tax_id || "",
+        billing_address: data.profile?.billing_address || "",
       });
       await refreshSession();
       setProfileSuccess("Perfil actualizado correctamente.");
@@ -204,6 +213,26 @@ export default function ResidentProfilePage() {
             <div>
               <label className={LABEL}>Teléfono</label>
               <input name="telefono" value={form.telefono} onChange={handleProfileChange} className={INPUT} />
+            </div>
+
+            <div className="pt-6 mt-6 border-t border-[var(--border-standard)]">
+              <p className="text-[10px] uppercase tracking-[0.24em] font-black text-[var(--condome-orange)] mb-4">
+                Datos de Facturación
+              </p>
+              <div className="space-y-4">
+                <div>
+                  <label className={LABEL}>Nombre Fiscal (Para recibos)</label>
+                  <input name="billing_name" value={form.billing_name} onChange={handleProfileChange} className={INPUT} placeholder="Ej: Juan Perez S.R.L" />
+                </div>
+                <div>
+                  <label className={LABEL}>Tax ID / RNC / Cédula</label>
+                  <input name="tax_id" value={form.tax_id} onChange={handleProfileChange} className={INPUT} placeholder="001-0000000-0" />
+                </div>
+                <div>
+                  <label className={LABEL}>Dirección de Facturación</label>
+                  <textarea name="billing_address" value={form.billing_address} onChange={handleProfileChange} className={`${INPUT} h-24 resize-none`} placeholder="Calle, Número, Ciudad..." />
+                </div>
+              </div>
             </div>
 
             <button

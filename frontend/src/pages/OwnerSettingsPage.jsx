@@ -149,6 +149,35 @@ export default function OwnerSettingsPage() {
             <span className="text-sm text-[#E5E5E5]">Validación automática de acceso en portería</span>
           </label>
 
+          <div className="pt-4 border-t border-[#262626] space-y-5">
+            <div>
+              <p className="text-[11px] uppercase tracking-[0.22em] font-semibold text-[#A3A3A3]">Información Bancaria</p>
+              <h2 className="mt-2 text-xl font-semibold text-[#E5E5E5]">Cuentas para Transferencias</h2>
+              <p className="text-[11px] text-[#737373] mt-1">Estos datos se mostrarán a los residentes al momento de realizar pagos manuales.</p>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <Field label="Nombre del Banco">
+                <input value={form.bankName || ""} onChange={(event) => setForm((current) => ({ ...current, bankName: event.target.value }))} className={INPUT} placeholder="Ej. Banco Popular" />
+              </Field>
+              <Field label="Número de Cuenta">
+                <input value={form.bankAccountNumber || ""} onChange={(event) => setForm((current) => ({ ...current, bankAccountNumber: event.target.value }))} className={INPUT} placeholder="0000000000" />
+              </Field>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <Field label="Tipo de Cuenta">
+                <select value={form.bankAccountType || "corriente"} onChange={(event) => setForm((current) => ({ ...current, bankAccountType: event.target.value }))} className={INPUT}>
+                  <option value="ahorros">Cuenta de Ahorros</option>
+                  <option value="corriente">Cuenta Corriente</option>
+                </select>
+              </Field>
+              <Field label="Titular de la Cuenta">
+                <input value={form.bankAccountHolder || ""} onChange={(event) => setForm((current) => ({ ...current, bankAccountHolder: event.target.value }))} className={INPUT} placeholder="Nombre completo" />
+              </Field>
+            </div>
+          </div>
+
           <button type="submit" disabled={saving || loading} className="px-5 py-3 rounded-xl text-white text-sm font-semibold border-none disabled:opacity-60" style={{ background: "linear-gradient(135deg, #FF7A30, #D94F10)" }}>
             {saving ? "Guardando..." : "Guardar configuración"}
           </button>

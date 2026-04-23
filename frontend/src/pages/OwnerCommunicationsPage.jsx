@@ -8,6 +8,17 @@ const INPUT =
 const FILTER_INPUT =
   "px-4 py-2.5 bg-[#1A1A1A] border border-[#262626] rounded-xl text-sm text-[#E5E5E5] outline-none focus:border-[#D94F10] focus:ring-4 focus:ring-[#D94F10]/10";
 
+const INITIAL_FORM = {
+  title: "",
+  message: "",
+  priority: "media",
+  scope: "general",
+  channel: "panel",
+  status: "draft",
+  scheduledFor: "",
+  targetLabel: "Todo el condominio",
+};
+
 export default function OwnerCommunicationsPage() {
   const { condominio, edificios } = useCondominio();
   const [communications, setCommunications] = useState([]);
@@ -15,16 +26,9 @@ export default function OwnerCommunicationsPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [filter, setFilter] = useState("all");
-  const [form, setForm] = useState({
-    title: "",
-    message: "",
-    priority: "media",
-    scope: "general",
-    channel: "panel",
-    status: "draft",
-    scheduledFor: "",
-    targetLabel: "Todo el condominio",
-  });
+  const [form, setForm] = useState(INITIAL_FORM);
+  const [editItem, setEditItem] = useState(null);
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
 
   const loadCommunications = useMemo(
     () => async () => {
@@ -73,23 +77,33 @@ export default function OwnerCommunicationsPage() {
     }
     setSaving(true);
     try {
-      await adminService.createCommunication({
-        ...form,
-        condominio_id: condominio.id,
-      });
-      setForm({
-        title: "",
-        message: "",
-        priority: "media",
-        scope: "general",
-        channel: "panel",
-        status: "draft",
-        scheduledFor: "",
-        targetLabel: "Todo el condominio",
-      });
+      if (editItem) {
+        await adminService.updateCommunication(editItem.id, form);
+        setEditItem(null);
+      } else {
+        await adminService.createCommunication({
+          ...form,
+          condominio_id: condominio.id,
+        });
+      }
+      setForm(INITIAL_FORM);
       await loadCommunications();
     } catch (saveError) {
       setError(saveError.message || "No se pudo guardar el comunicado.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteConfirm) return;
+    setSaving(true);
+    try {
+      await adminService.deleteCommunication(deleteConfirm.id);
+      setDeleteConfirm(null);
+      await loadCommunications();
+    } catch (delError) {
+      setError(delError.message || "No se pudo eliminar el comunicado.");
     } finally {
       setSaving(false);
     }
@@ -104,6 +118,26 @@ export default function OwnerCommunicationsPage() {
     } catch (updateError) {
       setError(updateError.message || "No se pudo actualizar el comunicado.");
     }
+  };
+
+  const handleEdit = (item) => {
+    setEditItem(item);
+    setForm({
+      title: item.title || "",
+      message: item.message || "",
+      priority: item.priority || "media",
+      scope: item.scope || "general",
+      channel: item.channel || "panel",
+      status: item.status || "draft",
+      scheduledFor: item.scheduledFor ? item.scheduledFor.slice(0, 16) : "",
+      targetLabel: item.targetLabel || "Todo el condominio",
+    });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const cancelEdit = () => {
+    setEditItem(null);
+    setForm(INITIAL_FORM);
   };
 
   return (
@@ -140,13 +174,15 @@ export default function OwnerCommunicationsPage() {
       </section>
 
       <section className="grid gap-6 xl:grid-cols-[1.05fr_1.25fr]">
-        <div className={`${SURFACE} p-6 md:p-7`}>
+        <div className={`${SURFACE} p-6 md:p-7 h-fit sticky top-6`}>
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-[11px] uppercase tracking-[0.22em] font-semibold text-[#B15A27]">
-                Nuevo comunicado
+                {editItem ? "Editar comunicado" : "Nuevo comunicado"}
               </p>
-              <h2 className="mt-2 text-xl font-semibold text-[#E5E5E5]">Redacción operativa</h2>
+              <h2 className="mt-2 text-xl font-semibold text-[#E5E5E5]">
+                {editItem ? "Modificar aviso" : "Redacción operativa"}
+              </h2>
             </div>
             <span className="px-3 py-1.5 rounded-full bg-[#FFF0E7] text-[#B14F12] text-xs font-semibold">
               Conectado con Odoo
@@ -171,11 +207,12 @@ export default function OwnerCommunicationsPage() {
                 </select>
               </Field>
 
-              <Field label="Estado inicial">
+              <Field label="Estado">
                 <select value={form.status} onChange={(event) => setForm((current) => ({ ...current, status: event.target.value }))} className={INPUT}>
                   <option value="draft">Borrador</option>
                   <option value="published">Publicar ahora</option>
                   <option value="scheduled">Programado</option>
+                  <option value="archived">Archivado</option>
                 </select>
               </Field>
             </div>
@@ -218,9 +255,16 @@ export default function OwnerCommunicationsPage() {
 
             {error && <ErrorBanner message={error} />}
 
-            <button type="submit" disabled={saving} className="px-5 py-3 rounded-xl text-white text-sm font-semibold border-none disabled:opacity-60" style={{ background: "linear-gradient(135deg, #FF7A30, #D94F10)" }}>
-              {saving ? "Guardando..." : "Guardar comunicado"}
-            </button>
+            <div className="flex gap-3">
+              {editItem && (
+                <button type="button" onClick={cancelEdit} className="px-5 py-3 rounded-xl bg-[#262626] text-[#A3A3A3] text-sm font-semibold border-none cursor-pointer">
+                  Cancelar
+                </button>
+              )}
+              <button type="submit" disabled={saving} className="flex-1 px-5 py-3 rounded-xl text-white text-sm font-semibold border-none disabled:opacity-60 cursor-pointer" style={{ background: "linear-gradient(135deg, #FF7A30, #D94F10)" }}>
+                {saving ? "Guardando..." : editItem ? "Actualizar cambios" : "Guardar comunicado"}
+              </button>
+            </div>
           </form>
         </div>
 
@@ -244,28 +288,41 @@ export default function OwnerCommunicationsPage() {
               <LoadingState label="Cargando comunicados..." />
             ) : filtered.length ? (
               filtered.map((item) => (
-                <article key={item.id} className="rounded-[24px] border border-[#262626] bg-[#141414] p-5">
+                <article key={item.id} className="rounded-[24px] border border-[#262626] bg-[#141414] p-5 hover:border-[#D94F10]/30 transition-all group">
                   <div className="flex items-start justify-between gap-4 flex-wrap">
-                    <div>
+                    <div className="flex-1">
                       <div className="flex flex-wrap gap-2">
-                        <Pill>{item.priority}</Pill>
+                        <Pill priority={item.priority}>{item.priority}</Pill>
                         <Pill variant="soft">{item.scope}</Pill>
-                        <Pill variant="soft">{item.status}</Pill>
+                        <Pill variant="status" status={item.status}>{item.status}</Pill>
                       </div>
-                      <h3 className="mt-3 text-lg font-semibold text-[#E5E5E5]">{item.title}</h3>
-                      <p className="mt-2 text-sm leading-7 text-[#5D554E]">{item.message}</p>
+                      <h3 className="mt-3 text-lg font-semibold text-[#E5E5E5] group-hover:text-[#D94F10] transition-colors">{item.title}</h3>
+                      <p className="mt-2 text-sm leading-7 text-[#A3A3A3]">{item.message}</p>
                     </div>
-                    <div className="text-right text-xs text-[#737373]">
-                      <p>{item.targetLabel}</p>
+                    <div className="text-right text-[11px] text-[#737373] font-medium min-w-[120px]">
+                      <p className="text-[#F5D2BC] uppercase tracking-wider">{item.targetLabel}</p>
                       <p className="mt-1">{item.channel}</p>
-                      <p className="mt-1">{formatDate(item.scheduledFor || item.createdAt)}</p>
+                      <p className="mt-1 text-[#555]">{formatDate(item.scheduledFor || item.createdAt)}</p>
                     </div>
                   </div>
 
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    <ActionChip onClick={() => updateStatus(item.id, "published")}>Publicar</ActionChip>
-                    <ActionChip onClick={() => updateStatus(item.id, "scheduled")}>Programar</ActionChip>
-                    <ActionChip onClick={() => updateStatus(item.id, "archived")}>Archivar</ActionChip>
+                  <div className="mt-5 pt-4 border-t border-[#262626] flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex flex-wrap gap-2">
+                      {item.status !== "published" && (
+                        <ActionChip onClick={() => updateStatus(item.id, "published")}>Publicar</ActionChip>
+                      )}
+                      {item.status !== "archived" && (
+                        <ActionChip onClick={() => updateStatus(item.id, "archived")}>Archivar</ActionChip>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <button onClick={() => handleEdit(item)} className="px-4 py-2 rounded-xl bg-[#262626] text-[#A3A3A3] text-[11px] font-bold uppercase tracking-wider hover:bg-[#333] hover:text-white transition-all border-none cursor-pointer">
+                        Editar
+                      </button>
+                      <button onClick={() => setDeleteConfirm(item)} className="px-4 py-2 rounded-xl bg-red-500/10 text-red-500 text-[11px] font-bold uppercase tracking-wider hover:bg-red-500/20 transition-all border-none cursor-pointer">
+                        Eliminar
+                      </button>
+                    </div>
                   </div>
                 </article>
               ))
@@ -275,6 +332,27 @@ export default function OwnerCommunicationsPage() {
           </div>
         </div>
       </section>
+
+      {/* Modal Confirmar Eliminar */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setDeleteConfirm(null)}>
+          <div className="bg-[#1A1A1A] rounded-[32px] w-full max-w-sm p-8 text-center border border-[#262626] shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-6 text-2xl border border-red-500/20">🗑️</div>
+            <h2 className="text-xl font-bold text-white mb-2">Eliminar comunicado</h2>
+            <p className="text-sm text-[#A3A3A3] leading-6 mb-8 font-medium">
+              ¿Estás seguro de eliminar "<strong>{deleteConfirm.title}</strong>"? Esta acción eliminará el aviso permanentemente de la cartelera de los residentes.
+            </p>
+            <div className="flex gap-3">
+              <button onClick={() => setDeleteConfirm(null)} className="flex-1 py-3.5 rounded-xl border border-[#262626] bg-transparent text-sm font-bold text-[#A3A3A3] cursor-pointer hover:bg-[#262626]">
+                Cancelar
+              </button>
+              <button onClick={handleDelete} disabled={saving} className="flex-1 py-3.5 rounded-xl border-none bg-red-600 text-white text-sm font-bold cursor-pointer hover:bg-red-700 disabled:opacity-50">
+                {saving ? "Eliminando..." : "Eliminar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -283,8 +361,9 @@ function MissingCondominioState() {
   return (
     <div className="flex items-center justify-center min-h-[60vh]">
       <div className={`${SURFACE} max-w-xl p-8 text-center`}>
-        <p className="text-sm font-semibold text-[#E5E5E5]">Primero registra tu condominio</p>
-        <p className="text-sm text-[#737373] mt-2">Necesitamos una ficha base del condominio para organizar comunicados por edificio y por comunidad.</p>
+        <div className="w-16 h-16 bg-[#FFF4EE]/5 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl">🏠</div>
+        <p className="text-lg font-semibold text-white">Primero selecciona tu condominio</p>
+        <p className="text-sm text-[#737373] mt-3 leading-7">Necesitamos una ficha base del condominio para organizar comunicados por edificio y por comunidad.</p>
       </div>
     </div>
   );
@@ -292,9 +371,9 @@ function MissingCondominioState() {
 
 function SummaryCard({ label, value }) {
   return (
-    <div className="rounded-[22px] border border-[#262626] bg-[#333333] backdrop-blur-sm p-4">
-      <p className="text-[11px] uppercase tracking-[0.2em] text-[#F5D2BC]">{label}</p>
-      <p className="mt-2 text-2xl font-semibold text-white">{value}</p>
+    <div className="rounded-[22px] border border-[#ffffff10] bg-[#ffffff05] backdrop-blur-md p-4">
+      <p className="text-[10px] uppercase tracking-[0.25em] text-[#F5D2BC] font-medium opacity-80">{label}</p>
+      <p className="mt-2 text-3xl font-semibold text-white tracking-tight">{value}</p>
     </div>
   );
 }
@@ -302,35 +381,52 @@ function SummaryCard({ label, value }) {
 function Field({ label, children }) {
   return (
     <label className="block">
-      <span className="block text-[10px] font-semibold tracking-[0.12em] uppercase text-[#A3A3A3] mb-1.5">{label}</span>
+      <span className="block text-[10px] font-bold tracking-[0.15em] uppercase text-[#737373] mb-2">{label}</span>
       {children}
     </label>
   );
 }
 
-function Pill({ children, variant = "strong" }) {
-  return <span className={`px-3 py-1 rounded-full text-[11px] font-semibold ${variant === "soft" ? "bg-[#262626] text-[#6F655B]" : "bg-[#FFF0E7] text-[#B14F12]"}`}>{children}</span>;
+function Pill({ children, variant = "strong", priority = "", status = "" }) {
+  let colors = "bg-[#262626] text-[#A3A3A3]";
+  if (priority === "alta") colors = "bg-red-500/10 text-red-500 border border-red-500/20";
+  else if (priority === "media") colors = "bg-orange-500/10 text-orange-400 border border-orange-500/20";
+  else if (variant === "strong") colors = "bg-[#D94F10]/10 text-[#D94F10] border border-[#D94F10]/20";
+
+  if (variant === "status") {
+    if (status === "published") colors = "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
+    if (status === "draft") colors = "bg-[#262626] text-[#737373] border border-[#333]";
+    if (status === "archived") colors = "bg-gray-500/10 text-gray-500 border border-gray-500/20";
+  }
+
+  return <span className={`px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-widest ${colors}`}>{children}</span>;
 }
 
 function ActionChip({ children, onClick }) {
-  return <button type="button" onClick={onClick} className="px-3 py-2 rounded-full bg-[#1A1A1A] border border-[#E6DCD2] text-xs font-semibold text-[#A3A3A3] hover:border-[#D94F10]/30 hover:text-[#D94F10]">{children}</button>;
+  return <button type="button" onClick={onClick} className="px-3 py-1.5 rounded-lg bg-transparent border border-[#262626] text-[10px] font-bold uppercase tracking-widest text-[#737373] hover:border-[#D94F10]/40 hover:text-[#D94F10] transition-colors cursor-pointer">{children}</button>;
 }
 
 function ErrorBanner({ message }) {
-  return <div className="px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-sm">{message}</div>;
+  return <div className="px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 text-xs font-semibold">{message}</div>;
 }
 
 function EmptyState({ title, description }) {
   return (
-    <div className="rounded-[24px] border border-dashed border-[#2B2723] bg-[#0B1014] p-8 text-center">
-      <h3 className="text-lg font-semibold text-[#E5E5E5]">{title}</h3>
-      <p className="mt-2 text-sm leading-7 text-[#A3A3A3]">{description}</p>
+    <div className="rounded-[24px] border border-dashed border-[#262626] bg-[#00000020] p-12 text-center">
+      <div className="text-3xl mb-4 opacity-20">📭</div>
+      <h3 className="text-base font-semibold text-white">{title}</h3>
+      <p className="mt-2 text-sm leading-7 text-[#737373] max-w-sm mx-auto">{description}</p>
     </div>
   );
 }
 
 function LoadingState({ label }) {
-  return <p className="text-sm text-[#A3A3A3]">{label}</p>;
+  return (
+    <div className="py-12 text-center">
+      <div className="w-8 h-8 border-2 border-[#D94F10] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+      <p className="text-xs font-bold uppercase tracking-widest text-[#737373]">{label}</p>
+    </div>
+  );
 }
 
 function formatDate(value) {

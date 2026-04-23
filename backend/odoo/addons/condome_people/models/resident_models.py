@@ -22,6 +22,12 @@ class CondomeResidente(models.Model):
     edificio_id = fields.Many2one(related="apartamento_id.edificio_id", store=True)
     condominio_id = fields.Many2one(related="apartamento_id.condominio_id", store=True)
     company_id = fields.Many2one(related="apartamento_id.company_id", store=True)
+    stripe_customer_id = fields.Char(string="Stripe Customer ID")
+    
+    # Datos de Facturación
+    billing_name = fields.Char(string="Nombre Fiscal")
+    tax_id = fields.Char(string="RNC / Cédula / Tax ID")
+    billing_address = fields.Text(string="Dirección de Facturación")
 
     @api.depends("nombre", "apellido")
     def _compute_name(self):

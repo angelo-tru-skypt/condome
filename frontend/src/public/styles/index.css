@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=DM+Sans:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -7,39 +7,57 @@
 @layer base {
   :root {
     color-scheme: light;
-    
-    /* Brand & Canvas */
-    --condome-orange: #D94F10;
-    --condome-orange-soft: #FF7A30;
-    --canvas: #F6F1EB;
-    
-    /* Shell Variables (Missing Fix) */
-    --dashboard-shell-bg: #F6F1EB;
-    --dashboard-shell-text: #1F1A16;
 
-    /* Foreground Hierarchy */
-    --fg-primary: #1F1A16;
-    --fg-secondary: #5C5149;
-    --fg-tertiary: #8C8177;
-    --fg-muted: #B2A497;
-    
-    /* Elevation System (Layering) */
-    --surface-0: #F6F1EB; /* Canvas */
-    --surface-1: #FFFBF7; /* Cards */
-    --surface-2: #FFFFFF; /* High focus / Dropdowns */
-    
-    /* Separators */
-    --border-subtle: rgba(31, 26, 22, 0.04);
-    --border-standard: rgba(31, 26, 22, 0.08);
-    --border-emphasis: rgba(31, 26, 22, 0.12);
-    
-    /* Functional */
-    --shadow-whisper: 0 4px 12px rgba(71, 52, 38, 0.04);
-    --shadow-card: 0 20px 44px rgba(71, 52, 38, 0.08);
-    --radius-sm: 8px;
-    --radius-md: 16px;
-    --radius-lg: 24px;
-    --radius-xl: 32px;
+    /* Architectural color world */
+    --lobby-paper: #f6f2ec;
+    --lobby-ivory: #fffdfa;
+    --ink-black: #121110;
+    --ink-charcoal: #201d1a;
+    --signal-orange: #d94f10;
+    --signal-orange-soft: #ff7a30;
+    --signal-orange-fog: rgba(217, 79, 16, 0.12);
+
+    /* Existing aliases used across the app */
+    --condome-orange: var(--signal-orange);
+    --condome-orange-soft: var(--signal-orange-soft);
+    --canvas: var(--lobby-paper);
+    --dashboard-shell-bg: var(--lobby-paper);
+    --dashboard-shell-text: var(--ink-charcoal);
+
+    /* Foreground hierarchy */
+    --fg-primary: #1e1a17;
+    --fg-secondary: #5f554d;
+    --fg-tertiary: #8c8076;
+    --fg-muted: #b6a99b;
+
+    /* Surface elevation */
+    --surface-0: #f7f3ee;
+    --surface-1: rgba(255, 253, 250, 0.88);
+    --surface-2: #ffffff;
+    --surface-3: #fff8f1;
+
+    /* Borders */
+    --border-subtle: rgba(30, 26, 23, 0.05);
+    --border-standard: rgba(30, 26, 23, 0.08);
+    --border-emphasis: rgba(30, 26, 23, 0.15);
+
+    /* Controls */
+    --control-bg: rgba(255, 255, 255, 0.82);
+    --control-bg-inset: #f4ede6;
+    --control-border: rgba(30, 26, 23, 0.1);
+    --control-border-strong: rgba(217, 79, 16, 0.22);
+    --focus-ring: rgba(217, 79, 16, 0.18);
+    --glow-orange: 0 0 0 1px rgba(255, 122, 48, 0.18), 0 18px 40px rgba(217, 79, 16, 0.22);
+
+    /* Depth */
+    --shadow-whisper: 0 10px 30px rgba(26, 20, 14, 0.04);
+    --shadow-card: 0 24px 60px rgba(26, 20, 14, 0.08);
+    --shadow-float: 0 32px 80px rgba(26, 20, 14, 0.12);
+
+    --radius-sm: 10px;
+    --radius-md: 18px;
+    --radius-lg: 26px;
+    --radius-xl: 34px;
   }
 
   *, *::before, *::after { box-sizing: border-box; }
@@ -48,7 +66,10 @@
     height: 100%;
     font-family: 'DM Sans', system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
-    background: var(--dashboard-shell-bg);
+    background:
+      radial-gradient(circle at top left, rgba(255, 122, 48, 0.1), transparent 22%),
+      radial-gradient(circle at 82% 4%, rgba(217, 79, 16, 0.08), transparent 24%),
+      linear-gradient(180deg, #fbf8f4 0%, #f4eee8 100%);
     color: var(--dashboard-shell-text);
   }
 
@@ -60,10 +81,37 @@
     margin: 0;
     text-rendering: optimizeLegibility;
     overflow-x: hidden;
+    min-height: 100vh;
   }
 
   input, textarea, select, button {
     font: inherit;
+  }
+
+  input, textarea, select {
+    color: var(--fg-primary);
+  }
+
+  input::placeholder, textarea::placeholder {
+    color: var(--fg-muted);
+  }
+
+  input, textarea, select {
+    background: var(--control-bg-inset);
+    border: 1px solid var(--control-border);
+    border-radius: var(--radius-md);
+    transition:
+      border-color 160ms ease,
+      box-shadow 160ms ease,
+      background-color 160ms ease,
+      transform 160ms ease;
+  }
+
+  input:focus, textarea:focus, select:focus {
+    outline: none;
+    border-color: var(--control-border-strong);
+    box-shadow: 0 0 0 4px var(--focus-ring);
+    background: var(--surface-2);
   }
 
   ::selection {
@@ -85,10 +133,36 @@
     animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
 
+  .animate-soft-pop {
+    animation: softPop 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .animate-float-soft {
+    animation: floatSoft 4.8s ease-in-out infinite;
+  }
+
   .glass-card {
-    background: rgba(255, 251, 247, 0.7);
-    backdrop-filter: blur(8px);
-    border: 1px solid rgba(31, 26, 22, 0.05);
+    background: rgba(255, 253, 250, 0.74);
+    backdrop-filter: blur(14px);
+    border: 1px solid var(--border-standard);
+    box-shadow: var(--shadow-card);
+  }
+
+  .architectural-panel {
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(255, 249, 243, 0.92));
+    border: 1px solid var(--border-standard);
+    box-shadow: var(--shadow-card);
+  }
+
+  .signal-ring {
+    box-shadow:
+      0 0 0 1px rgba(217, 79, 16, 0.08),
+      0 10px 24px rgba(217, 79, 16, 0.16);
+  }
+
+  .hover-glow-orange:hover {
+    box-shadow: var(--glow-orange);
   }
 
   @keyframes reveal {
@@ -99,5 +173,15 @@
   @keyframes slideUp {
     from { opacity: 0; transform: translateY(20px); }
     to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes softPop {
+    from { opacity: 0; transform: scale(0.98) translateY(10px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+  }
+
+  @keyframes floatSoft {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
   }
 }

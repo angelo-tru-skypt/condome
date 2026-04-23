@@ -16,6 +16,10 @@ class OwnerReportingController(http.Controller):
     def report_exports(self, **kwargs):
         return service.handle_export_requests()
 
+    @http.route("/condome_api/owner/reportes/exportaciones/<int:export_id>", type="http", auth="public", methods=["DELETE", "OPTIONS"], csrf=False, cors="http://localhost:3000")
+    def report_exports_delete(self, export_id, **kwargs):
+        return service.handle_export_delete(export_id)
+
     @http.route("/condome_api/report/download/<int:export_id>", type="http", auth="public", methods=["GET", "OPTIONS"], csrf=False, cors="http://localhost:3000")
     def download_report(self, export_id, **kwargs):
         return service.handle_report_download(export_id)

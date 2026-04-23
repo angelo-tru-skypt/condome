@@ -12,8 +12,10 @@ class OwnerCommunityController(http.Controller):
     def announcements(self, **kwargs):
         return service.handle_announcements()
 
-    @http.route("/condome_api/owner/comunicados/<int:comunicado_id>", type="http", auth="public", methods=["PUT", "OPTIONS"], csrf=False, cors="http://localhost:3000")
+    @http.route("/condome_api/owner/comunicados/<int:comunicado_id>", type="http", auth="public", methods=["PUT", "DELETE", "OPTIONS"], csrf=False, cors="http://localhost:3000")
     def announcement_update(self, comunicado_id, **kwargs):
+        if request.httprequest.method == "DELETE":
+            return service.handle_announcement_delete(comunicado_id)
         return service.handle_announcement_update(comunicado_id)
 
     @http.route("/condome_api/owner/areas-comunes/", type="http", auth="public", methods=["GET", "POST", "OPTIONS"], csrf=False, cors="http://localhost:3000")
