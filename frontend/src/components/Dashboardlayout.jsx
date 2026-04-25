@@ -574,7 +574,7 @@ export default function DashboardLayout() {
     (isResident ? "Residente" : isSystemAdmin ? "Admin" : isCondoAdmin ? "Admin" : isPropertyOwner ? "Propietario" : "Usuario");
 
   return (
-    <div className="relative flex min-h-screen overflow-hidden text-[var(--fg-primary)]">
+    <div className="relative flex h-screen overflow-hidden text-[var(--fg-primary)]">
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute left-[-12rem] top-[-10rem] h-[28rem] w-[28rem] rounded-full bg-[radial-gradient(circle,_rgba(255,122,48,0.16),_transparent_68%)]" />
         <div className="absolute right-[-10rem] top-[5rem] h-[24rem] w-[24rem] rounded-full bg-[radial-gradient(circle,_rgba(217,79,16,0.12),_transparent_68%)]" />
@@ -590,8 +590,8 @@ export default function DashboardLayout() {
 
       <aside
         className={`
-          fixed inset-y-0 left-0 z-40 flex h-screen flex-col overflow-hidden
-          transition-all duration-300 ease-in-out lg:relative lg:h-screen
+          fixed inset-y-0 left-0 z-40 flex h-full flex-col overflow-hidden
+          transition-all duration-300 ease-in-out lg:relative lg:h-full
           ${mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
           ${collapsed ? "w-[92px]" : "w-[332px]"}
         `}

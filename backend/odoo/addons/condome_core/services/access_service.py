@@ -1,4 +1,5 @@
 from odoo import _
+from odoo.addons.condome_auth.jwt_utils import TokenError, verify_token
 from odoo.http import request
 
 class ApiAccessMixin:
@@ -6,6 +7,17 @@ class ApiAccessMixin:
 
     def require_session(self):
         if not request.session.uid:
+            auth_header = request.httprequest.headers.get("Authorization")
+            if auth_header and auth_header.startswith("Bearer "):
+                token = auth_header[7:]
+                try:
+                    payload = verify_token(token, expected_type="access")
+                    user_id = payload.get("sub")
+                    user = request.env["res.users"].sudo().browse(user_id)
+                    if user.exists():
+                        return user
+                except TokenError:
+                    pass
             raise PermissionError(_("Debes iniciar sesion para continuar"))
         return request.env.user.sudo()
 

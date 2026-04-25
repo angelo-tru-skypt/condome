@@ -4,6 +4,8 @@ from odoo import _
 from odoo.exceptions import AccessDenied, MissingError, UserError
 from odoo.http import request
 
+from ..jwt_utils import TokenError, build_tokens, verify_token
+
 
 class AuthApiService:
     """Centraliza la lógica HTTP y de negocio de autenticación para no recargar el controller."""
@@ -50,6 +52,17 @@ class AuthApiService:
 
     def require_session(self):
         if not request.session.uid:
+            auth_header = request.httprequest.headers.get("Authorization")
+            if auth_header and auth_header.startswith("Bearer "):
+                token = auth_header[7:]
+                try:
+                    payload = verify_token(token, expected_type="access")
+                    user_id = payload.get("sub")
+                    user = request.env["res.users"].sudo().browse(user_id)
+                    if user.exists():
+                        return user
+                except TokenError:
+                    pass
             raise AccessDenied(_("No hay una sesión activa"))
         return request.env.user.sudo()
 
@@ -145,7 +158,15 @@ class AuthApiService:
             if not self.authenticate_credentials(db, login, password):
                 return self.error_response(_("Correo o contraseña inválidos"), status=401)
 
-            return self.build_response({"user": self.serialize_user(request.env.user.sudo())})
+            user = request.env.user.sudo()
+            tokens = build_tokens(user)
+            return self.build_response(
+                {
+                    "user": self.serialize_user(user),
+                    "token": tokens["access_token"],
+                    "refresh_token": tokens["refresh_token"],
+                }
+            )
         except Exception as error:  # pragma: no cover
             return self.error_response(str(error), status=400)
 
@@ -296,6 +317,7 @@ class AuthApiService:
         try:
             if self.is_preflight_request():
                 return self.handle_options()
-            return self.build_response({"valid": bool(request.session.uid)})
-        except Exception as error:  # pragma: no cover
-            return self.error_response(str(error), status=400)
+            user = self.require_session()
+            return self.build_response({"valid": bool(user)})
+        except Exception:
+            return self.build_response({"valid": False})

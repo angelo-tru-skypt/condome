@@ -164,43 +164,42 @@ export default function ResidentDashboardHome() {
   return (
     <div className="space-y-6 md:space-y-7">
       <section
-        className="rounded-[34px] overflow-hidden border border-[rgba(30,26,23,0.08)] animate-reveal"
+        className="rounded-[34px] overflow-hidden border border-[rgba(217,79,16,0.12)] animate-reveal"
         style={{
           background:
-            "linear-gradient(145deg, #121110 0%, #241B16 45%, #121110 100%)",
-          boxShadow: "0 24px 60px rgba(14,36,51,0.16)",
+            "linear-gradient(145deg, #FFFDFB 0%, #F9F4F0 45%, #FDF4ED 100%)",
+          boxShadow: "0 24px 60px rgba(217,79,16,0.06)",
         }}
       >
         <div className="relative px-7 py-8 md:px-10 md:py-10">
           <div
-            className="absolute inset-y-0 right-0 w-[45%] opacity-30 pointer-events-none"
+            className="absolute inset-y-0 right-0 w-[45%] opacity-40 pointer-events-none"
             style={{
               background:
-                "radial-gradient(circle at 70% 35%, rgba(102,226,212,0.9) 0, rgba(102,226,212,0) 60%)",
+                "radial-gradient(circle at 70% 35%, rgba(255,122,48,0.2) 0, rgba(255,122,48,0) 60%)",
             }}
           />
           <div className="relative z-10 grid gap-6 lg:grid-cols-[1.55fr_1fr]">
             <div>
               <div className="flex flex-wrap items-center gap-2">
-                <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-semibold tracking-[0.24em] uppercase text-white/60">
-                  Centro del residente
+                <span className="px-3 py-1 rounded-full bg-[var(--condome-orange)]/5 border border-[var(--condome-orange)]/10 text-[10px] font-semibold tracking-[0.24em] uppercase text-[var(--condome-orange)]">
+                  Portal del Residente
                 </span>
                 <span className="px-3 py-1 rounded-full bg-[var(--condome-orange)]/10 text-[var(--condome-orange-soft)] text-[10px] font-bold uppercase tracking-widest border border-[var(--condome-orange)]/20">
-                  Accesos & Finanzas
+                  Bienvenido a casa
                 </span>
               </div>
 
               <h1
-                className="mt-4 text-3xl md:text-[3.05rem] leading-tight font-semibold text-white"
+                className="mt-4 text-3xl md:text-[3.05rem] leading-tight font-semibold text-[var(--fg-primary)]"
                 style={{ fontFamily: "'Playfair Display', serif" }}
               >
-                Hola, {firstName}. Desde aqui podras manejar visitas, pagos, reservas e incidencias.
+                Hola, {firstName}. Gestiona tu espacio y comunidad con total tranquilidad.
               </h1>
 
-              <p className="mt-4 max-w-2xl text-sm md:text-[15px] leading-7 text-white/74">
-                Esta experiencia esta pensada para que el residente resuelva sus gestiones mas
-                frecuentes con pocos pasos, contexto claro y acceso a la informacion principal de
-                su unidad.
+              <p className="mt-4 max-w-2xl text-sm md:text-[15px] leading-7 text-[var(--fg-secondary)]">
+                Todo lo que necesitas para el dia a dia en tu residencia: autorizacion de visitas,
+                pagos de cuotas y reporte de incidencias en un solo lugar.
               </p>
 
               <div className="mt-6 flex flex-wrap gap-3">
@@ -208,14 +207,19 @@ export default function ResidentDashboardHome() {
                   <Link
                     key={action.to}
                     to={action.to}
-                    className="px-6 py-4 rounded-full no-underline text-xs font-bold uppercase tracking-widest text-white transition-all hover:scale-[1.02]"
+                    className="px-6 py-4 rounded-full no-underline text-xs font-bold uppercase tracking-widest transition-all hover:scale-[1.02]"
                     style={
                       action.to === "/visitas"
                         ? {
                             background: "linear-gradient(135deg, var(--condome-orange-soft), var(--condome-orange))",
                             color: "white",
+                            boxShadow: "0 10px 20px rgba(217,79,16,0.15)"
                           }
-                        : { background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }
+                        : { 
+                            background: "var(--surface-2)", 
+                            border: "1px solid var(--border-standard)",
+                            color: "var(--fg-primary)"
+                          }
                     }
                   >
                     {action.title}
@@ -224,9 +228,9 @@ export default function ResidentDashboardHome() {
               </div>
             </div>
 
-            <div className="rounded-[24px] border border-white/10 bg-white/10 backdrop-blur-sm p-5">
-              <p className="text-[11px] uppercase tracking-[0.2em] font-semibold text-[#C4F0EC]">
-                Contexto de tu residencia
+            <div className="rounded-[24px] border border-[var(--border-standard)] bg-white/60 backdrop-blur-md p-5 shadow-sm">
+              <p className="text-[11px] uppercase tracking-[0.2em] font-semibold text-[var(--fg-tertiary)]">
+                Detalles de tu residencia
               </p>
               <div className="mt-4 space-y-3">
                 <InfoTile label="Condominio" value={context?.condominio?.nombre || "Sin contexto"} />

@@ -177,79 +177,80 @@ export default function AdminDashboardPage() {
   return (
     <div className="space-y-6 md:space-y-7">
       <section
-        className="rounded-[34px] overflow-hidden border border-[#262626]"
+        className="rounded-[34px] overflow-hidden border border-[#1A1A1A]"
         style={{
-          background: "linear-gradient(145deg, #0B1014 0%, #1A1612 42%, #3D2214 100%)",
-          boxShadow: "0 24px 60px rgba(0,0,0,0.32)",
+          background: "linear-gradient(145deg, #050505 0%, #0E1116 50%, #050505 100%)",
+          boxShadow: "0 24px 60px rgba(0,0,0,0.45)",
         }}
       >
         <div className="relative px-7 py-8 md:px-10 md:py-10">
           <div
-            className="absolute inset-y-0 right-0 w-[45%] opacity-30 pointer-events-none"
+            className="absolute inset-y-0 right-0 w-[45%] opacity-15 pointer-events-none"
             style={{
               background:
-                "radial-gradient(circle at 70% 30%, rgba(255,122,48,0.9) 0, rgba(255,122,48,0) 60%)",
+                "radial-gradient(circle at 70% 30%, #D94F10 0, transparent 65%)",
             }}
           />
 
           <div className="relative z-10 grid gap-6 lg:grid-cols-[1.55fr_1fr]">
             <div>
               <div className="flex flex-wrap items-center gap-2">
-                <span className="px-3 py-1 rounded-full bg-[#171513] border border-[#2D2620] text-[11px] font-semibold tracking-[0.2em] uppercase text-[#F5D2BC]">
-                  Dashboard administrativo
+                <span className="px-3 py-1 rounded-full bg-[#D94F10]/10 border border-[#D94F10]/40 text-[11px] font-semibold tracking-[0.2em] uppercase text-[#FF7A30]">
+                  Administración Central
                 </span>
-                <span className="px-3 py-1 rounded-full bg-[#D94F10]/10 border border-[#D94F10]/20 text-[#FF7A30] text-xs font-semibold">
-                  {condominio?.nombre || "Base administrativa pendiente"}
+                <span className="px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold">
+                  {condominio?.nombre || "Sistema Maestro"}
                 </span>
               </div>
 
               <h1
-                className="mt-4 text-3xl md:text-[3.05rem] leading-tight font-semibold text-[#F6F0E9]"
+                className="mt-4 text-3xl md:text-[3.05rem] leading-tight font-semibold text-white/95"
                 style={{ fontFamily: "'Playfair Display', serif" }}
               >
-                Hola, {firstName}. Este panel esta pensado para administrar, gobernar y auditar el condominio.
+                Bienvenido al Centro de Control, {firstName}.
               </h1>
 
-              <p className={`mt-4 max-w-2xl ${BODY_COPY}`}>
-                Prioriza estructura, comunidad, finanzas, seguridad y control operativo con una vista diferenciada del resto de los roles.
+              <p className="mt-4 max-w-2xl text-sm md:text-[15px] leading-7 text-[#A3A3A3]">
+                Supervisa el estado operativo, financiero y comunitario de las unidades bajo tu
+                gestión con visibilidad total y herramientas de auditoría avanzada.
               </p>
 
               <div className="mt-6 flex flex-wrap gap-3">
                 <Link
                   to={hasCondominio ? "/condominio" : "/condominio/nuevo"}
-                  className="px-5 py-3 rounded-2xl no-underline text-sm font-semibold text-[#E5E5E5]"
-                  style={{ background: "linear-gradient(135deg, #FF7A30, #D94F10)" }}
+                  className="px-5 py-3 rounded-2xl no-underline text-xs font-bold uppercase tracking-widest text-[#E5E5E5] transition-all hover:brightness-110"
+                  style={{ background: "linear-gradient(135deg, #FF7A30, #D94F10)", boxShadow: "0 8px 16px rgba(217,79,16,0.2)" }}
                 >
-                  {hasCondominio ? "Ver ficha del condominio" : "Registrar condominio"}
+                  {hasCondominio ? "Gestión de Condominio" : "Registrar Base"}
                 </Link>
                 <Link
                   to="/configuracion"
-                  className="px-5 py-3 rounded-2xl no-underline text-sm font-semibold text-[#E5E5E5] border border-[#2D2620] bg-[#171513]"
+                  className="px-5 py-3 rounded-2xl no-underline text-xs font-bold uppercase tracking-widest text-white/80 border border-white/10 bg-white/5 backdrop-blur-sm transition-all hover:bg-white/10"
                 >
-                  Ajustar configuracion general
+                  Configuración Maestra
                 </Link>
               </div>
             </div>
 
-            <div className="rounded-[24px] border border-[#2D2620] bg-[#171513] p-5 shadow-sm">
-              <p className="text-[11px] uppercase tracking-[0.2em] font-semibold text-[#F5D2BC]">
-                Hoy necesitas vigilar
+            <div className="rounded-[24px] border border-white/5 bg-white/[0.02] backdrop-blur-xl p-5 shadow-2xl">
+              <p className="text-[11px] uppercase tracking-[0.2em] font-semibold text-[#FF7A30]">
+                Métricas de Supervisión
               </p>
               <div className="mt-4 space-y-3">
                 <StatusTile
-                  label="Visitas pendientes"
+                  label="Visitas en Cola"
                   value={pendingVisits}
-                  helper="Solicitudes que afectan porteria y control"
+                  helper="Solicitudes activas en portería"
                 />
                 <StatusTile
-                  label="Incidencias activas"
+                  label="Incidencias Críticas"
                   value={openIncidents}
-                  helper="Casos que siguen bajo supervision administrativa"
+                  helper="Casos que requieren resolución"
                 />
                 <StatusTile
-                  label="Alertas del sistema"
+                  label="Alertas de Red"
                   value={unreadNotifications}
-                  helper="Notificaciones que todavia no han sido revisadas"
+                  helper="Avisos del sistema sin procesar"
                 />
               </div>
             </div>
@@ -418,10 +419,10 @@ function PageLoader({ label }) {
 
 function StatusTile({ label, value, helper }) {
   return (
-    <div className="rounded-2xl border border-[#2D2620] bg-[#121110] px-4 py-3">
-      <p className="text-[11px] uppercase tracking-[0.2em] text-[#8C7D71]">{label}</p>
-      <p className="mt-1 text-sm font-semibold text-[#E5E5E5]">{value}</p>
-      <p className="mt-1 text-sm leading-6 text-[#B8AA9E]">{helper}</p>
+    <div className="rounded-2xl border border-white/5 bg-white/[0.03] px-4 py-3 hover:bg-white/5 transition-colors">
+      <p className="text-[10px] uppercase tracking-[0.2em] text-[#FF7A30] font-bold">{label}</p>
+      <p className="mt-1 text-sm font-semibold text-white">{value}</p>
+      <p className="mt-1 text-[11px] leading-5 text-[#A3A3A3]">{helper}</p>
     </div>
   );
 }
@@ -430,19 +431,19 @@ function QueueCard({ title, description, to }) {
   return (
     <Link
       to={to}
-      className="rounded-[22px] border border-[#2D2620] bg-[#171513] p-5 no-underline hover:border-[#D94F10]/40 hover:bg-[#1D1916] transition-colors"
+      className="rounded-[22px] border border-white/10 bg-white/[0.02] p-5 no-underline hover:border-[#D94F10]/50 hover:bg-white/[0.05] transition-all"
     >
-      <p className="text-sm font-semibold text-[#E5E5E5]">{title}</p>
-      <p className="mt-2 text-sm leading-7 text-[#B8AA9E]">{description}</p>
+      <p className="text-sm font-semibold text-white/95">{title}</p>
+      <p className="mt-2 text-sm leading-7 text-[#A3A3A3]">{description}</p>
     </Link>
   );
 }
 
 function EmptyState({ title, description }) {
   return (
-    <div className="rounded-[24px] border border-dashed border-[#2D2620] bg-[#171513] p-6 text-center">
-      <h3 className="text-base font-semibold text-[#E5E5E5]">{title}</h3>
-      <p className="mt-2 text-sm leading-7 text-[#B8AA9E]">{description}</p>
+    <div className="rounded-[24px] border border-dashed border-white/10 bg-white/[0.01] p-6 text-center">
+      <h3 className="text-base font-semibold text-white/80">{title}</h3>
+      <p className="mt-2 text-sm leading-7 text-[#A3A3A3]">{description}</p>
     </div>
   );
 }

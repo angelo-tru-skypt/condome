@@ -248,27 +248,27 @@ export default function PropertyOwnerDashboardPage() {
         className="rounded-[32px] overflow-hidden border border-[var(--border-standard)]"
         style={{
           background:
-            "linear-gradient(140deg, #1A1612 0%, #2D1F1A 40%, #1A1612 100%)",
-          boxShadow: "0 24px 60px rgba(37,24,15,0.12)",
+            "linear-gradient(140deg, #0F0D0C 0%, #261B16 50%, #0F0D0C 100%)",
+          boxShadow: "0 24px 60px rgba(0,0,0,0.3)",
         }}
       >
         <div className="relative px-7 py-10 md:px-12 md:py-14">
           <div
-            className="absolute inset-y-0 right-0 w-[50%] opacity-20 pointer-events-none"
+            className="absolute inset-y-0 right-0 w-[50%] opacity-25 pointer-events-none"
             style={{
               background:
-                "radial-gradient(circle at 60% 30%, var(--condome-orange-soft) 0, transparent 70%), radial-gradient(circle at 80% 80%, rgba(217,79,16,0.28) 0, transparent 60%)",
+                "radial-gradient(circle at 60% 30%, var(--condome-orange-soft) 0, transparent 70%), radial-gradient(circle at 80% 80%, rgba(217,79,16,0.3) 0, transparent 60%)",
             }}
           />
 
           <div className="relative z-10 grid gap-8 lg:grid-cols-[1.6fr_1fr]">
             <div>
               <div className="flex flex-wrap items-center gap-2">
-                <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-semibold tracking-[0.24em] uppercase text-white/60">
+                <span className="px-3 py-1 rounded-full bg-white/10 border border-white/20 text-[10px] font-semibold tracking-[0.24em] uppercase text-white/90">
                   Propiedad & Gestión
                 </span>
                 {hasCondominio && (
-                  <span className="px-3 py-1 rounded-full bg-[var(--condome-orange)]/10 text-[var(--condome-orange-soft)] text-[10px] font-bold uppercase tracking-widest border border-[var(--condome-orange)]/20">
+                  <span className="px-3 py-1 rounded-full bg-[var(--condome-orange)]/20 text-[#FFB184] text-[10px] font-bold uppercase tracking-widest border border-[var(--condome-orange)]/30">
                     {condominio.nombre}
                   </span>
                 )}
@@ -281,7 +281,7 @@ export default function PropertyOwnerDashboardPage() {
                 Bienvenido, <span className="italic">{firstName}</span>.
               </h1>
 
-              <p className="mt-6 max-w-2xl text-[16px] md:text-[18px] leading-relaxed text-white/60 font-light">
+              <p className="mt-6 max-w-2xl text-[16px] md:text-[18px] leading-relaxed text-white/85 font-light">
                 Coordina el arranque, la vitalidad operativa y la transparencia financiera de tu condominio desde este centro de mando unificado.
               </p>
 
@@ -302,14 +302,14 @@ export default function PropertyOwnerDashboardPage() {
               </div>
             </div>
 
-            <div className="rounded-[32px] border border-white/5 bg-white/[0.03] backdrop-blur-xl p-6 md:p-8">
-              <p className="text-[10px] uppercase tracking-[0.24em] font-bold text-white/40">
+            <div className="rounded-[32px] border border-white/10 bg-white/[0.05] backdrop-blur-xl p-6 md:p-8">
+              <p className="text-[10px] uppercase tracking-[0.24em] font-bold text-white/70">
                 Resumen de Implementación
               </p>
               <div className="mt-6">
                 <div className="flex items-end justify-between gap-3">
                   <span className="text-3xl font-light text-white">{setupProgress}%</span>
-                  <p className="text-[10px] uppercase tracking-widest text-white/30 font-bold mb-2">
+                  <p className="text-[10px] uppercase tracking-widest text-white/50 font-bold mb-2">
                     {setupCompleted}/{setupSteps.length} Hitos
                   </p>
                 </div>
