@@ -1,7 +1,10 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 import { useCondominio } from "../../context/CondominioContext";
 import { COUNTRIES, getCountryLabel } from "../../data/countries";
+import { toDashboardPath } from "../../utils/dashboardPaths";
+import { getPlanUsage } from "../../utils/planUtils";
 
 const INPUT =
   "w-full px-4 py-3 bg-[#FFFCF8] border border-[#E6D9CD] rounded-2xl text-[#1F1A16] text-sm outline-none transition-all duration-200 placeholder:text-[#A2978D] focus:border-[#D94F10] focus:ring-4 focus:ring-[#D94F10]/10";
@@ -20,7 +23,8 @@ const STEPS = ["Base del condominio", "Contacto y ubicacion"];
 
 export default function RegistroCondominio({ onSuccess }) {
   const navigate = useNavigate();
-  const { crearCondominio } = useCondominio();
+  const { user } = useAuth();
+  const { crearCondominio, condominios } = useCondominio();
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -35,7 +39,10 @@ export default function RegistroCondominio({ onSuccess }) {
     pais: "DO",
     telefono: "",
     email: "",
+    parking_spaces_total: "0",
   });
+  const planUsage = getPlanUsage(user, condominios);
+  const canCreateAnotherCondominio = !condominios.length || planUsage.canAddMore;
 
   const handleChange = ({ target: { name, value } }) => {
     setForm((current) => ({ ...current, [name]: value }));
@@ -70,6 +77,11 @@ export default function RegistroCondominio({ onSuccess }) {
   };
 
   const handleSubmit = async () => {
+    if (!canCreateAnotherCondominio) {
+      setError(planUsage.upgradeCopy);
+      return;
+    }
+
     const nextErrors = validateStep1();
     if (Object.keys(nextErrors).length) {
       setErrors(nextErrors);
@@ -84,7 +96,7 @@ export default function RegistroCondominio({ onSuccess }) {
       setSuccess(true);
       setTimeout(() => {
         if (onSuccess) onSuccess(result.data);
-        else navigate("/condominio");
+        else navigate(toDashboardPath("condominio"));
       }, 1600);
     } catch (submitError) {
       setError(submitError.message || "Error al registrar el condominio");
@@ -115,6 +127,51 @@ export default function RegistroCondominio({ onSuccess }) {
     );
   }
 
+  if (!canCreateAnotherCondominio) {
+    return (
+      <div className="max-w-3xl mx-auto rounded-[34px] border border-[#E6D9CD] bg-[#FFF8F2] p-8 md:p-10 shadow-[0_24px_50px_rgba(71,52,38,0.08)]">
+        <p className="text-[11px] uppercase tracking-[0.22em] font-semibold text-[#B15A27]">
+          Capacidad alcanzada
+        </p>
+        <h1
+          style={{ fontFamily: "'Playfair Display', serif" }}
+          className="mt-3 text-3xl font-semibold text-[#1F1A16]"
+        >
+          Tu plan {planUsage.details.label} ya llegó a su límite.
+        </h1>
+        <p className="mt-4 text-sm leading-7 text-[#6D625A] max-w-2xl">
+          Actualmente administras {planUsage.usageLabel.toLowerCase()} y no puedes registrar otro
+          condominio hasta cambiar a un plan superior.
+        </p>
+
+        <div className="mt-6 rounded-[24px] border border-[#E6D9CD] bg-white p-5">
+          <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-[#B15A27]">
+            Qué desbloqueas al subir de plan
+          </p>
+          <ul className="mt-4 space-y-3 text-sm text-[#6D625A]">
+            <li>Pro: hasta 3 condominios y reportes automáticos mensuales.</li>
+            <li>Premium: condominios ilimitados y automatización completa.</li>
+          </ul>
+        </div>
+
+        <div className="mt-8 flex flex-wrap gap-3">
+          <Link
+            to="/dashboard/planes"
+            className="px-6 py-3 rounded-2xl bg-[#D94F10] text-white text-sm font-semibold no-underline shadow-xl shadow-[#D94F10]/20"
+          >
+            Ver planes
+          </Link>
+          <Link
+            to="/dashboard"
+            className="px-6 py-3 rounded-2xl border border-[#E6D9CD] bg-white text-[#6D625A] text-sm font-semibold no-underline"
+          >
+            Volver al dashboard
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
       <div>
@@ -131,6 +188,20 @@ export default function RegistroCondominio({ onSuccess }) {
           <p className="mt-3 text-sm leading-7 text-[#6D625A] max-w-2xl">
             Completa esta ficha para habilitar el backend administrativo. A partir de aqui podras
             organizar estructura, comunidad, pagos, accesos y seguimiento operativo.
+          </p>
+        </div>
+
+        <div className="mb-6 rounded-[24px] border border-[#E6D9CD] bg-[#FFF8F2] px-5 py-4">
+          <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-[#B15A27]">
+            Plan {planUsage.details.label}
+          </p>
+          <p className="mt-2 text-sm text-[#1F1A16] font-semibold">
+            Capacidad disponible: {planUsage.usageLabel}
+          </p>
+          <p className="mt-1 text-sm leading-6 text-[#6D625A]">
+            {planUsage.remainingSlots === null
+              ? "Puedes seguir registrando condominios sin límite."
+              : `Te quedan ${planUsage.remainingSlots} espacio(s) antes de llegar al tope del plan.`}
           </p>
         </div>
 
@@ -230,6 +301,18 @@ export default function RegistroCondominio({ onSuccess }) {
                   />
                   {errors.direccion ? <p className="mt-1 text-[11px] text-red-500">{errors.direccion}</p> : null}
                 </div>
+                <div>
+                  <label className={LABEL}>Espacios de estacionamiento</label>
+                  <input
+                    type="number"
+                    min="0"
+                    name="parking_spaces_total"
+                    value={form.parking_spaces_total}
+                    onChange={handleChange}
+                    className={INPUT}
+                    placeholder="0"
+                  />
+                </div>
               </div>
             </div>
           ) : (
@@ -312,6 +395,7 @@ export default function RegistroCondominio({ onSuccess }) {
               { label: "Nombre", value: form.nombre || "Pendiente" },
               { label: "Tipo", value: TIPOS.find((item) => item.value === form.tipo)?.label || "Pendiente" },
               { label: "Direccion", value: form.direccion || "Pendiente" },
+              { label: "Parqueos", value: form.parking_spaces_total || "0" },
               { label: "Pais", value: getCountryLabel(form.pais) || "Pendiente" },
               { label: "Ciudad", value: form.ciudad || "Pendiente" },
             ].map((item) => (

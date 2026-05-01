@@ -140,6 +140,35 @@ export default function BillingPaymentsPage() {
     setTimeout(() => setSuccess(""), 8000);
   };
 
+  const submitTemplatePayment = async (templateId) => {
+    setSavingChargeId(`tpl_${templateId}`);
+    setError("");
+    setSuccess("");
+    
+    try {
+      const response = await adminService.initiatePayment({
+        template_id: templateId,
+        method: "stripe",
+      });
+
+      if (response.ok && response.client_secret) {
+        const methodData = paymentMethods.find(m => m.id === "stripe");
+        setStripeIntent({
+          clientSecret: response.client_secret,
+          publishedKey: methodData?.published_key,
+          amount: response.amount,
+          chargeId: response.charge_id
+        });
+      } else {
+        throw new Error(response.error || "No se pudo iniciar la pasarela de Stripe.");
+      }
+    } catch (saveError) {
+      setError(saveError.message || "No se pudo procesar el pago de la cuota.");
+    } finally {
+      setSavingChargeId(null);
+    }
+  };
+
   if (isAdmin && !condominio?.id) {
     return <MissingCondominioState message="Los pagos administrativos requieren un condominio activo." />;
   }
@@ -206,6 +235,22 @@ export default function BillingPaymentsPage() {
                     </div>
                     <h3 className="text-lg font-bold text-[var(--fg-primary)] group-hover:text-[var(--condome-orange)] transition-colors">{template.name}</h3>
                     <p className="mt-1 text-sm font-bold text-[var(--fg-tertiary)]">Costo: {formatMoney(template.amount)} <span className="mx-2 text-[var(--border-standard)]">|</span> Día {template.dueDay}</p>
+                    
+                    {!isAdmin && (
+                        <div className="mt-4 pt-4 border-t border-[var(--border-standard)] flex">
+                            <button
+                                onClick={() => submitTemplatePayment(template.id)}
+                                disabled={savingChargeId === `tpl_${template.id}`}
+                                className="w-full px-4 py-3 text-[11px] font-black uppercase tracking-widest text-white rounded-xl transition-all hover:scale-[1.02] active:scale-[0.97]"
+                                style={{
+                                    background: "linear-gradient(135deg, #635bff, #ac50ef)",
+                                    boxShadow: "0 4px 10px rgba(99,91,255,0.2)"
+                                }}
+                            >
+                                {savingChargeId === `tpl_${template.id}` ? "Procesando..." : "Pagar Cuota con Stripe"}
+                            </button>
+                        </div>
+                    )}
                   </article>
               ))}
              </div>
@@ -262,7 +307,14 @@ export default function BillingPaymentsPage() {
                               }
                               className={`${INPUT} cursor-pointer font-bold`}
                             >
-                                {paymentMethods.map((m) => (
+                                {paymentMethods
+                                  .filter(m => {
+                                    if (isResident) {
+                                      return ["stripe", "transferencia"].includes(m.id);
+                                    }
+                                    return true;
+                                  })
+                                  .map((m) => (
                                   <option key={m.id} value={m.id}>{m.name}</option>
                                 ))}
                             </select>

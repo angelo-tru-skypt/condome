@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { loadStripe } from "@stripe/stripe-js";
 import {
   Elements,
@@ -80,9 +80,15 @@ export default function StripePaymentModal({
   onSuccess,
   onError,
 }) {
-  if (!show || !clientSecret || !publishedKey) return null;
+  const stripePromise = useMemo(() => {
+    if (publishedKey && publishedKey !== "pk_test_placeholder") {
+      return loadStripe(publishedKey);
+    }
+    // Fallback para testeo visual
+    return null;
+  }, [publishedKey]);
 
-  const stripePromise = loadStripe(publishedKey);
+  if (!show || !clientSecret || !publishedKey) return null;
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-reveal">

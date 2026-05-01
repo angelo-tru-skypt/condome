@@ -3,13 +3,27 @@ import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useCondominio } from "../context/CondominioContext";
 import { getRoleLabel, isSystemAdminRole, isCondoAdminRole, isResidentRole, isPropertyOwnerRole } from "../utils/roles";
+import { getPlanUsage } from "../utils/planUtils";
+import { toDashboardPath } from "../utils/dashboardPaths";
 
-const ADMIN_NAV = [
+function withDashboardBase(groups) {
+  return groups.map((group) => ({
+    ...group,
+    items: group.items.map((item) => ({
+      ...item,
+      to: toDashboardPath(item.to),
+    })),
+  }));
+}
+
+const NEW_CONDOMINIO_ROUTE = toDashboardPath("condominio/nuevo");
+
+const ADMIN_NAV = withDashboardBase([
   {
     section: "Gobierno",
     items: [
       {
-        to: "/",
+        to: "/dashboard",
         icon: <IconGrid />,
         label: "Dashboard admin",
         description: "Centro de control, alertas y prioridades operativas del dia.",
@@ -167,14 +181,14 @@ const ADMIN_NAV = [
       },
     ],
   },
-];
+]);
 
-const PROPERTY_OWNER_NAV = [
+const PROPERTY_OWNER_NAV = withDashboardBase([
   {
     section: "Arranque",
     items: [
       {
-        to: "/",
+        to: "/dashboard",
         icon: <IconGrid />,
         label: "Panel del condominio",
         description: "Vista principal del propietario encargado y prioridades de gestion.",
@@ -190,6 +204,12 @@ const PROPERTY_OWNER_NAV = [
         icon: <IconBuilding />,
         label: "Mi condominio",
         description: "Ficha maestra, datos base y accesos de configuracion.",
+      },
+      {
+        to: "/dashboard/planes",
+        icon: <IconReceipt />,
+        label: "Planes y Suscripción",
+        description: "Actualiza tu plan y gestiona facturación mensual.",
       },
     ],
   },
@@ -327,14 +347,14 @@ const PROPERTY_OWNER_NAV = [
       },
     ],
   },
-];
+]);
 
-const RESIDENT_NAV = [
+const RESIDENT_NAV = withDashboardBase([
   {
     section: "Panorama",
     items: [
       {
-        to: "/",
+        to: "/dashboard",
         icon: <IconGrid />,
         label: "Centro del residente",
         description: "Resumen personal y accesos rapidos para tu dia a dia.",
@@ -416,14 +436,14 @@ const RESIDENT_NAV = [
       },
     ],
   },
-];
+]);
 
-const SYSTEM_MONITOR_NAV = [
+const SYSTEM_MONITOR_NAV = withDashboardBase([
   {
     section: "Monitor",
     items: [
       {
-        to: "/",
+        to: "/dashboard",
         icon: <IconGrid />,
         label: "Centro de monitoreo",
         description: "Vista consolidada de todo el ecosistema.",
@@ -482,7 +502,7 @@ const SYSTEM_MONITOR_NAV = [
       },
     ],
   },
-];
+]);
 
 export default function DashboardLayout() {
   const { user, logout } = useAuth();
@@ -496,7 +516,12 @@ export default function DashboardLayout() {
   const isSystemAdmin = isSystemAdminRole(roleValue);
   const isCondoAdmin = isCondoAdminRole(roleValue);
   const isPropertyOwner = isPropertyOwnerRole(roleValue);
+  const isAdminWorkspace = isCondoAdmin;
   const hasRegisteredCondominio = Boolean(condominio?.id || activeCondominioId || condominios.length);
+  const showPlanSummary = isPropertyOwner;
+  const planUsage = getPlanUsage(user, condominios);
+  const canCreateAnotherCondominio = !hasRegisteredCondominio || planUsage.canAddMore;
+  const showCreateCondominioAction = isPropertyOwner && canCreateAnotherCondominio;
 
   const nav = useMemo(() => {
     const baseNav = isSystemAdmin
@@ -513,44 +538,40 @@ export default function DashboardLayout() {
       .map((group) => ({
         ...group,
         items: group.items.filter((item) => {
-          if (item.to === "/condominio/nuevo") {
-            return !hasRegisteredCondominio;
+          if (item.to === NEW_CONDOMINIO_ROUTE) {
+            return canCreateAnotherCondominio;
           }
           return true;
         }),
       }))
       .filter((group) => group.items.length > 0);
-  }, [hasRegisteredCondominio, isCondoAdmin, isPropertyOwner, isResident, isSystemAdmin]);
+  }, [canCreateAnotherCondominio, isCondoAdmin, isPropertyOwner, isResident, isSystemAdmin]);
   const shellMeta = isSystemAdmin
     ? {
         panelLabel: "Monitoreo global",
         panelCopy: "Supervisa condominios, movimientos y alertas con una vista clara y ejecutiva.",
-        pageChip: "Supervisor del sistema",
       }
     : isCondoAdmin
       ? {
           panelLabel: "Administracion activa",
           panelCopy: "Organiza operacion, finanzas y comunidad desde un panel mas estructurado.",
-          pageChip: "Administrador de condominio",
         }
       : isResident
         ? {
             panelLabel: "Portal residencial",
             panelCopy: "Resuelve visitas, pagos y soporte desde una experiencia mas limpia y directa.",
-            pageChip: "Experiencia del residente",
           }
         : {
             panelLabel: "Gestion del propietario",
             panelCopy: "Controla estructura, comunidad y seguimiento del condominio con mejor jerarquia visual.",
-            pageChip: "Propietario gestor",
           };
 
   const currentPage = useMemo(() => {
     const normalizedPath = location.pathname.replace(/\/+$/, "") || "/";
     for (const group of nav) {
       for (const item of group.items) {
-        const normalizedTarget = item.to.replace(/\/+$/, "") || "/";
-        const matchesRoot = normalizedTarget === "/" && (normalizedPath === "/" || normalizedPath.endsWith("/dashboard"));
+        const normalizedTarget = item.to.replace(/\/+$/, "") || "/dashboard";
+        const matchesRoot = normalizedTarget === "/dashboard" && (normalizedPath === "/dashboard");
         const matchesPath =
           normalizedPath === normalizedTarget ||
           (normalizedTarget !== "/" && normalizedPath.endsWith(normalizedTarget));
@@ -565,7 +586,7 @@ export default function DashboardLayout() {
 
   const handleLogout = async () => {
     await logout();
-    navigate("/login");
+    navigate("/landing");
   };
 
   const safeRole = getRoleLabel(roleValue);
@@ -574,7 +595,7 @@ export default function DashboardLayout() {
     (isResident ? "Residente" : isSystemAdmin ? "Admin" : isCondoAdmin ? "Admin" : isPropertyOwner ? "Propietario" : "Usuario");
 
   return (
-    <div className="relative flex h-screen overflow-hidden text-[var(--fg-primary)]">
+    <div className={`relative flex h-screen overflow-hidden text-[var(--fg-primary)] ${isAdminWorkspace ? "dashboard-theme-admin" : ""}`}>
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute left-[-12rem] top-[-10rem] h-[28rem] w-[28rem] rounded-full bg-[radial-gradient(circle,_rgba(255,122,48,0.16),_transparent_68%)]" />
         <div className="absolute right-[-10rem] top-[5rem] h-[24rem] w-[24rem] rounded-full bg-[radial-gradient(circle,_rgba(217,79,16,0.12),_transparent_68%)]" />
@@ -593,7 +614,7 @@ export default function DashboardLayout() {
           fixed inset-y-0 left-0 z-40 flex h-full flex-col overflow-hidden
           transition-all duration-300 ease-in-out lg:relative lg:h-full
           ${mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
-          ${collapsed ? "w-[92px]" : "w-[332px]"}
+          ${collapsed ? "w-[72px] xs:w-[80px] sm:w-[92px]" : "w-[280px] xs:w-[300px] sm:w-[332px]"}
         `}
         style={{
           background: "linear-gradient(180deg, #080808 0%, #17120F 52%, #D94F10 165%)",
@@ -720,7 +741,11 @@ export default function DashboardLayout() {
                   <p className="truncate text-[13px] font-semibold text-white">
                     {user?.name || "Usuario"}
                   </p>
-                  <p className="truncate text-[10px] text-white/52">{safeRole}</p>
+                  {showPlanSummary ? (
+                    <p className="mt-1 truncate text-[11px] text-white/58">
+                      Plan {planUsage.details.label} · {planUsage.usageLabel}
+                    </p>
+                  ) : null}
                 </div>
                 <button
                   onClick={handleLogout}
@@ -753,31 +778,41 @@ export default function DashboardLayout() {
       </aside>
 
       <div className="relative flex min-w-0 flex-1 flex-col overflow-hidden">
-        <div className="z-20 px-3 pt-3 md:px-5 xl:pl-8 xl:pr-8">
-          <header className="architectural-panel flex min-h-[104px] items-center gap-4 rounded-[30px] px-5 py-4 md:px-6 xl:px-8">
+        <div className="z-20 px-2 pt-2 sm:px-3 md:px-5 xl:pl-8 xl:pr-8">
+          <header className="architectural-panel flex min-h-[72px] items-center gap-2 sm:gap-3 md:gap-4 rounded-[20px] sm:rounded-[24px] md:rounded-[30px] px-3 py-3 sm:px-4 md:px-5 md:py-4 xl:px-8">
           <button
             onClick={() => setMobileOpen(true)}
-            className="cursor-pointer rounded-2xl border-none bg-transparent p-2.5 text-[var(--fg-secondary)] transition-colors hover:bg-[var(--surface-3)] hover:text-[var(--fg-primary)] lg:hidden"
+            className="cursor-pointer rounded-xl sm:rounded-2xl border-none bg-transparent p-2 text-[var(--fg-secondary)] transition-colors hover:bg-[var(--surface-3)] hover:text-[var(--fg-primary)] lg:hidden"
           >
             <IconMenu />
           </button>
 
-          <div className="flex-1 min-w-0">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--condome-orange)]">
+          <div className="flex-1 min-w-0 min-w-0">
+            <p className="text-[9px] sm:text-[10px] md:text-[11px] font-semibold uppercase tracking-[0.18em] sm:tracking-[0.22em] md:tracking-[0.24em] text-[var(--condome-orange)]">
               {currentPage.label}
             </p>
-            <h2 className="mt-1 text-[1.35rem] font-semibold leading-tight text-[var(--fg-primary)] md:text-[1.7rem]">
+            <h2 className="mt-0.5 text-[1rem] sm:text-[1.2rem] md:text-[1.35rem] lg:text-[1.7rem] font-semibold leading-tight text-[var(--fg-primary)]">
               Bienvenido, {firstName}
             </h2>
-            <p className="mt-1 truncate text-sm text-[var(--fg-secondary)]">
+            <p className="mt-0.5 truncate text-[10px] sm:text-xs md:text-sm text-[var(--fg-secondary)] hidden xs:block">
               {currentPage.description}
             </p>
           </div>
 
-          <div className="hidden items-center gap-2.5 md:flex">
+          <div className="hidden items-center gap-2 md:flex lg:flex">
+            {showPlanSummary ? (
+              <div className="hidden xl:flex flex-col rounded-full border border-[var(--border-standard)] bg-[var(--surface-2)] px-4 py-2 shadow-[var(--shadow-whisper)]">
+                <span className="text-[10px] font-black uppercase tracking-[0.18em] text-[var(--fg-tertiary)]">
+                  Plan {planUsage.details.label}
+                </span>
+                <span className="mt-1 text-xs font-semibold text-[var(--fg-primary)]">
+                  {planUsage.usageLabel}
+                </span>
+              </div>
+            ) : null}
             {!isResident && condominios.length ? (
               <label
-                className="flex items-center gap-2.5 rounded-full border border-[var(--border-standard)] bg-white px-3.5 py-2.5 shadow-[var(--shadow-whisper)]"
+                className="flex items-center gap-2.5 rounded-full border border-[var(--border-standard)] bg-[var(--surface-2)] px-3.5 py-2.5 shadow-[var(--shadow-whisper)]"
               >
                 <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--fg-tertiary)]">
                   Condominio
@@ -807,37 +842,44 @@ export default function DashboardLayout() {
                 )}
               </label>
             ) : null}
-            {!isResident && !condominios.length ? (
+            {showCreateCondominioAction ? (
               <NavLink
-                to="/condominio/nuevo"
+                to={NEW_CONDOMINIO_ROUTE}
                 className="rounded-full border border-[var(--control-border-strong)] bg-[var(--signal-orange-fog)] px-3.5 py-2 text-xs font-semibold text-[var(--condome-orange)] no-underline"
               >
-                Registrar condominio
+                {condominios.length ? "Nuevo condominio" : "Registrar condominio"}
               </NavLink>
             ) : null}
-            <span className="rounded-full bg-[var(--signal-orange-fog)] px-3.5 py-2 text-xs font-semibold text-[var(--condome-orange)]">
-              {safeRole}
-            </span>
-            <span className="rounded-full border border-[var(--border-standard)] bg-white px-3.5 py-2 text-xs font-semibold text-[var(--fg-secondary)]">
-              {shellMeta.pageChip}
+            <span className="rounded-full border border-[var(--border-standard)] bg-[var(--surface-2)] px-3.5 py-2 text-xs font-semibold text-[var(--fg-secondary)]">
+              Condome
             </span>
           </div>
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             <button
-              className="relative cursor-pointer rounded-2xl border-none bg-transparent p-2.5 text-[var(--fg-secondary)] transition-colors hover:bg-[var(--surface-3)] hover:text-[var(--fg-primary)]"
+              className="relative cursor-pointer rounded-xl sm:rounded-2xl border-none bg-transparent p-2 text-[var(--fg-secondary)] transition-colors hover:bg-[var(--surface-3)] hover:text-[var(--fg-primary)]"
             >
               <IconBell />
               <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-[#D94F10] rounded-full" />
             </button>
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[linear-gradient(135deg,#FF7A30,#D94F10)] text-xs font-bold text-white shadow-[0_10px_20px_rgba(217,79,16,0.18)]">
+            <button
+              onClick={() => navigate(toDashboardPath("perfil"))}
+              className="cursor-pointer rounded-xl sm:rounded-2xl border-none bg-transparent p-2 text-[var(--fg-secondary)] transition-colors hover:bg-[var(--surface-3)] hover:text-[var(--fg-primary)]"
+              title="Mi perfil"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-4 h-4 sm:w-5 sm:h-5">
+                <circle cx="12" cy="8" r="4" />
+                <path d="M4 20c0-4 4-6 8-6s8 2 8 6" />
+              </svg>
+            </button>
+            <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-[linear-gradient(135deg,#FF7A30,#D94F10)] text-[10px] sm:text-xs font-bold text-white shadow-[0_10px_20px_rgba(217,79,16,0.18)]">
               {user?.name?.charAt(0)?.toUpperCase() || "U"}
             </div>
           </div>
         </header>
         </div>
 
-        <main className="flex-1 overflow-y-auto px-3 pb-6 pt-4 md:px-5 md:pb-8 md:pt-5 xl:px-8">
+        <main className="flex-1 overflow-y-auto px-2 pb-4 pt-3 sm:px-3 sm:pb-6 sm:pt-4 md:px-5 md:pb-8 md:pt-5 xl:px-8">
           <div key={location.pathname} className="mx-auto w-full max-w-[1480px] animate-soft-pop">
             <Outlet />
           </div>

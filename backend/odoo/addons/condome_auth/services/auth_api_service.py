@@ -1,10 +1,28 @@
 import json
+import logging
+import uuid
 
-from odoo import _
+from odoo import _, fields
 from odoo.exceptions import AccessDenied, MissingError, UserError
 from odoo.http import request
 
 from ..jwt_utils import TokenError, build_tokens, verify_token
+
+_logger = logging.getLogger(__name__)
+
+# Inicialización diferida del servicio de correo para evitar imports circulares.
+_mail_service = None
+
+
+def _get_mail_service():
+    global _mail_service
+    if _mail_service is None:
+        try:
+            from odoo.addons.condome_mail.services.email_service import CondomeEmailService
+            _mail_service = CondomeEmailService()
+        except Exception:
+            _logger.debug("condome_mail no disponible; los correos de auth estarán deshabilitados.")
+    return _mail_service
 
 
 class AuthApiService:
@@ -78,12 +96,43 @@ class AuthApiService:
             role = "encargado"
         elif user.has_group("condome_auth.group_condome_residente"):
             role = "residente"
+        plan_details = self.serialize_plan(user)
         return {
             "id": user.id,
             "name": user.name,
             "email": user.login,
             "role": role,
             "db": request.db,
+            "plan": getattr(user, "condome_plan", "free"),
+            "plan_details": plan_details,
+            "email_verified": self.is_email_verified(user),
+            "has_completed_onboarding": getattr(user, "has_completed_onboarding", False),
+        }
+
+    def serialize_plan(self, user):
+        plan_code = getattr(user, "condome_plan", "free") or "free"
+        if hasattr(user, "get_condome_plan_config"):
+            config = user.get_condome_plan_config()
+        else:
+            config = {
+                "code": plan_code,
+                "label": plan_code.title(),
+                "monthly_price_dop": 0,
+                "max_condominios": 1,
+                "is_paid": False,
+                "automatic_reports": False,
+                "feature_summary": [],
+            }
+        max_condominios = config.get("max_condominios")
+        return {
+            "code": config.get("code", plan_code),
+            "label": config.get("label", plan_code.title()),
+            "monthly_price_dop": config.get("monthly_price_dop", 0),
+            "max_condominios": max_condominios,
+            "is_paid": bool(config.get("is_paid")),
+            "supports_automatic_reports": bool(config.get("automatic_reports")),
+            "supports_multi_condominio": max_condominios is None or max_condominios > 1,
+            "feature_summary": list(config.get("feature_summary") or []),
         }
 
     def resident_record_for_user(self, user):
@@ -141,6 +190,68 @@ class AuthApiService:
             return company
         return request.env["res.company"].sudo().search([], limit=1)
 
+    def is_email_verified(self, user):
+        verification_token = getattr(user, "email_verification_token", False)
+        return bool(getattr(user, "email_verified", False) or not verification_token)
+
+    def _frontend_base_url(self):
+        configured = (
+            request.env["ir.config_parameter"].sudo().get_param("condome.frontend_base_url")
+            or ""
+        ).strip()
+        if configured:
+            return configured.rstrip("/")
+
+        origin = (request.httprequest.headers.get("Origin") or "").strip()
+        if origin:
+            return origin.rstrip("/")
+
+        host_url = (request.httprequest.host_url or "").strip().rstrip("/")
+        if host_url:
+            return host_url
+        return "http://localhost:3000"
+
+    def _resolve_condominio_name(self, user):
+        resident = self.resident_record_for_user(user)
+        if resident and resident.condominio_id:
+            return resident.condominio_id.name
+
+        condominio = request.env["condome.condominio"].sudo().search(
+            [("owner_user_id", "=", user.id)],
+            limit=1,
+        )
+        if condominio:
+            return condominio.name
+        return "Condome"
+
+    def _verification_url(self, token):
+        return f"{self._frontend_base_url()}/verify-email?token={token}"
+
+    def _issue_verification_token(self, user):
+        token = uuid.uuid4().hex
+        user.sudo().write({"email_verification_token": token})
+        return token
+
+    def _send_verification_email(self, user, force_new_token=False):
+        if not user or not user.login:
+            return False
+
+        token = getattr(user, "email_verification_token", False)
+        if force_new_token or not token:
+            token = self._issue_verification_token(user)
+
+        mail = _get_mail_service()
+        if not mail:
+            return False
+
+        return bool(
+            mail.send_email_verification(
+                user,
+                verification_url=self._verification_url(token),
+                condominio_name=self._resolve_condominio_name(user),
+            )
+        )
+
     def handle_options(self):
         return self.build_response({"ok": True})
 
@@ -160,6 +271,20 @@ class AuthApiService:
 
             user = request.env.user.sudo()
             tokens = build_tokens(user)
+
+            # Enviar correo de confirmación de login (async, no bloquea la respuesta)
+            mail = _get_mail_service()
+            if mail:
+                ip = request.httprequest.remote_addr or ""
+                condo_name = ""
+                try:
+                    resident = self.resident_record_for_user(user)
+                    if resident and resident.condominio_id:
+                        condo_name = resident.condominio_id.name
+                except Exception:
+                    pass
+                mail.send_login_confirmation(user, condominio_name=condo_name, ip_address=ip)
+
             return self.build_response(
                 {
                     "user": self.serialize_user(user),
@@ -174,9 +299,15 @@ class AuthApiService:
         try:
             if self.is_preflight_request():
                 return self.handle_options()
-            if not request.session.uid:
+            # Aceptar tanto sesión de Odoo como JWT Bearer token
+            if request.session.uid:
+                return self.build_response({"user": self.serialize_user(request.env.user.sudo())})
+            # Intentar con JWT
+            try:
+                user = self.require_session()
+                return self.build_response({"user": self.serialize_user(user)})
+            except Exception:
                 return self.error_response(_("No hay una sesión activa"), status=401)
-            return self.build_response({"user": self.serialize_user(request.env.user.sudo())})
         except Exception as error:  # pragma: no cover
             return self.error_response(str(error), status=400)
 
@@ -247,6 +378,12 @@ class AuthApiService:
                 return self.error_response(_("La contraseña actual no es válida"), status=401)
 
             user.sudo().write({"password": new_password})
+
+            # Notificar cambio de contraseña por correo
+            mail = _get_mail_service()
+            if mail:
+                mail.send_password_changed(user)
+
             return self.build_response({"ok": True})
         except AccessDenied as error:
             return self.error_response(error, status=401)
@@ -280,28 +417,52 @@ class AuthApiService:
                 return self.error_response(_("Ya existe un usuario con ese correo"), status=409)
 
             full_name = f"{first_name} {last_name}".strip()
+            company = self.default_company()
             partner_vals = {"name": full_name, "email": email, "phone": phone}
+            if company:
+                partner_vals["company_id"] = company.id
+            
             country = self.find_country(country_code)
             if country:
                 partner_vals["country_id"] = country.id
-
+            
             partner = request.env["res.partner"].sudo().create(partner_vals)
             group = request.env.ref("condome_auth.group_condome_propietario", raise_if_not_found=False)
-            company = self.default_company()
+            
             user_vals = {
                 "name": full_name,
                 "partner_id": partner.id,
                 "login": email,
                 "password": password,
+                "email_verified": True,
+                "has_completed_onboarding": False,
             }
             if company:
                 user_vals["company_id"] = company.id
                 user_vals["company_ids"] = [(6, 0, [company.id])]
+            
             user = request.env["res.users"].sudo().create(user_vals)
             if group:
-                user.write({"groups_id": [(4, group.id)]})
-            return self.build_response({"user": self.serialize_user(user)})
+                user.sudo().write({"groups_id": [(4, group.id)]})
+
+            # Asegurar que los cambios se guarden antes de intentar autenticar
+            request.env.cr.flush()
+
+            # Autenticar automáticamente al registrarse
+            try:
+                request.session.authenticate(request.db, email, password)
+            except Exception as auth_err:
+                _logger.warning(f"Error en auto-autenticación tras registro: {auth_err}")
+
+            # Devolver también tokens JWT para que el frontend pueda guardar la sesión
+            tokens = build_tokens(user)
+            return self.build_response({
+                "user": self.serialize_user(user),
+                "token": tokens["access_token"],
+                "refresh_token": tokens["refresh_token"],
+            })
         except Exception as error:  # pragma: no cover
+            _logger.exception("Error crítico durante el registro de usuario")
             return self.error_response(str(error), status=400)
 
     def handle_logout(self):
@@ -319,5 +480,99 @@ class AuthApiService:
                 return self.handle_options()
             user = self.require_session()
             return self.build_response({"valid": bool(user)})
-        except Exception:
-            return self.build_response({"valid": False})
+        except Exception as error:  # pragma: no cover
+            return self.error_response(str(error), status=400)
+
+    def handle_verify_email(self):
+        try:
+            if self.is_preflight_request():
+                return self.handle_options()
+
+            payload = self.read_payload()
+            token = self.clean_str(payload.get("token") or request.httprequest.args.get("token"))
+            if not token:
+                return self.error_response(_("El token de verificación es requerido"))
+
+            user = request.env["res.users"].sudo().search(
+                [("email_verification_token", "=", token)],
+                limit=1,
+            )
+            if not user:
+                return self.error_response(_("El enlace de verificación ya no es válido"), status=404)
+
+            user.sudo().write(
+                {
+                    "email_verified": True,
+                    "email_verified_at": fields.Datetime.now(),
+                    "email_verification_token": False,
+                }
+            )
+            tokens = build_tokens(user)
+            return self.build_response(
+                {
+                    "ok": True,
+                    "user": self.serialize_user(user),
+                    "token": tokens["access_token"],
+                    "refresh_token": tokens["refresh_token"],
+                }
+            )
+        except Exception as error:  # pragma: no cover
+            return self.error_response(str(error), status=400)
+
+    def handle_resend_verification(self):
+        try:
+            if self.is_preflight_request():
+                return self.handle_options()
+
+            payload = self.read_payload()
+            email = self.clean_str(payload.get("email")).lower()
+            if not email:
+                return self.error_response(_("El correo es requerido"))
+
+            user = request.env["res.users"].sudo().search([("login", "=", email)], limit=1)
+            if not user:
+                return self.error_response(_("No existe una cuenta registrada con ese correo"), status=404)
+
+            if self.is_email_verified(user):
+                return self.build_response(
+                    {
+                        "ok": True,
+                        "message": _("Tu cuenta ya está verificada. Puedes iniciar sesión normalmente."),
+                        "user": self.serialize_user(user),
+                    }
+                )
+
+            sent = self._send_verification_email(user, force_new_token=True)
+            if not sent:
+                return self.build_response(
+                    {
+                        "ok": False,
+                        "message": _(
+                            "No se pudo enviar el correo de verificación en este momento. "
+                            "Verifica la configuración SMTP e inténtalo de nuevo."
+                        ),
+                    },
+                    status=503,
+                )
+
+            return self.build_response(
+                {
+                    "ok": True,
+                    "message": _("Te reenviamos el correo de verificación. Revisa tu bandeja de entrada."),
+                }
+            )
+        except Exception as error:  # pragma: no cover
+            return self.error_response(str(error), status=400)
+
+    def handle_complete_onboarding(self):
+        try:
+            if self.is_preflight_request():
+                return self.handle_options()
+            
+            user = self.require_session()
+            user.sudo().write({"has_completed_onboarding": True})
+            return self.build_response({"ok": True, "user": self.serialize_user(user)})
+        except AccessDenied as error:
+            return self.error_response(error, status=401)
+        except Exception as error:
+            return self.error_response(str(error), status=400)

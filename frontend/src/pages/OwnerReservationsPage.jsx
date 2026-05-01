@@ -13,6 +13,7 @@ export default function OwnerReservationsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [toast, setToast] = useState({ visible: false, message: "", type: "success" });
   const [areaForm, setAreaForm] = useState({ name: "", capacity: "", schedule: "", rules: "" });
   const [requestForm, setRequestForm] = useState({
     areaId: "",
@@ -125,12 +126,22 @@ export default function OwnerReservationsPage() {
     }
   };
 
+  const showToast = (message, type = "success") => {
+    setToast({ visible: true, message, type });
+    setTimeout(() => setToast({ visible: false, message: "", type: "success" }), 4000);
+  };
+
   const updateStatus = async (reservationId, status) => {
     try {
       const response = await adminService.updateReservation(reservationId, { status });
       setReservations((current) =>
         current.map((item) => (item.id === reservationId ? response.data : item))
       );
+      if (status === "approved") {
+        showToast("Reserva aprobada — se envió confirmación por email al residente ✉️");
+      } else if (status === "rejected") {
+        showToast("Reserva rechazada", "info");
+      }
     } catch (updateError) {
       setError(updateError.message || "No se pudo actualizar la reserva.");
     }
@@ -138,6 +149,17 @@ export default function OwnerReservationsPage() {
 
   return (
     <div className="space-y-6">
+      {/* Toast de notificación */}
+      {toast.visible && (
+        <div className={`fixed bottom-6 right-6 z-[200] px-5 py-4 rounded-2xl shadow-2xl border text-sm font-semibold flex items-center gap-3 transition-all animate-fade-up ${
+          toast.type === "success"
+            ? "bg-[#0D1F17] border-emerald-500/30 text-emerald-400"
+            : "bg-[#1A1A1A] border-[#262626] text-[#A3A3A3]"
+        }`}>
+          <span>{toast.type === "success" ? "✅" : "ℹ️"}</span>
+          {toast.message}
+        </div>
+      )}
       <section className={`${SURFACE} p-6 md:p-7`}>
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>

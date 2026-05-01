@@ -7,7 +7,7 @@ const INPUT =
   "w-full px-4 py-3 bg-[#1A1A1A] border border-[#262626] rounded-xl text-[#E5E5E5] text-sm outline-none transition-all focus:border-[#D94F10] focus:bg-[#1A1A1A] focus:ring-4 focus:ring-[#D94F10]/10";
 
 export default function OwnersManagementPage() {
-  const { condominio, apartamentos } = useCondominio();
+  const { condominio, apartamentos, reenviarCredencialesPropietario } = useCondominio();
   const [owners, setOwners] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -83,7 +83,7 @@ export default function OwnersManagementPage() {
         portalAccess: form.portalAccess,
         notes: form.notes,
       });
-      setCredentials(response.credenciales || null);
+      setCredentials(response || null);
       setForm({
         name: "",
         email: "",
@@ -189,9 +189,13 @@ export default function OwnersManagementPage() {
 
             {credentials && (
               <div className="rounded-xl border border-blue-500/20 bg-blue-500/10 px-4 py-3 text-sm text-blue-400">
-                <p className="font-semibold">Acceso temporal generado</p>
-                <p className="mt-1">Login: {credentials.login}</p>
-                <p>Contraseña temporal: {credentials.password_temporal}</p>
+                <p className="font-semibold">{credentials.message || "Acceso temporal generado"}</p>
+                {credentials.credenciales && (
+                  <>
+                    <p className="mt-1">Login: {credentials.credenciales.login}</p>
+                    <p>Contraseña temporal: {credentials.credenciales.password_temporal}</p>
+                  </>
+                )}
               </div>
             )}
 
@@ -231,6 +235,19 @@ export default function OwnersManagementPage() {
                     </div>
 
                     <div className="flex gap-2">
+                      <ActionChip onClick={async () => {
+                         try {
+                           const res = await reenviarCredencialesPropietario(owner.id);
+                           const manualFallback = !res?.emailSent && res?.credenciales
+                             ? `\n\nLogin: ${res.credenciales.login}\nClave temporal: ${res.credenciales.password_temporal}`
+                             : "";
+                           alert((res?.message || "Credenciales reenviadas") + manualFallback);
+                         } catch (err) {
+                           alert(err.message || "Error al reenviar");
+                         }
+                      }}>
+                        Reenviar Clave
+                      </ActionChip>
                       <ActionChip onClick={() => toggleStatus(owner.id, "active")}>Activar</ActionChip>
                       <ActionChip onClick={() => toggleStatus(owner.id, "inactive")}>Inactivar</ActionChip>
                     </div>

@@ -23,6 +23,8 @@ export const AUTH_ENDPOINTS = {
   register: `${AUTH_PREFIX}/register`,
   refresh: `${AUTH_PREFIX}/refresh`,
   validateToken: `${AUTH_PREFIX}/validate_token`,
+  verifyEmail: `${AUTH_PREFIX}/verify_email`,
+  resendVerification: `${AUTH_PREFIX}/resend_verification`,
 };
 
 /**
@@ -60,6 +62,7 @@ export const CONDOMINIO_ENDPOINTS = {
   getResidente: (residenteId) => `${API_PREFIX}/residentes/${residenteId}`,
   updateResidente: (residenteId) => `${API_PREFIX}/residentes/${residenteId}`,
   deleteResidente: (residenteId) => `${API_PREFIX}/residentes/${residenteId}`,
+  resendResidenteCredentials: (residenteId) => `${API_PREFIX}/residentes/${residenteId}/resend_credentials`,
 };
 
 /**
@@ -74,6 +77,7 @@ export const ADMIN_ENDPOINTS = {
   // Propietarios
   propietarios: `${API_PREFIX}/owner/propietarios/`,
   getPropietario: (id) => `${API_PREFIX}/owner/propietarios/${id}`,
+  resendPropietarioCredentials: (id) => `${API_PREFIX}/propietarios/${id}/resend_credentials`,
 
   // Documentos
   documentos: `${API_PREFIX}/owner/documentos/`,
@@ -200,11 +204,28 @@ export function buildUrl(endpoint, params = {}) {
   return queryString ? `${endpoint}?${queryString}` : endpoint;
 }
 
+export const PAYMENTS_PLAN_INITIATE = `${API_PREFIX}/payments/plan/initiate`;
+export const PAYMENTS_PLAN_CONFIRM = `${API_PREFIX}/payments/plan/confirm`;
+
+/**
+ * Endpoints de Correo (Mail)
+ */
+export const MAIL_ENDPOINTS = {
+  systemNotice: `${API_PREFIX}/mail/system-notice/`,
+  broadcast: `${API_PREFIX}/mail/broadcast/`,
+  paymentReminder: `${API_PREFIX}/mail/payment-reminder/`,
+  notifyResident: `${API_PREFIX}/mail/notify-resident/`,
+  testSmtp: `${API_PREFIX}/mail/test/`,
+};
+
 export default {
   AUTH_ENDPOINTS,
   CONDOMINIO_ENDPOINTS,
   ADMIN_ENDPOINTS,
   RESIDENT_ENDPOINTS,
   BILLING_ENDPOINTS,
+  MAIL_ENDPOINTS,
+  PAYMENTS_PLAN_INITIATE,
+  PAYMENTS_PLAN_CONFIRM,
   buildUrl,
 };

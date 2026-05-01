@@ -95,24 +95,26 @@ class ApiClient {
 
   /**
    * Ejecutar solicitud con reintentos
+   * Acepta maxRetries por llamada para sobrescribir el default de la instancia
    */
-  async _executeWithRetry(fn, endpoint, retryCount = 0) {
+  async _executeWithRetry(fn, endpoint, retryCount = 0, maxRetries = null) {
+    const limit = maxRetries !== null ? maxRetries : this.maxRetries;
     try {
       return await fn();
     } catch (error) {
       const isRetryable =
-        error.status >= 500 || // Errores del servidor
-        error.timeout || // Timeout
-        (error instanceof TypeError && error.message.includes("network")); // Errores de red
+        error.status >= 500 ||
+        error.timeout ||
+        (error instanceof TypeError && error.message.includes("network"));
 
-      if (isRetryable && retryCount < this.maxRetries) {
-        const delay = Math.pow(2, retryCount) * 1000; // Exponential backoff
+      if (isRetryable && retryCount < limit) {
+        const delay = Math.pow(2, retryCount) * 1000;
         this._log("warn", `Reintentando ${endpoint} en ${delay}ms (intento ${retryCount + 1})`, {
           reason: error.message,
         });
 
         await new Promise((resolve) => setTimeout(resolve, delay));
-        return this._executeWithRetry(fn, endpoint, retryCount + 1);
+        return this._executeWithRetry(fn, endpoint, retryCount + 1, maxRetries);
       }
 
       throw error;
@@ -217,7 +219,7 @@ class ApiClient {
       // la capa superior maneje la redirección/limpieza de sesión.
       if (response.status === 401) {
         this._log("warn", "401 Unauthorized recibido", { endpoint });
-        if (this.onTokenExpired) {
+        if (this.onTokenExpired && endpoint !== "/condome_auth/authenticate") {
           try {
             this.onTokenExpired();
           } catch (err) {
@@ -307,9 +309,12 @@ class ApiClient {
    * POST request
    */
   async post(endpoint, body = null, options = {}) {
+    const { maxRetries: perCallRetries, ...restOptions } = options;
     return this._executeWithRetry(
-      () => this._makeRequest(endpoint, { ...options, method: "POST", body }),
-      endpoint
+      () => this._makeRequest(endpoint, { ...restOptions, method: "POST", body }),
+      endpoint,
+      0,
+      perCallRetries !== undefined ? perCallRetries : null
     );
   }
 
@@ -460,15 +465,17 @@ export { ApiClient, ApiError, TokenExpiredError };
 
 /**
  * Instancia global del ApiClient
+ * onTokenExpired NO limpia la sesión automáticamente — eso lo maneja AuthContext
+ * para evitar que el SessionValidator u otras llamadas en background destruyan la sesión
  */
 const apiClient = new ApiClient({
   baseURL: API_BASE_URL,
   timeout: DEFAULT_TIMEOUT,
   maxRetries: DEFAULT_RETRIES,
   onTokenExpired: () => {
-    // Notificar al usuario que la sesión expiró
-    localStorage.removeItem("authData");
-    window.location.href = "/login?session-expired=true";
+    // Solo notificar — no limpiar ni redirigir aquí
+    // AuthContext escucha el evento y decide qué hacer
+    window.dispatchEvent(new CustomEvent("condome:session-expired"));
   },
 });
 

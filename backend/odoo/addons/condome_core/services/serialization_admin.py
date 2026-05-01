@@ -181,6 +181,7 @@ class ApiSerializationAdminMixin:
             "edificio_nombre": record.edificio_id.name if record.edificio_id else "",
             "condominio_id": record.condominio_id.id,
             "condominio_nombre": record.condominio_id.name,
+            "parkingSpaceAssigned": record.estado == "activo",
             "notas": record.notas or "",
             "createdAt": record.create_date.isoformat() if record.create_date else None,
             "updatedAt": record.write_date.isoformat() if record.write_date else None,

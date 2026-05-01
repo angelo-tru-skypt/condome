@@ -167,11 +167,13 @@ class CondomeVehiculo(models.Model):
     )
     estado = fields.Selection(
         [
+            ("pendiente", "Pendiente"),
             ("activo", "Activo"),
+            ("restringido", "Restringido"),
             ("inactivo", "Inactivo"),
             ("suspendido", "Suspendido"),
         ],
-        default="activo",
+        default="pendiente",
         required=True,
     )
     propietario_documento = fields.Char()
@@ -201,3 +203,45 @@ class CondomeVehiculo(models.Model):
                 )
                 if existing:
                     raise ValidationError(_("Ya existe un vhículo registrado con la placa %s en este condominio.") % record.placa)
+
+    @api.model
+    def _normalize_estado(self, value):
+        safe_value = (value or "").strip().lower()
+        aliases = {
+            "aprobado": "activo",
+            "liberado": "inactivo",
+            "suspendido": "restringido",
+        }
+        return aliases.get(safe_value, safe_value or "pendiente")
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        normalized_vals_list = []
+        for values in vals_list:
+            current_values = dict(values)
+            estado = self._normalize_estado(current_values.get("estado"))
+            current_values["estado"] = estado
+            residente_id = current_values.get("residente_id")
+            if estado == "activo" and residente_id:
+                resident = self.env["condome.residente"].sudo().browse(int(residente_id))
+                if resident.exists() and resident.condominio_id:
+                    resident.condominio_id.ensure_parking_slot_available()
+            normalized_vals_list.append(current_values)
+        return super().create(normalized_vals_list)
+
+    def write(self, vals):
+        updated_vals = dict(vals)
+        if "estado" in updated_vals:
+            updated_vals["estado"] = self._normalize_estado(updated_vals.get("estado"))
+
+        for record in self:
+            next_resident = record.residente_id
+            if updated_vals.get("residente_id"):
+                next_resident = self.env["condome.residente"].sudo().browse(int(updated_vals["residente_id"]))
+            next_condominio = next_resident.condominio_id if next_resident else record.condominio_id
+            next_estado = updated_vals.get("estado", record.estado)
+
+            if next_estado == "activo" and record.estado != "activo" and next_condominio:
+                next_condominio.ensure_parking_slot_available(excluding_vehicle=record)
+
+        return super().write(updated_vals)

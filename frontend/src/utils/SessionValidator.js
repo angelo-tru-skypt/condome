@@ -122,9 +122,9 @@ const sessionValidator = new SessionValidator({
   interval: 300000, // Validar cada 5 minutos
   heartbeatInterval: 600000, // Heartbeat cada 10 minutos
   onSessionExpired: () => {
-    console.warn("[SessionValidator] Sesión expirada - redirigiendo a login");
+    console.warn("[SessionValidator] Sesión expirada - redirigiendo a landing");
     localStorage.removeItem("authData");
-    window.location.href = "/login?session-expired=true";
+    window.location.href = "/?session-expired=true";
   },
 });
 

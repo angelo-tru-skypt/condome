@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { RESIDENT_MODULES, RESIDENT_WORKSPACES } from "../data/residentModules";
 import billingPortalService from "../utils/billingPortalService";
+import { toDashboardPath } from "../utils/dashboardPaths";
 import residentPortalService from "../utils/residentPortalService";
 
 const SURFACE = "rounded-[24px] border border-[var(--border-standard)] bg-[var(--surface-1)] shadow-[var(--shadow-card)]";
@@ -23,10 +24,10 @@ export default function ResidentDashboardHome() {
   const firstName = user?.name?.split(" ")[0] || "Residente";
 
   const quickActions = [
-    { to: "/visitas", title: "Solicitar visita", helper: "Invita familiares, entregas o proveedores." },
-    { to: "/pagos", title: "Pagar cuota", helper: "Consulta saldo y procesa tu pago desde aqui." },
-    { to: "/reservas", title: "Reservar area", helper: "Agenda amenidades y revisa disponibilidad." },
-    { to: "/incidencias", title: "Reportar incidencia", helper: "Abre un caso y dale seguimiento." },
+    { to: "visitas", title: "Solicitar visita", helper: "Invita familiares, entregas o proveedores." },
+    { to: "pagos", title: "Pagar cuota", helper: "Consulta saldo y procesa tu pago desde aqui." },
+    { to: "reservas", title: "Reservar area", helper: "Agenda amenidades y revisa disponibilidad." },
+    { to: "incidencias", title: "Reportar incidencia", helper: "Abre un caso y dale seguimiento." },
   ];
 
   useEffect(() => {
@@ -183,7 +184,7 @@ export default function ResidentDashboardHome() {
             <div>
               <div className="flex flex-wrap items-center gap-2">
                 <span className="px-3 py-1 rounded-full bg-[var(--condome-orange)]/5 border border-[var(--condome-orange)]/10 text-[10px] font-semibold tracking-[0.24em] uppercase text-[var(--condome-orange)]">
-                  Portal del Residente
+                  Tu Espacio Personal
                 </span>
                 <span className="px-3 py-1 rounded-full bg-[var(--condome-orange)]/10 text-[var(--condome-orange-soft)] text-[10px] font-bold uppercase tracking-widest border border-[var(--condome-orange)]/20">
                   Bienvenido a casa
@@ -206,10 +207,10 @@ export default function ResidentDashboardHome() {
                 {quickActions.slice(0, 2).map((action) => (
                   <Link
                     key={action.to}
-                    to={action.to}
+                    to={toDashboardPath(action.to)}
                     className="px-6 py-4 rounded-full no-underline text-xs font-bold uppercase tracking-widest transition-all hover:scale-[1.02]"
                     style={
-                      action.to === "/visitas"
+                      action.to === "visitas"
                         ? {
                             background: "linear-gradient(135deg, var(--condome-orange-soft), var(--condome-orange))",
                             color: "white",
@@ -228,7 +229,7 @@ export default function ResidentDashboardHome() {
               </div>
             </div>
 
-            <div className="rounded-[24px] border border-[var(--border-standard)] bg-white/60 backdrop-blur-md p-5 shadow-sm">
+            <div className="rounded-[24px] border border-[var(--border-standard)] bg-white/40 backdrop-blur-md p-5 shadow-sm">
               <p className="text-[11px] uppercase tracking-[0.2em] font-semibold text-[var(--fg-tertiary)]">
                 Detalles de tu residencia
               </p>
@@ -264,11 +265,11 @@ export default function ResidentDashboardHome() {
             >
               <MetricIcon />
             </div>
-            <p className="mt-4 text-sm font-semibold text-[#10212D]">{stat.title}</p>
+            <p className="mt-4 text-sm font-semibold text-[var(--fg-primary)]">{stat.title}</p>
             <p className="mt-1 text-[11px] uppercase tracking-[0.24em] font-bold" style={{ color: stat.color }}>
               {stat.label}
             </p>
-            <p className="mt-2 text-sm leading-6 text-[#5B6B71]">{stat.helper}</p>
+            <p className="mt-2 text-sm leading-6 text-[var(--fg-secondary)]">{stat.helper}</p>
           </article>
         ))}
       </section>
@@ -281,7 +282,7 @@ export default function ResidentDashboardHome() {
               <h2 className={SECTION_TITLE}>Todo lo que el residente debe poder resolver</h2>
             </div>
             <span className="px-3 py-1.5 rounded-full bg-[rgba(217,79,16,0.1)] text-[var(--condome-orange)] text-xs font-semibold">
-              Interfaz dedicada por rol
+              Experiencia centralizada
             </span>
           </div>
           <p className={`mt-3 max-w-3xl ${BODY_COPY}`}>
@@ -294,13 +295,13 @@ export default function ResidentDashboardHome() {
               <article key={workspace.title} className={`${SOFT_PANEL} p-5`}>
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <h3 className="text-lg font-semibold text-[#10212D]">{workspace.title}</h3>
-                    <p className="mt-2 text-sm leading-6 text-[#5B6B71]">{workspace.description}</p>
+                    <h3 className="text-lg font-semibold text-[var(--fg-primary)]">{workspace.title}</h3>
+                    <p className="mt-2 text-sm leading-6 text-[var(--fg-secondary)]">{workspace.description}</p>
                   </div>
                   <span className="w-3 h-12 rounded-full" style={{ backgroundColor: workspace.color }} />
                 </div>
 
-                <p className="mt-4 text-sm leading-6 text-[#355654]">{workspaceStatus[workspace.title]}</p>
+                <p className="mt-4 text-sm leading-6 text-[var(--fg-secondary)]">{workspaceStatus[workspace.title]}</p>
 
                 <div className="mt-4 flex flex-wrap gap-2">
                   {workspace.routes.map((route) => {
@@ -311,7 +312,7 @@ export default function ResidentDashboardHome() {
                     return (
                       <Link
                         key={route}
-                        to={`/${route}`}
+                        to={toDashboardPath(route)}
                         className="px-3 py-2 rounded-full bg-[var(--surface-0)] border border-[var(--border-standard)] no-underline text-xs font-bold text-[var(--fg-secondary)] hover:border-[var(--condome-orange)]/30 hover:text-[var(--condome-orange)] transition-colors"
                       >
                         {label}
@@ -366,9 +367,9 @@ function PageLoader({ label }) {
 
 function InfoTile({ label, value }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-md px-4 py-3 hover:bg-white/10 transition-colors cursor-default group">
-      <p className="text-[10px] uppercase tracking-[0.22em] font-bold text-white/40 group-hover:text-white/60 transition-colors">{label}</p>
-      <p className="mt-1 text-sm font-semibold text-white tracking-wide">{value}</p>
+    <div className="rounded-2xl border border-[var(--border-standard)] bg-[var(--surface-0)] px-4 py-3 hover:bg-[var(--surface-2)] transition-colors cursor-default group">
+      <p className="text-[10px] uppercase tracking-[0.22em] font-bold text-[var(--fg-tertiary)] group-hover:text-[var(--fg-secondary)] transition-colors">{label}</p>
+      <p className="mt-1 text-sm font-semibold text-[var(--fg-primary)] tracking-wide">{value}</p>
     </div>
   );
 }

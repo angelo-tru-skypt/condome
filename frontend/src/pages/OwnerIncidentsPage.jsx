@@ -12,6 +12,12 @@ export default function OwnerIncidentsPage() {
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState(null);
   const [error, setError] = useState("");
+  const [toast, setToast] = useState({ visible: false, message: "" });
+
+  const showToast = (message) => {
+    setToast({ visible: true, message });
+    setTimeout(() => setToast({ visible: false, message: "" }), 4000);
+  };
 
   const loadIncidents = async () => {
     const response = await adminService.listIncidents();
@@ -67,8 +73,12 @@ export default function OwnerIncidentsPage() {
     setSavingId(incident.id);
     setError("");
     try {
-      await adminService.updateIncident(incident.id, getDraft(incident));
+      const draft = getDraft(incident);
+      await adminService.updateIncident(incident.id, draft);
       await loadIncidents();
+      if (draft.estado === "resuelta" || draft.estado === "cerrada") {
+        showToast(`Incidencia marcada como "${draft.estado}" — se notificó al residente por email ✉️`);
+      }
     } catch (saveError) {
       setError(saveError.message || "No se pudo actualizar la incidencia");
     } finally {
@@ -94,6 +104,12 @@ export default function OwnerIncidentsPage() {
 
   return (
     <div className="space-y-6">
+      {/* Toast de notificación */}
+      {toast.visible && (
+        <div className="fixed bottom-6 right-6 z-[200] px-5 py-4 rounded-2xl shadow-2xl border bg-[#0D1F17] border-emerald-500/30 text-emerald-400 text-sm font-semibold flex items-center gap-3 animate-fade-up">
+          ✅ {toast.message}
+        </div>
+      )}
       <section className={`${SURFACE} p-6 md:p-7`}>
         <div className="flex items-start justify-between gap-5 flex-wrap">
           <div>

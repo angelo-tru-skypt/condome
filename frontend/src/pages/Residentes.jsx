@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useCondominio } from "../context/CondominioContext";
+import { toDashboardPath } from "../utils/dashboardPaths";
 
 // ── Estilos reutilizables (Modo Claro) ───────────────────────────────────────
 const INPUT = "w-full px-4 py-3 bg-[var(--surface-0)] border border-[var(--border-standard)] rounded-xl text-[var(--fg-primary)] text-sm outline-none transition-all focus:border-[var(--condome-orange)] focus:bg-[var(--surface-2)] focus:ring-4 focus:ring-[var(--condome-orange)]/10 font-medium shadow-sm";
@@ -8,7 +9,7 @@ const LABEL = "block text-[10px] font-bold tracking-[0.12em] uppercase text-[var
 const SURFACE = "rounded-[24px] border border-[var(--border-standard)] bg-[var(--surface-1)] shadow-[var(--shadow-card)]";
 
 export default function ResidentesPage() {
-  const { condominio, residentes, actualizarResidente, eliminarResidente, hasCondominio } = useCondominio();
+  const { condominio, residentes, actualizarResidente, eliminarResidente, hasCondominio, reenviarCredencialesResidente } = useCondominio();
   const [editItem, setEditItem] = useState(null);
   const [editForm, setEditForm] = useState({});
   const [deleteConfirm, setDeleteConfirm] = useState(null);
@@ -56,15 +57,15 @@ export default function ResidentesPage() {
   if (!hasCondominio) {
     return (
       <div className={`${SURFACE} p-12 text-center`}>
-         <div className="w-20 h-20 bg-[#FFF4EE] rounded-full flex items-center justify-center mx-auto mb-6 text-3xl shadow-sm">👥</div>
-        <h1 style={{ fontFamily: "'Playfair Display', serif" }} className="text-2xl font-bold text-[#1A1A1A]">
+         <div className="w-20 h-20 bg-[var(--signal-orange-fog)] rounded-full flex items-center justify-center mx-auto mb-6 text-3xl shadow-sm">👥</div>
+        <h1 style={{ fontFamily: "'Playfair Display', serif" }} className="text-2xl font-bold text-[var(--fg-primary)]">
           Primero registra tu condominio
         </h1>
-        <p className="mt-4 text-sm leading-8 text-[#404040] font-medium max-w-sm mx-auto">
+        <p className="mt-4 text-sm leading-8 text-[var(--fg-secondary)] font-medium max-w-sm mx-auto">
           El módulo de residentes se activa cuando ya existe un condominio base registrado en la plataforma.
         </p>
         <Link
-          to="/condominio"
+          to={toDashboardPath("condominio")}
           className="inline-flex mt-8 px-10 py-4 rounded-2xl no-underline text-white font-black uppercase tracking-widest text-xs shadow-xl"
           style={{ background: "linear-gradient(135deg, var(--condome-orange-soft), var(--condome-orange))" }}
         >
@@ -79,18 +80,18 @@ export default function ResidentesPage() {
       <section className={`${SURFACE} p-6 md:p-8`}>
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div>
-            <p className="text-[11px] uppercase tracking-[0.22em] font-bold text-[#D94F10]">
+            <p className="text-[11px] uppercase tracking-[0.22em] font-bold text-[var(--condome-orange)]">
               Comunidad
             </p>
-            <h1 style={{ fontFamily: "'Playfair Display', serif" }} className="mt-2 text-2xl font-bold text-[#1A1A1A]">
+            <h1 style={{ fontFamily: "'Playfair Display', serif" }} className="mt-2 text-2xl font-bold text-[var(--fg-primary)]">
               Residentes del condominio
             </h1>
-            <p className="mt-2 text-sm leading-7 text-[#404040] font-medium max-w-2xl">
+            <p className="mt-2 text-sm leading-7 text-[var(--fg-secondary)] font-medium max-w-2xl">
               Los residentes se registran desde cada apartamento. Aquí ves el listado consolidado de <strong>{condominio?.nombre}</strong>.
             </p>
           </div>
           <Link
-            to="/apartamentos"
+            to={toDashboardPath("apartamentos")}
             className="px-8 py-4 rounded-2xl no-underline text-white text-[11px] font-black uppercase tracking-widest shadow-lg"
             style={{ background: "linear-gradient(135deg, var(--condome-orange-soft), var(--condome-orange))" }}
           >
@@ -100,15 +101,15 @@ export default function ResidentesPage() {
       </section>
 
       {error && (
-        <div className="px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-sm font-bold">
+        <div className="px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm font-bold">
           {error}
         </div>
       )}
 
       <section className={`${SURFACE} p-6 md:p-8`}>
         <div className="flex items-center justify-between gap-4 flex-wrap mb-7">
-          <h2 className="text-xl font-bold text-[#1A1A1A]">Listado consolidado</h2>
-          <span className="px-4 py-1.5 rounded-full bg-[#FAF9F7] border border-[#E8DDD3] text-[#D94F10] text-[11px] font-bold uppercase tracking-wider">
+          <h2 className="text-xl font-bold text-[var(--fg-primary)]">Listado consolidado</h2>
+          <span className="px-4 py-1.5 rounded-full bg-[var(--surface-2)] border border-[var(--border-standard)] text-[var(--condome-orange)] text-[11px] font-bold uppercase tracking-wider">
             {residentes.length} residentes activos
           </span>
         </div>
@@ -142,6 +143,22 @@ export default function ResidentesPage() {
                    </div>
                    <div className="flex gap-2">
                      <button
+                       onClick={async () => {
+                         try {
+                           const res = await reenviarCredencialesResidente(item.id);
+                           const manualFallback = !res?.emailSent && res?.credenciales
+                             ? `\n\nLogin: ${res.credenciales.login}\nClave temporal: ${res.credenciales.password_temporal}`
+                             : "";
+                           alert((res?.message || "Credenciales reenviadas") + manualFallback);
+                         } catch (err) {
+                           alert(err.message || "Error al reenviar");
+                         }
+                       }}
+                       className="px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-50 border border-emerald-200 cursor-pointer hover:bg-emerald-100 transition-colors"
+                     >
+                       Reenviar Clave
+                     </button>
+                     <button
                        onClick={() => handleEditOpen(item)}
                        className="px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest text-blue-600 bg-blue-50 border border-blue-200 cursor-pointer hover:bg-blue-100 transition-colors"
                      >
@@ -158,10 +175,10 @@ export default function ResidentesPage() {
               </article>
             ))
           ) : (
-            <div className="md:col-span-2 xl:col-span-3 rounded-[24px] border border-dashed border-[#E8DDD3] bg-[#FAF9F7] p-12 text-center">
+            <div className="md:col-span-2 xl:col-span-3 rounded-[24px] border border-dashed border-[var(--border-standard)] bg-[var(--surface-0)] p-12 text-center">
               <div className="text-4xl mb-4">📭</div>
-              <h3 className="text-lg font-bold text-[#1A1A1A]">No hay residentes todavía</h3>
-              <p className="mt-3 text-sm leading-7 text-[#404040] font-medium max-w-sm mx-auto">
+              <h3 className="text-lg font-bold text-[var(--fg-primary)]">No hay residentes todavía</h3>
+              <p className="mt-3 text-sm leading-7 text-[var(--fg-secondary)] font-medium max-w-sm mx-auto">
                 Registra el primer residente desde el módulo de apartamentos para que aparezca en este listado global.
               </p>
             </div>
@@ -223,7 +240,7 @@ export default function ResidentesPage() {
       {deleteConfirm && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-md" onClick={() => setDeleteConfirm(null)}>
           <div className="bg-[var(--surface-1)] rounded-[28px] w-full max-w-sm p-8 text-center relative border border-[var(--border-standard)] shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-5 text-2xl border border-red-100">🗑️</div>
+            <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-5 text-2xl border border-red-500/20">🗑️</div>
             <h2 className="text-xl font-bold text-[var(--fg-primary)] mb-2">Eliminar residente</h2>
             <p className="text-sm text-[var(--fg-secondary)] font-medium mb-6">
               ¿Estas seguro de eliminar a <strong>{deleteConfirm.nombre_completo}</strong>? Se desactivara su cuenta de acceso al portal.
@@ -243,9 +260,9 @@ export default function ResidentesPage() {
 
 function MiniData({ label, value }) {
   return (
-    <div className="flex items-center justify-between gap-4 py-1.5 border-b border-[#E8DDD3]/30 last:border-0">
-      <span className="text-[10px] font-bold tracking-wider uppercase text-[#737373]">{label}</span>
-      <span className="text-xs font-bold text-[#1A1A1A] text-right truncate max-w-[60%]">{value}</span>
+    <div className="flex items-center justify-between gap-4 py-1.5 border-b border-[var(--border-standard)] last:border-0">
+      <span className="text-[10px] font-bold tracking-wider uppercase text-[var(--fg-tertiary)]">{label}</span>
+      <span className="text-xs font-bold text-[var(--fg-primary)] text-right truncate max-w-[60%]">{value}</span>
     </div>
   );
 }

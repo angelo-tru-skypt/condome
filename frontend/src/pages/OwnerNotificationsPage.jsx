@@ -14,6 +14,12 @@ export default function OwnerNotificationsPage() {
   const [saving, setSaving] = useState(false);
   const [sendingNotification, setSendingNotification] = useState(false);
   const [error, setError] = useState("");
+  const [toast, setToast] = useState({ visible: false, message: "", ok: true });
+
+  const showToast = (message, ok = true) => {
+    setToast({ visible: true, message, ok });
+    setTimeout(() => setToast({ visible: false, message: "", ok: true }), 4000);
+  };
   const [form, setForm] = useState({
     name: "",
     trigger: "incidencia_reportada",
@@ -128,6 +134,15 @@ export default function OwnerNotificationsPage() {
         residente_id: notificationForm.residentId ? Number(notificationForm.residentId) : undefined,
       });
       setNotifications((current) => [response.data, ...current]);
+
+      if (response.emailSent) {
+        showToast("Alerta enviada al panel y por email ✉️");
+      } else if (notificationForm.residentId) {
+        showToast("Alerta enviada al panel, pero el email no pudo salir", false);
+      } else {
+        showToast("Alerta enviada al panel correctamente");
+      }
+
       setNotificationForm({ message: "", residentId: "" });
     } catch (sendError) {
       setError(sendError.message || "No se pudo enviar la alerta.");
@@ -138,6 +153,16 @@ export default function OwnerNotificationsPage() {
 
   return (
     <div className="space-y-6">
+      {/* Toast */}
+      {toast.visible && (
+        <div className={`fixed bottom-6 right-6 z-[200] px-5 py-4 rounded-2xl shadow-2xl border text-sm font-semibold flex items-center gap-3 animate-fade-up ${
+          toast.ok
+            ? "bg-[#0D1F17] border-emerald-500/30 text-emerald-400"
+            : "bg-[#1A1A1A] border-[#262626] text-[#A3A3A3]"
+        }`}>
+          {toast.ok ? "✅" : "⚠️"} {toast.message}
+        </div>
+      )}
       <section className={`${SURFACE} p-6 md:p-7`}>
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>

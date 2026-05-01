@@ -7,6 +7,20 @@ from .base_api_service import BaseApiService
 
 _logger = logging.getLogger(__name__)
 
+# Inicialización diferida del servicio de correo.
+_mail_svc = None
+
+
+def _mail():
+    global _mail_svc
+    if _mail_svc is None:
+        try:
+            from odoo.addons.condome_mail.services.email_service import CondomeEmailService
+            _mail_svc = CondomeEmailService()
+        except Exception:
+            _logger.debug("condome_mail no disponible; correos de workflow deshabilitados.")
+    return _mail_svc
+
 
 class OwnerWorkflowService(BaseApiService):
     """Gestiona las decisiones operativas del owner sobre visitas e incidencias."""
@@ -92,6 +106,26 @@ class OwnerWorkflowService(BaseApiService):
             }
             values["fecha_resolucion"] = fields.Datetime.now() if status in {"resuelta", "cerrada"} else False
             incident.write(values)
+            # Notificar al residente cuando su incidencia es resuelta o cerrada
+            if status in {"resuelta", "cerrada"}:
+                mail = _mail()
+                if mail:
+                    try:
+                        resident = incident.residente_id
+                        if resident and resident.email:
+                            mail.send_to_resident(
+                                resident,
+                                subject=f"Incidencia {status}: {incident.titulo} — Condome",
+                                title=f"Tu incidencia ha sido {status}",
+                                message=(
+                                    f"La incidencia <strong>{incident.titulo}</strong> ha sido marcada como "
+                                    f"<strong>{status}</strong>."
+                                    + (f"<br><br><em>{incident.respuesta_propietario}</em>" if incident.respuesta_propietario else "")
+                                ),
+                                severity="success" if status == "resuelta" else "info",
+                            )
+                    except Exception as exc:
+                        _logger.debug("No se pudo enviar correo de resolución de incidencia: %s", exc)
             return self.build_response({"data": self.serialize_incidencia(incident)})
         except PermissionError as error:
             return self.error_response(error, status=401)

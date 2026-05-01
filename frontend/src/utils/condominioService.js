@@ -4,7 +4,7 @@
  */
 
 import apiClient from "./ApiClient.js";
-import { CONDOMINIO_ENDPOINTS, buildUrl } from "./API_ENDPOINTS.js";
+import { ADMIN_ENDPOINTS, CONDOMINIO_ENDPOINTS, buildUrl } from "./API_ENDPOINTS.js";
 import { DEFAULT_DB } from "../config/api.js";
 
 const condominioService = {
@@ -306,6 +306,32 @@ const condominioService = {
       return response;
     } catch (error) {
       throw new Error(error.message || "Error al eliminar residente");
+    }
+  },
+
+  /**
+   * Reenviar credenciales residente
+   */
+  async reenviarCredencialesResidente(residenteId, db = DEFAULT_DB) {
+    try {
+      const endpoint = buildUrl(CONDOMINIO_ENDPOINTS.resendResidenteCredentials(residenteId), { db });
+      const response = await apiClient.post(endpoint, { db });
+      return response;
+    } catch (error) {
+      throw new Error(error.message || "Error al reenviar credenciales");
+    }
+  },
+
+  /**
+   * Reenviar credenciales propietario
+   */
+  async reenviarCredencialesPropietario(propietarioId, db = DEFAULT_DB) {
+    try {
+      const endpoint = buildUrl(ADMIN_ENDPOINTS.resendPropietarioCredentials(propietarioId), { db });
+      const response = await apiClient.post(endpoint, { db });
+      return response;
+    } catch (error) {
+      throw new Error(error.message || "Error al reenviar credenciales");
     }
   },
 };

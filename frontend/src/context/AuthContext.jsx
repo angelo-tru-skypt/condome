@@ -11,6 +11,7 @@ const STORAGE_KEY = "authData";
 
 const initialState = {
   user: null,
+  token: null,
   loading: true,
   isValidating: false,
 };
@@ -19,10 +20,10 @@ function sessionReducer(state, action) {
   switch (action.type) {
     case "RESTORE_SESSION":
     case "SET_USER":
-      return { ...state, user: action.payload, loading: false };
+      return { ...state, user: action.payload.user, token: action.payload.token || state.token, loading: false };
 
     case "CLEAR_SESSION":
-      return { ...state, user: null, loading: false };
+      return { ...state, user: null, token: null, loading: false };
 
     case "START_VALIDATION":
       return { ...state, isValidating: true };
@@ -54,7 +55,7 @@ export function AuthProvider({ children }) {
         try {
           const parsed = JSON.parse(stored);
           if (parsed.user) {
-            dispatch({ type: "RESTORE_SESSION", payload: parsed.user });
+            dispatch({ type: "RESTORE_SESSION", payload: { user: parsed.user, token: parsed.token } });
             return;
           }
         } catch (error) {
@@ -67,7 +68,7 @@ export function AuthProvider({ children }) {
       try {
         const user = await authService.getSessionInfo();
         if (user) {
-          dispatch({ type: "RESTORE_SESSION", payload: user });
+          dispatch({ type: "RESTORE_SESSION", payload: { user } });
         }
       } catch (error) {
         console.debug("[AuthContext] No hay sesión activa");
@@ -80,17 +81,30 @@ export function AuthProvider({ children }) {
   }, []);
 
   /**
-   * Persistir sesión en localStorage
+   * Persistir sesión en localStorage y escuchar expiración
    */
   useEffect(() => {
+    if (state.loading) {
+      return undefined;
+    }
+
     if (state.user) {
       localStorage.setItem(
         STORAGE_KEY,
         JSON.stringify({
           user: state.user,
+          token: state.token,
           timestamp: Date.now(),
         })
       );
+
+      // Escuchar evento de sesión expirada del ApiClient
+      const handleExpired = () => {
+        dispatch({ type: "CLEAR_SESSION" });
+        localStorage.removeItem(STORAGE_KEY);
+        window.location.href = "/login?session-expired=true";
+      };
+      window.addEventListener("condome:session-expired", handleExpired);
 
       // Iniciar validador de sesión cuando el usuario se autentica
       sessionValidator.onSessionExpired = () => {
@@ -99,11 +113,15 @@ export function AuthProvider({ children }) {
         window.location.href = "/login?session-expired=true";
       };
       sessionValidator.start();
+
+      return () => {
+        window.removeEventListener("condome:session-expired", handleExpired);
+      };
     } else {
       localStorage.removeItem(STORAGE_KEY);
       sessionValidator.stop();
     }
-  }, [state.user]);
+  }, [state.loading, state.token, state.user]);
 
   /**
    * Login
@@ -112,7 +130,7 @@ export function AuthProvider({ children }) {
     dispatch({ type: "START_VALIDATION" });
     try {
       const response = await authService.login(credentials);
-      dispatch({ type: "SET_USER", payload: response.user });
+      dispatch({ type: "SET_USER", payload: { user: response.user, token: response.token } });
       return response.user;
     } finally {
       dispatch({ type: "FINISH_VALIDATION" });
@@ -127,7 +145,7 @@ export function AuthProvider({ children }) {
     try {
       const user = await authService.getSessionInfo();
       if (user) {
-        dispatch({ type: "SET_USER", payload: user });
+        dispatch({ type: "SET_USER", payload: { user } });
       }
       return user;
     } finally {
@@ -137,23 +155,21 @@ export function AuthProvider({ children }) {
 
   /**
    * Registrar nuevo usuario
+   * No autentica al usuario — espera verificación de email.
+   * Guarda el token en localStorage para que verifyEmail pueda usarlo.
    */
-  const register = useCallback(
-    async (form) => {
-      dispatch({ type: "START_VALIDATION" });
-      try {
-        const response = await authService.register(form);
-        if (response.user) {
-          dispatch({ type: "SET_USER", payload: response.user });
-          return response.user;
-        }
-        return null;
-      } finally {
-        dispatch({ type: "FINISH_VALIDATION" });
+  const register = useCallback(async (form) => {
+    dispatch({ type: "START_VALIDATION" });
+    try {
+      const response = await authService.register(form);
+      if (response?.user) {
+        dispatch({ type: "SET_USER", payload: { user: response.user, token: response.token } });
       }
-    },
-    []
-  );
+      return response;
+    } finally {
+      dispatch({ type: "FINISH_VALIDATION" });
+    }
+  }, []);
 
   /**
    * Logout
@@ -183,8 +199,38 @@ export function AuthProvider({ children }) {
    */
   const updateProfile = useCallback(async (payload) => {
     const result = await authService.updateProfile(payload);
-    if (result) {
-      dispatch({ type: "SET_USER", payload: result });
+    if (result?.user) {
+      dispatch({ type: "SET_USER", payload: { user: result.user } });
+    }
+    return result;
+  }, []);
+
+  /**
+   * Verificar email — autentica al usuario tras la verificación exitosa
+   */
+  const verifyEmail = useCallback(async (token) => {
+    const result = await authService.verifyEmail(token);
+    if (result?.user && result?.token) {
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({
+          token: result.token,
+          user: result.user,
+          timestamp: Date.now(),
+        })
+      );
+      dispatch({ type: "SET_USER", payload: { user: result.user, token: result.token } });
+    }
+    return result;
+  }, []);
+
+  /**
+   * Completar onboarding
+   */
+  const completeOnboarding = useCallback(async () => {
+    const result = await authService.completeOnboarding();
+    if (result?.user) {
+      dispatch({ type: "SET_USER", payload: { user: result.user } });
     }
     return result;
   }, []);
@@ -192,6 +238,7 @@ export function AuthProvider({ children }) {
   const value = useMemo(
     () => ({
       user: state.user,
+      token: state.token,
       isAuth: Boolean(state.user),
       loading: state.loading,
       isValidating: state.isValidating,
@@ -201,8 +248,10 @@ export function AuthProvider({ children }) {
       logout,
       changePassword,
       updateProfile,
+      verifyEmail,
+      completeOnboarding,
     }),
-    [state.user, state.loading, state.isValidating, login, refreshSession, register, logout, changePassword, updateProfile]
+    [state.user, state.token, state.loading, state.isValidating, login, refreshSession, register, logout, changePassword, updateProfile, verifyEmail, completeOnboarding]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

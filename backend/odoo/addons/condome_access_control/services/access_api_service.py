@@ -121,6 +121,10 @@ class AccessApiService(BaseApiService):
             message = self.clean_str(payload.get("message") or payload.get("mensaje"))
             if not message:
                 return self.error_response(_("El mensaje es requerido"))
+            title = self.clean_str(payload.get("title") or payload.get("titulo")) or _("Notificación del condominio")
+            subject = self.clean_str(payload.get("subject") or payload.get("asunto"))
+            severity = self.clean_str(payload.get("severity")) or "info"
+            channel = self.clean_str(payload.get("channel") or payload.get("canal")) or "panel"
 
             target_resident_id = payload.get("residente_id")
             target_resident = False
@@ -138,7 +142,23 @@ class AccessApiService(BaseApiService):
                     "residente_id": target_resident.id if target_resident else False,
                 }
             )
-            return self.build_response({"data": self.serialize_notification(record)}, status=201)
+            emails_sent = self.send_notification_email(
+                condominio,
+                message,
+                resident=target_resident,
+                title=title,
+                subject=subject,
+                severity=severity,
+                channel=channel,
+            )
+            return self.build_response(
+                {
+                    "data": self.serialize_notification(record),
+                    "emailSent": bool(emails_sent),
+                    "emailsSent": emails_sent,
+                },
+                status=201,
+            )
         except PermissionError as error:
             return self.error_response(error, status=403)
         except Exception as error:  # pragma: no cover
@@ -257,7 +277,7 @@ class AccessApiService(BaseApiService):
             if self.is_preflight_request():
                 return self.handle_options()
 
-            user = self.require_session()
+            user = self.require_owner_session()
             model = request.env["condome.vehiculo"].sudo()
 
             if request.httprequest.method == "GET":
@@ -288,13 +308,20 @@ class AccessApiService(BaseApiService):
                     "color": self.clean_str(payload.get("color")),
                     "ano": int(payload.get("ano") or payload.get("year") or 0) if payload.get("ano") or payload.get("year") else False,
                     "tipo": self.clean_str(payload.get("tipo") or payload.get("type")) or "auto",
-                    "estado": self.clean_str(payload.get("estado") or payload.get("status")) or "activo",
+                    "estado": self.clean_str(payload.get("estado") or payload.get("status")) or "pendiente",
                     "propietario_documento": self.clean_str(payload.get("propietario_documento") or payload.get("ownerDocument")),
                     "propietario_nombre": self.clean_str(payload.get("propietario_nombre") or payload.get("ownerName")),
                     "propietario_telefono": self.clean_str(payload.get("propietario_telefono") or payload.get("ownerPhone")),
                     "residente_id": int(residente_id),
                     "notas": self.clean_str(payload.get("notas") or payload.get("notes")),
                 }
+            )
+            self.create_audit_entry(
+                record.condominio_id,
+                "vehiculos",
+                _("Vehículo registrado"),
+                _("%s · Estado %s") % (record.placa, record.estado),
+                actor=self.clean_str(user.name or user.login) or "Administracion",
             )
             return self.build_response({"data": self.serialize_vehiculo(record)}, status=201)
         except PermissionError as error:
@@ -308,7 +335,7 @@ class AccessApiService(BaseApiService):
             if self.is_preflight_request():
                 return self.handle_options()
 
-            user = self.require_session()
+            user = self.require_owner_session()
             model = request.env["condome.vehiculo"].sudo()
             record = model.search([("id", "=", vehiculo_id)] + self.owner_domain(user), limit=1)
             if not record:
@@ -342,6 +369,14 @@ class AccessApiService(BaseApiService):
 
             if values:
                 record.write(values)
+                self.create_audit_entry(
+                    record.condominio_id,
+                    "vehiculos",
+                    _("Vehículo actualizado"),
+                    _("%s · Estado %s") % (record.placa, record.estado),
+                    actor=self.clean_str(user.name or user.login) or "Administracion",
+                    severity="success" if record.estado == "activo" else "info",
+                )
             return self.build_response({"data": self.serialize_vehiculo(record)})
         except PermissionError as error:
             return self.error_response(error, status=403)

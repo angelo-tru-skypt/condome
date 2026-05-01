@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import logo from "../public/img/logo.svg";
+import logoWhite from "../public/img/logo-white.svg";
 import { useAuth } from "../context/AuthContext";
 
 const INPUT =
@@ -136,7 +137,7 @@ export default function Register() {
     setGlobalError("");
 
     try {
-      await register({
+      const response = await register({
         nombre: form.nombre,
         apellido: form.apellido,
         email: form.email,
@@ -145,10 +146,15 @@ export default function Register() {
         password: form.password,
         confirmPassword: form.confirmPassword,
       });
-      navigate("/dashboard");
+      // Pasar el email como state para mostrarlo en la página de verificación
+      navigate("/verify-email", { state: { email: form.email } });
     } catch (error) {
-      setGlobalError(error.message || "Error al crear la cuenta. Intenta de nuevo.");
-      if (error.message?.toLowerCase().includes("correo")) setStep(1);
+      const msg = error.message || "Error al crear la cuenta. Intenta de nuevo.";
+      setGlobalError(msg);
+      // Si el error menciona el correo, volver al paso 1
+      if (msg.toLowerCase().includes("correo") || msg.toLowerCase().includes("email") || msg.toLowerCase().includes("usuario")) {
+        setStep(1);
+      }
     } finally {
       setLoading(false);
     }
@@ -165,112 +171,112 @@ export default function Register() {
         <div className="absolute inset-0 opacity-50" style={{ backgroundImage: "radial-gradient(circle, rgba(18,17,16,0.08) 1px, transparent 1px)", backgroundSize: "30px 30px" }} />
       </div>
 
-      <div className="relative z-10 mx-auto grid min-h-screen max-w-7xl gap-8 px-4 py-6 md:px-8 lg:grid-cols-[1.02fr_0.98fr] lg:items-center">
-        <section className="hidden rounded-[36px] bg-[linear-gradient(150deg,#121110_0%,#241B16_52%,#121110_100%)] p-9 text-white shadow-[0_30px_80px_rgba(18,17,16,0.18)] lg:block">
+      <div className="relative z-10 mx-auto grid min-h-screen gap-6 px-3 py-4 sm:gap-8 sm:px-4 sm:py-6 md:px-8 lg:max-w-7xl lg:grid-cols-[1.02fr_0.98fr] lg:items-center">
+        <section className="dark-surface-readable hidden rounded-[28px] bg-[linear-gradient(150deg,#121110_0%,#241B16_52%,#121110_100%)] p-6 text-white shadow-[0_30px_80px_rgba(18,17,16,0.18)] lg:block lg:p-9 xl:p-10">
           <Link to="/landing" className="flex items-center gap-3 no-underline">
-            <div className="flex h-12 items-center px-4 py-2 rounded-[22px] bg-white/5 border border-white/10 backdrop-blur-md">
-              <img src={logo} alt="Condome" className="h-8 w-auto brightness-0 invert opacity-90" />
+            <div className="flex h-10 sm:h-12 items-center px-3 sm:px-4 py-2 rounded-[18px] sm:rounded-[22px] bg-white/5 border border-white/10 backdrop-blur-md">
+              <img src={logoWhite} alt="Condome" className="h-6 sm:h-8 w-auto opacity-90" />
             </div>
           </Link>
 
-          <div className="mt-14 max-w-xl">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.26em] text-[#FFB184]">Registro de cuenta</p>
-            <h1 className="mt-5 text-[3.4rem] font-semibold leading-[1.02]" style={{ fontFamily: "'Playfair Display', serif" }}>
+          <div className="mt-10 sm:mt-14 max-w-xl">
+            <p className="text-[9px] sm:text-[10px] md:text-[11px] font-semibold uppercase tracking-[0.22em] sm:tracking-[0.26em] text-[#FFB184]">Registro de cuenta</p>
+            <h1 className="mt-4 sm:mt-5 text-[1.8rem] sm:text-[2.6rem] md:text-[3.4rem] font-semibold leading-[1.02]" style={{ fontFamily: "'Playfair Display', serif" }}>
               Una experiencia de entrada mas cuidada desde el primer paso.
             </h1>
-            <p className="mt-6 text-[15px] leading-7 text-white/70">
+            <p className="mt-4 sm:mt-6 text-[13px] sm:text-[14px] md:text-[15px] leading-6 sm:leading-7 text-white/90">
               Crea tu cuenta y entra a una plataforma mas estructurada para gestionar comunidad, espacios y finanzas sin perder el orden.
             </p>
           </div>
 
-          <div className="mt-12 grid gap-4">
+          <div className="mt-8 sm:mt-12 grid gap-3 sm:gap-4">
             {[
               "Paso 1: datos base del usuario y contexto.",
               "Paso 2: acceso seguro y preparacion de credenciales.",
-              "Paso 3: redireccion al panel segun el rol del usuario.",
+              "Paso 3: acceso directo a tu panel personalizado.",
             ].map((item, index) => (
-              <div key={item} className="flex items-center gap-4 rounded-[24px] border border-white/10 bg-white/6 px-5 py-4">
-                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[rgba(255,122,48,0.12)] text-sm font-semibold text-[#FFB184]">
+              <div key={item} className="flex items-center gap-3 sm:gap-4 rounded-[18px] sm:rounded-[24px] border border-white/10 bg-white/6 px-4 sm:px-5 py-3 sm:py-4">
+                <span className="flex h-8 sm:h-10 w-8 sm:w-10 items-center justify-center rounded-full bg-[rgba(255,122,48,0.12)] text-[11px] sm:text-sm font-semibold text-[#FFB184]">
                   0{index + 1}
                 </span>
-                <p className="text-sm leading-6 text-white/66">{item}</p>
+                <p className="text-xs sm:text-sm leading-5 sm:leading-6 text-white/80">{item}</p>
               </div>
             ))}
           </div>
         </section>
 
-        <section className="architectural-panel mx-auto w-full max-w-[560px] rounded-[36px] p-6 md:p-8">
-          <div className="flex items-center justify-between gap-4">
+        <section className="architectural-panel mx-auto w-full max-w-[440px] sm:max-w-[500px] md:max-w-[560px] rounded-[24px] sm:rounded-[28px] md:rounded-[36px] p-4 sm:p-5 md:p-6 lg:p-8">
+          <div className="flex items-center justify-between gap-3 sm:gap-4">
             <Link to="/landing" className="no-underline">
-              <img src={logo} alt="Condome" className="h-9 w-auto" />
+              <img src={logo} alt="Condome" className="h-7 sm:h-8 md:h-9 w-auto" />
             </Link>
-            <Link to="/login" className="rounded-full bg-[rgba(217,79,16,0.1)] px-3.5 py-2 text-xs font-semibold text-[var(--condome-orange)] no-underline">
+            <Link to="/login" className="rounded-full bg-[rgba(217,79,16,0.1)] px-3 sm:px-3.5 py-1.5 sm:py-2 text-[10px] sm:text-xs font-semibold text-[var(--condome-orange)] no-underline">
               Ya tengo cuenta
             </Link>
           </div>
 
-          <div className="mt-10">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--condome-orange)]">Crear cuenta</p>
-            <h1 className="mt-3 text-[2.2rem] font-semibold leading-tight text-[var(--fg-primary)]" style={{ fontFamily: "'Playfair Display', serif" }}>
+          <div className="mt-8 sm:mt-10">
+            <p className="text-[9px] sm:text-[10px] md:text-[11px] font-semibold uppercase tracking-[0.2em] sm:tracking-[0.24em] text-[var(--condome-orange)]">Crear cuenta</p>
+            <h1 className="mt-2 sm:mt-3 text-[1.5rem] sm:text-[2rem] md:text-[2.2rem] font-semibold leading-tight text-[var(--fg-primary)]" style={{ fontFamily: "'Playfair Display', serif" }}>
               Empieza con una base bien estructurada
             </h1>
-            <p className="mt-3 text-sm leading-7 text-[var(--fg-secondary)]">
+            <p className="mt-2 sm:mt-3 text-xs sm:text-sm leading-6 sm:leading-7 text-[var(--fg-secondary)]">
               Completa tus datos y prepara el acceso al panel principal sin salir del mismo flujo.
             </p>
           </div>
 
-          <div className="mt-7 flex items-center gap-3 rounded-[24px] border border-[var(--border-subtle)] bg-white/72 px-4 py-3">
+          <div className="mt-5 sm:mt-7 flex items-center gap-2.5 sm:gap-3 rounded-[18px] sm:rounded-[24px] border border-[var(--border-subtle)] bg-white/72 px-3 sm:px-4 py-2.5 sm:py-3">
             <StepDot active={step === 1} done={step > 1} number={1} />
-            <span className={`text-[11px] font-semibold uppercase tracking-[0.18em] ${step === 1 ? "text-[var(--condome-orange)]" : "text-[var(--fg-tertiary)]"}`}>
+            <span className={`text-[9px] sm:text-[11px] font-semibold uppercase tracking-[0.16em] sm:tracking-[0.18em] ${step === 1 ? "text-[var(--condome-orange)]" : "text-[var(--fg-tertiary)]"}`}>
               Datos base
             </span>
             <div className="h-px flex-1 bg-[var(--border-subtle)]" />
             <StepDot active={step === 2} done={false} number={2} />
-            <span className={`text-[11px] font-semibold uppercase tracking-[0.18em] ${step === 2 ? "text-[var(--condome-orange)]" : "text-[var(--fg-tertiary)]"}`}>
+            <span className={`text-[9px] sm:text-[11px] font-semibold uppercase tracking-[0.16em] sm:tracking-[0.18em] ${step === 2 ? "text-[var(--condome-orange)]" : "text-[var(--fg-tertiary)]"}`}>
               Acceso
             </span>
           </div>
 
           {globalError ? (
-            <div className="mt-6 flex items-center gap-3 rounded-[22px] border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+            <div className="mt-5 sm:mt-6 flex items-center gap-2.5 sm:gap-3 rounded-[18px] sm:rounded-[22px] border border-red-200 bg-red-50 px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm text-red-600">
               <IconWarn />
               <span>{globalError}</span>
             </div>
           ) : null}
 
-          <form className="mt-8" onSubmit={handleSubmit} noValidate>
+          <form className="mt-6 sm:mt-8" onSubmit={handleSubmit} noValidate>
             {step === 1 ? (
-              <div className="space-y-4">
-                <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-3.5 sm:space-y-4">
+                <div className="grid gap-3.5 sm:gap-4 grid-cols-1 sm:grid-cols-2">
                   <div>
                     <label className={LABEL}>Nombre</label>
                     <input name="nombre" value={form.nombre} onChange={handleChange} className={fieldClass("nombre")} placeholder="Nombre" />
-                    {errors.nombre ? <p className="mt-1.5 text-[11px] text-red-500">{errors.nombre}</p> : null}
+                    {errors.nombre ? <p className="mt-1 text-[10px] sm:text-[11px] text-red-500">{errors.nombre}</p> : null}
                   </div>
                   <div>
                     <label className={LABEL}>Apellido</label>
                     <input name="apellido" value={form.apellido} onChange={handleChange} className={fieldClass("apellido")} placeholder="Apellido" />
-                    {errors.apellido ? <p className="mt-1.5 text-[11px] text-red-500">{errors.apellido}</p> : null}
+                    {errors.apellido ? <p className="mt-1 text-[10px] sm:text-[11px] text-red-500">{errors.apellido}</p> : null}
                   </div>
                 </div>
 
                 <div>
                   <label className={LABEL}>Correo electronico</label>
                   <input type="email" name="email" value={form.email} onChange={handleChange} className={fieldClass("email")} placeholder="correo@ejemplo.com" />
-                  {errors.email ? <p className="mt-1.5 text-[11px] text-red-500">{errors.email}</p> : null}
+                  {errors.email ? <p className="mt-1 text-[10px] sm:text-[11px] text-red-500">{errors.email}</p> : null}
                 </div>
 
                 <div>
                   <label className={LABEL}>Telefono</label>
                   <input type="tel" name="telefono" value={form.telefono} onChange={handleChange} className={fieldClass("telefono")} placeholder="+1 809 000 0000" />
-                  {errors.telefono ? <p className="mt-1.5 text-[11px] text-red-500">{errors.telefono}</p> : null}
+                  {errors.telefono ? <p className="mt-1 text-[10px] sm:text-[11px] text-red-500">{errors.telefono}</p> : null}
                 </div>
 
                 <div>
                   <label className={LABEL}>Pais</label>
                   <div className="relative">
                     {selectedCountry ? (
-                      <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 rounded-full bg-[rgba(217,79,16,0.1)] px-2 py-1 text-[10px] font-semibold text-[var(--condome-orange)]">
+                      <span className="pointer-events-none absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 rounded-full bg-[rgba(217,79,16,0.1)] px-1.5 sm:px-2 py-0.5 sm:py-1 text-[9px] sm:text-[10px] font-semibold text-[var(--condome-orange)]">
                         {selectedCountry.flag}
                       </span>
                     ) : null}
@@ -278,7 +284,7 @@ export default function Register() {
                       name="pais"
                       value={form.pais}
                       onChange={handleChange}
-                      className={`${fieldClass("pais")} ${selectedCountry ? "pl-16" : ""} cursor-pointer`}
+                      className={`${fieldClass("pais")} ${selectedCountry ? "pl-12 sm:pl-16" : ""} cursor-pointer`}
                       style={SELECT_STYLE}
                     >
                       <option value="">Selecciona tu pais</option>
@@ -289,7 +295,7 @@ export default function Register() {
                       ))}
                     </select>
                   </div>
-                  {errors.pais ? <p className="mt-1.5 text-[11px] text-red-500">{errors.pais}</p> : null}
+                  {errors.pais ? <p className="mt-1 text-[10px] sm:text-[11px] text-red-500">{errors.pais}</p> : null}
                 </div>
 
                 <button

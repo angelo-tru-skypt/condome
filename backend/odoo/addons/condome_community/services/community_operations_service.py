@@ -55,7 +55,22 @@ class CommunityOperationsService(BaseApiService):
                 actor=self.clean_str(user.name or user.login) or "Administracion",
                 severity="warning" if record.prioridad == "alta" else "info",
             )
-            return self.build_response({"data": self.serialize_comunicado(record)}, status=201)
+            emails_sent = 0
+            if self.should_send_announcement_email(record.estado, record.canal):
+                emails_sent = self.send_comunicado_email(
+                    condominio,
+                    title=record.name,
+                    message=record.mensaje or "",
+                    priority=record.prioridad or "media",
+                )
+            return self.build_response(
+                {
+                    "data": self.serialize_comunicado(record),
+                    "emailSent": bool(emails_sent),
+                    "emailsSent": emails_sent,
+                },
+                status=201,
+            )
         except PermissionError as error:
             return self.error_response(error, status=403)
         except Exception as error:  # pragma: no cover
@@ -87,6 +102,8 @@ class CommunityOperationsService(BaseApiService):
                 values["target_label"] = self.clean_str(payload.get("targetLabel") or payload.get("target_label")) or record.target_label
             if "scheduledFor" in payload or "scheduled_for" in payload:
                 values["scheduled_for"] = self.normalize_datetime_value(payload.get("scheduledFor") or payload.get("scheduled_for"))
+            previous_status = record.estado
+            previous_channel = record.canal
             record.write(values)
             self.create_audit_entry(
                 record.condominio_id,
@@ -96,7 +113,26 @@ class CommunityOperationsService(BaseApiService):
                 actor=self.clean_str(user.name or user.login) or "Administracion",
                 severity="warning" if record.prioridad == "alta" else "success",
             )
-            return self.build_response({"data": self.serialize_comunicado(record)})
+            email_related_fields = {"name", "mensaje", "prioridad", "canal", "estado"}
+            emails_sent = 0
+            if self.should_send_announcement_email(record.estado, record.canal) and (
+                previous_status != "published"
+                or previous_channel != record.canal
+                or bool(email_related_fields.intersection(values))
+            ):
+                emails_sent = self.send_comunicado_email(
+                    record.condominio_id,
+                    title=record.name,
+                    message=record.mensaje or "",
+                    priority=record.prioridad or "media",
+                )
+            return self.build_response(
+                {
+                    "data": self.serialize_comunicado(record),
+                    "emailSent": bool(emails_sent),
+                    "emailsSent": emails_sent,
+                }
+            )
         except PermissionError as error:
             return self.error_response(error, status=403)
         except Exception as error:  # pragma: no cover

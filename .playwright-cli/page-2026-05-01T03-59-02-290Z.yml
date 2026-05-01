@@ -1,0 +1,55 @@
+- generic [ref=e3]:
+  - generic:
+    - generic:
+      - generic:
+        - img
+      - generic:
+        - paragraph: Bienvenido
+        - paragraph: Estamos preparando tu panel principal.
+  - generic [ref=e4]:
+    - generic [ref=e5]:
+      - link "Condome" [ref=e6] [cursor=pointer]:
+        - /url: /landing
+        - img "Condome" [ref=e8]
+      - generic [ref=e9]:
+        - paragraph [ref=e10]: Inicio de sesion
+        - heading "Un acceso mas claro para un panel mas profesional." [level=1] [ref=e11]
+        - paragraph [ref=e12]: El sistema ahora se apoya en una capa visual mas limpia, con mejor jerarquia y una experiencia mucho mas agradable para administrar condominios.
+      - generic [ref=e13]:
+        - generic [ref=e14]:
+          - paragraph [ref=e15]: Orden
+          - paragraph [ref=e16]: navegacion por areas reales de trabajo
+        - generic [ref=e17]:
+          - paragraph [ref=e18]: Claridad
+          - paragraph [ref=e19]: datos con jerarquia mas consistente
+        - generic [ref=e20]:
+          - paragraph [ref=e21]: Confianza
+          - paragraph [ref=e22]: blanco, negro y naranja como lenguaje comun
+    - generic [ref=e23]:
+      - generic [ref=e24]:
+        - link "Condome" [ref=e25] [cursor=pointer]:
+          - /url: /landing
+          - img "Condome" [ref=e26]
+        - link "Crear cuenta" [ref=e27] [cursor=pointer]:
+          - /url: /register
+      - generic [ref=e28]:
+        - paragraph [ref=e29]: Cuenta existente
+        - heading "Iniciar sesion" [level=1] [ref=e30]
+        - paragraph [ref=e31]: Entra a tu panel para continuar con cobros, comunidad, accesos y seguimiento del condominio.
+      - generic [ref=e32]:
+        - generic [ref=e33]:
+          - generic [ref=e34]: Correo electronico
+          - textbox "correo@ejemplo.com" [ref=e35]
+        - generic [ref=e36]:
+          - generic [ref=e37]:
+            - generic [ref=e38]: Contrasena
+            - link "Recuperar acceso" [ref=e39] [cursor=pointer]:
+              - /url: "#"
+          - generic [ref=e40]:
+            - textbox "••••••••" [ref=e41]
+            - button [ref=e42] [cursor=pointer]:
+              - img [ref=e43]
+        - button "Entrar al panel" [ref=e46] [cursor=pointer]
+      - generic [ref=e47]:
+        - paragraph [ref=e48]: Acceso rapido
+        - paragraph [ref=e49]: El nuevo shell prioriza navegacion, contexto del usuario y mejor lectura de la informacion en desktop y mobile.

@@ -341,6 +341,18 @@ const adminService = {
     }
   },
 
+  async runDelinquencyAction(condominioId, payload) {
+    try {
+      const response = await apiClient.post(ADMIN_ENDPOINTS.morosidad, {
+        condominio_id: condominioId,
+        ...payload,
+      });
+      return response;
+    } catch (error) {
+      throw new Error(error.message || "Error al ejecutar la acción de morosidad");
+    }
+  },
+
   // ── Áreas Comunes ──────────────────────────────────────────────────────────
 
   async listCommonAreas(condominioId) {
@@ -467,6 +479,15 @@ const adminService = {
       return response;
     } catch (error) {
       throw new Error(error.message || "Error al obtener reportes");
+    }
+  },
+
+  async updateReportAutomation(payload) {
+    try {
+      const response = await apiClient.put(ADMIN_ENDPOINTS.reportes, payload);
+      return response;
+    } catch (error) {
+      throw new Error(error.message || "Error al actualizar la automatización de reportes");
     }
   },
 

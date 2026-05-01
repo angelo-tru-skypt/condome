@@ -129,6 +129,41 @@ const authService = {
   },
 
   /**
+   * Verificar correo
+   */
+  async verifyEmail(token) {
+    try {
+      const response = await apiClient.post(AUTH_ENDPOINTS.verifyEmail, { token });
+
+      if (response?.token) {
+        localStorage.setItem(
+          "authData",
+          JSON.stringify({
+            token: response.token,
+            user: response.user,
+            timestamp: Date.now(),
+          })
+        );
+      }
+
+      return response;
+    } catch (error) {
+      throw new Error(error.message || "No se pudo verificar el correo");
+    }
+  },
+
+  /**
+   * Reenviar verificación
+   */
+  async resendVerification(email) {
+    try {
+      return await apiClient.post(AUTH_ENDPOINTS.resendVerification, { email });
+    } catch (error) {
+      throw new Error(error.message || "No se pudo reenviar el correo de verificación");
+    }
+  },
+
+  /**
    * Validar token
    * Nota: Este método es un fallback. Si el endpoint no existe o falla,
    * asumimos que la sesión es válida (getSessionInfo la validará si realmente expiró).
@@ -142,6 +177,30 @@ const authService = {
       // La sesión realmente expirada será detectada por getSessionInfo
       console.debug("[AuthService] validateToken fallback (asumiendo válido)", error?.message);
       return true;
+    }
+  },
+
+  /**
+   * Completar onboarding (planes)
+   */
+  async completeOnboarding() {
+    try {
+      const response = await apiClient.post("/condome_auth/complete_onboarding");
+      
+      if (response?.user) {
+        const authData = JSON.parse(localStorage.getItem("authData") || "{}");
+        localStorage.setItem(
+          "authData",
+          JSON.stringify({
+            ...authData,
+            user: response.user,
+            timestamp: Date.now(),
+          })
+        );
+      }
+      return response;
+    } catch (error) {
+      throw new Error(error.message || "Error al completar onboarding");
     }
   },
 

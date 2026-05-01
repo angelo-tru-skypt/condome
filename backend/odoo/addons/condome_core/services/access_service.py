@@ -27,11 +27,14 @@ class ApiAccessMixin:
     def is_propietario_user(self, user):
         return user.has_group("condome_auth.group_condome_propietario")
 
+    def is_encargado_user(self, user):
+        return user.has_group("condome_auth.group_condome_encargado")
+
     def is_system_owner(self, user):
         return self.is_owner_user(user)
 
     def is_condominio_admin(self, user):
-        return self.is_propietario_user(user)
+        return self.is_propietario_user(user) or self.is_encargado_user(user)
 
     def _system_owner_condominio_ids(self):
         return request.env["condome.condominio"].sudo().search([]).ids

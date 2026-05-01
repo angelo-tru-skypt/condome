@@ -19,6 +19,7 @@
         "condome_roles",
         "condome_billing",
         "condome_reporting",
+        "condome_mail",
     ],
     "installable": True,
     "application": False,

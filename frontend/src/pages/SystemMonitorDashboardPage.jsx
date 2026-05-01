@@ -105,7 +105,7 @@ export default function SystemMonitorDashboardPage() {
           <div className="relative z-10">
             <div className="flex flex-wrap items-center gap-2 mb-4">
               <span className="px-3 py-1 rounded-full bg-[#D94F10]/10 border border-[#D94F10]/30 text-[11px] font-semibold tracking-[0.2em] uppercase text-[#FF7A30]">
-                System Monitor
+                Monitoreo Global
               </span>
               <span className="px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-[11px] font-semibold text-emerald-400">
                 ● En línea
@@ -116,7 +116,7 @@ export default function SystemMonitorDashboardPage() {
             </div>
 
             <h1 className="text-3xl md:text-4xl font-bold text-[#E5E5E5]" style={{ fontFamily: "'Playfair Display', serif" }}>
-              Centro de monitoreo del sistema
+              Centro de Control
             </h1>
             <p className="mt-3 text-[15px] leading-7 text-[#A3A3A3] max-w-3xl">
               Bienvenido, {firstName}. Vista consolidada de todos los condominios, movimientos y alertas del ecosistema Condome.
@@ -230,13 +230,13 @@ export default function SystemMonitorDashboardPage() {
                     <span className="px-2 py-0.5 rounded-md bg-[#D94F10]/10 border border-[#D94F10]/30 text-[10px] font-bold text-[#FF7A30] uppercase tracking-wider">
                       {item.category || "sistema"}
                     </span>
-                    <span className="text-[10px] text-[#737373] font-medium">
+                    <span className="text-[10px] text-[#A3A3A3] font-medium">
                       {formatDate(item.createdAt)}
                     </span>
                   </div>
                   <h3 className="text-sm font-semibold text-[#E5E5E5]">{item.title}</h3>
                   <p className="mt-1.5 text-xs text-[#A3A3A3] line-clamp-2 leading-relaxed">{item.detail}</p>
-                  <p className="mt-2.5 text-[10px] text-[#737373] font-medium uppercase tracking-wide border-t border-[#262626] pt-2">{item.actor}</p>
+                  <p className="mt-2.5 text-[10px] text-[#A3A3A3] font-medium uppercase tracking-wide border-t border-[#262626] pt-2">{item.actor}</p>
                 </article>
               ))
             ) : (
@@ -263,8 +263,8 @@ export default function SystemMonitorDashboardPage() {
             />
             <QuickLink
               to="/roles"
-              title="Roles y permisos"
-              description="Configurar el control de acceso por perfil."
+              title="Perfiles"
+              description="Configurar el control de acceso."
               accent="#FF7A30"
             />
             <QuickLink
@@ -342,7 +342,7 @@ function MonitorLoader() {
           className="w-10 h-10 rounded-full border-2 border-[#262626] border-t-[#D94F10]"
           style={{ animation: "spin 0.8s linear infinite" }}
         />
-        <p className="text-sm text-[#A3A3A3]">Cargando centro de monitoreo...</p>
+        <p className="text-sm text-[#A3A3A3]">Cargando panel...</p>
         <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
       </div>
     </div>

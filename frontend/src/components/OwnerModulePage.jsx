@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { OWNER_MODULES } from "../data/ownerModules";
+import { toDashboardPath } from "../utils/dashboardPaths";
 
 const SURFACE = "rounded-[28px] border border-[var(--border-standard)] bg-[var(--surface-1)] shadow-[var(--shadow-card)]";
 const SOFT = "rounded-[24px] border border-[var(--border-subtle)] bg-[var(--surface-3)]";
@@ -23,7 +24,7 @@ export default function OwnerModulePage({ moduleKey }) {
   return (
     <div className="space-y-6">
       <section
-        className="overflow-hidden rounded-[34px] border border-[rgba(30,26,23,0.08)]"
+        className="dark-surface-readable overflow-hidden rounded-[34px] border border-[rgba(30,26,23,0.08)]"
         style={{
           background: "linear-gradient(145deg, #121110 0%, #241B16 46%, #121110 100%)",
           boxShadow: "0 24px 60px rgba(18,17,16,0.18)",
@@ -106,8 +107,8 @@ export default function OwnerModulePage({ moduleKey }) {
               {module.related.map((item) => (
                 <Link
                   key={item.to}
-                  to={item.to}
-                  className="block rounded-[22px] border border-[var(--border-standard)] bg-white px-4 py-3 text-inherit no-underline transition-all hover:border-[var(--control-border-strong)] hover:shadow-[var(--shadow-whisper)]"
+                  to={toDashboardPath(item.to)}
+                  className="block rounded-[22px] border border-[var(--border-standard)] bg-[var(--surface-2)] px-4 py-3 text-inherit no-underline transition-all hover:border-[var(--control-border-strong)] hover:shadow-[var(--shadow-whisper)]"
                 >
                   <p className="text-sm font-semibold text-[var(--fg-primary)]">{item.label}</p>
                   <p className="mt-1 text-xs leading-6 text-[var(--fg-secondary)]">
@@ -127,7 +128,7 @@ export default function OwnerModulePage({ moduleKey }) {
                   ["Listado o agenda", "Tabla, tarjetas o seguimiento segun el caso."],
                   ["Bitacora viva", "Cambios recientes y acciones relacionadas sin perder contexto."],
                 ].map(([title, copy]) => (
-                  <div key={title} className="rounded-[20px] border border-[var(--border-standard)] bg-white p-4">
+                  <div key={title} className="rounded-[20px] border border-[var(--border-standard)] bg-[var(--surface-2)] p-4">
                     <p className="text-sm font-semibold text-[var(--fg-primary)]">{title}</p>
                     <p className="mt-1 text-xs leading-6 text-[var(--fg-secondary)]">{copy}</p>
                   </div>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import logo from "../public/img/logo.svg";
+import logoWhite from "../public/img/logo-white.svg";
 import { useAuth } from "../context/AuthContext";
 
 const INPUT =
@@ -22,7 +23,9 @@ export default function Login() {
 
   useEffect(() => {
     if (!success) return;
-    const timeout = setTimeout(() => navigate("/dashboard"), 1800);
+    // Siempre ir al dashboard — DashboardHomeByRole decide qué mostrar según el rol
+    // El ProtectedRoute maneja el gate de onboarding si aplica
+    const timeout = setTimeout(() => navigate("/dashboard"), 1200);
     return () => clearTimeout(timeout);
   }, [success, navigate]);
 
@@ -60,7 +63,15 @@ export default function Login() {
       setUserName(data?.name?.split(" ")[0] || "");
       setSuccess(true);
     } catch (error) {
-      setGlobalError(error.message || "Correo o contrasena incorrectos");
+      const msg = error.message || "";
+      // Mensajes de error más claros según el tipo
+      if (msg.toLowerCase().includes("contraseña") || msg.toLowerCase().includes("password") || msg.toLowerCase().includes("inválido")) {
+        setGlobalError("Correo o contraseña incorrectos. Verifica tus datos.");
+      } else if (msg.toLowerCase().includes("sesión") || msg.toLowerCase().includes("session")) {
+        setGlobalError("No se pudo iniciar sesión. Intenta de nuevo.");
+      } else {
+        setGlobalError(msg || "Correo o contraseña incorrectos.");
+      }
     } finally {
       setLoading(false);
     }
@@ -75,7 +86,7 @@ export default function Login() {
       </div>
 
       <div
-        className={`fixed left-1/2 top-6 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 rounded-[24px] bg-[#121110] px-5 py-4 text-white shadow-[0_24px_50px_rgba(18,17,16,0.24)] transition-all duration-500 ${
+        className={`dark-surface-readable fixed left-1/2 top-6 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 rounded-[24px] bg-[#121110] px-5 py-4 text-white shadow-[0_24px_50px_rgba(18,17,16,0.24)] transition-all duration-500 ${
           success ? "translate-y-0 opacity-100" : "-translate-y-4 opacity-0 pointer-events-none"
         }`}
       >
@@ -96,70 +107,70 @@ export default function Login() {
         </div>
       </div>
 
-      <div className="relative z-10 mx-auto grid min-h-screen max-w-7xl gap-8 px-4 py-6 md:px-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
-        <section className="hidden rounded-[36px] bg-[linear-gradient(150deg,#121110_0%,#241B16_52%,#121110_100%)] p-9 text-white shadow-[0_30px_80px_rgba(18,17,16,0.18)] lg:block">
+      <div className="relative z-10 mx-auto grid min-h-screen gap-6 px-3 py-4 sm:gap-8 sm:px-4 sm:py-6 md:px-8 lg:max-w-7xl lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
+        <section className="dark-surface-readable hidden rounded-[28px] bg-[linear-gradient(150deg,#121110_0%,#241B16_52%,#121110_100%)] p-6 text-white shadow-[0_30px_80px_rgba(18,17,16,0.18)] lg:block lg:p-9 xl:p-10">
           <Link to="/landing" className="flex items-center gap-3 no-underline">
-            <div className="flex h-12 items-center px-4 py-2 rounded-[22px] bg-white/5 border border-white/10 backdrop-blur-md">
-              <img src={logo} alt="Condome" className="h-8 w-auto brightness-0 invert opacity-90" />
+            <div className="flex h-10 sm:h-12 items-center px-3 sm:px-4 py-2 rounded-[18px] sm:rounded-[22px] bg-white/5 border border-white/10 backdrop-blur-md">
+              <img src={logoWhite} alt="Condome" className="h-6 sm:h-8 w-auto opacity-90" />
             </div>
           </Link>
 
-          <div className="mt-14 max-w-xl">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.26em] text-[#FFB184]">Inicio de sesion</p>
-            <h1 className="mt-5 text-[3.5rem] font-semibold leading-[1.02]" style={{ fontFamily: "'Playfair Display', serif" }}>
+          <div className="mt-10 sm:mt-14 max-w-xl">
+            <p className="text-[9px] sm:text-[10px] md:text-[11px] font-semibold uppercase tracking-[0.22em] sm:tracking-[0.26em] text-[#FFB184]">Inicio de sesion</p>
+            <h1 className="mt-4 sm:mt-5 text-[2rem] sm:text-[2.8rem] md:text-[3.5rem] font-semibold leading-[1.02]" style={{ fontFamily: "'Playfair Display', serif" }}>
               Un acceso mas claro para un panel mas profesional.
             </h1>
-            <p className="mt-6 text-[15px] leading-7 text-white/70">
+            <p className="mt-4 sm:mt-6 text-[13px] sm:text-[14px] md:text-[15px] leading-6 sm:leading-7 text-white/90">
               El sistema ahora se apoya en una capa visual mas limpia, con mejor jerarquia y una experiencia mucho mas agradable para administrar condominios.
             </p>
           </div>
 
-          <div className="mt-12 grid gap-4 sm:grid-cols-3">
+          <div className="mt-8 sm:mt-12 grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-3">
             {[
               ["Orden", "navegacion por areas reales de trabajo"],
               ["Claridad", "datos con jerarquia mas consistente"],
               ["Confianza", "blanco, negro y naranja como lenguaje comun"],
             ].map(([title, copy]) => (
-              <div key={title} className="rounded-[24px] border border-white/10 bg-white/6 p-4 backdrop-blur-sm">
-                <p className="text-lg font-semibold text-white" style={{ fontFamily: "'Playfair Display', serif" }}>
+              <div key={title} className="rounded-[18px] sm:rounded-[24px] border border-white/10 bg-white/6 p-3 sm:p-4 backdrop-blur-sm">
+                <p className="text-sm sm:text-lg font-semibold text-white" style={{ fontFamily: "'Playfair Display', serif" }}>
                   {title}
                 </p>
-                <p className="mt-2 text-sm leading-6 text-white/58">{copy}</p>
+                <p className="mt-1.5 sm:mt-2 text-[11px] sm:text-sm leading-5 sm:leading-6 text-white/75">{copy}</p>
               </div>
             ))}
           </div>
         </section>
 
-        <section className="architectural-panel mx-auto w-full max-w-[520px] rounded-[36px] p-6 md:p-8">
-          <div className="flex items-center justify-between gap-4">
+        <section className="architectural-panel mx-auto w-full max-w-[420px] sm:max-w-[480px] md:max-w-[520px] rounded-[24px] sm:rounded-[28px] md:rounded-[36px] p-4 sm:p-5 md:p-6 lg:p-8">
+          <div className="flex items-center justify-between gap-3 sm:gap-4">
             <Link to="/landing" className="no-underline">
-              <img src={logo} alt="Condome" className="h-9 w-auto" />
+              <img src={logo} alt="Condome" className="h-7 sm:h-8 md:h-9 w-auto" />
             </Link>
-            <Link to="/register" className="rounded-full bg-[rgba(217,79,16,0.1)] px-3.5 py-2 text-xs font-semibold text-[var(--condome-orange)] no-underline">
+            <Link to="/register" className="rounded-full bg-[rgba(217,79,16,0.1)] px-3 sm:px-3.5 py-1.5 sm:py-2 text-[10px] sm:text-xs font-semibold text-[var(--condome-orange)] no-underline">
               Crear cuenta
             </Link>
           </div>
 
-          <div className="mt-10">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--condome-orange)]">Cuenta existente</p>
-            <h1 className="mt-3 text-[2.2rem] font-semibold leading-tight text-[var(--fg-primary)]" style={{ fontFamily: "'Playfair Display', serif" }}>
+          <div className="mt-8 sm:mt-10">
+            <p className="text-[9px] sm:text-[10px] md:text-[11px] font-semibold uppercase tracking-[0.2em] sm:tracking-[0.24em] text-[var(--condome-orange)]">Cuenta existente</p>
+            <h1 className="mt-2 sm:mt-3 text-[1.6rem] sm:text-[2rem] md:text-[2.2rem] font-semibold leading-tight text-[var(--fg-primary)]" style={{ fontFamily: "'Playfair Display', serif" }}>
               Iniciar sesion
             </h1>
-            <p className="mt-3 text-sm leading-7 text-[var(--fg-secondary)]">
+            <p className="mt-2 sm:mt-3 text-xs sm:text-sm leading-6 sm:leading-7 text-[var(--fg-secondary)]">
               Entra a tu panel para continuar con cobros, comunidad, accesos y seguimiento del condominio.
             </p>
           </div>
 
           {globalError && (
-            <div className="mt-6 flex items-center gap-3 rounded-[22px] border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+            <div className="mt-5 sm:mt-6 flex items-center gap-2.5 sm:gap-3 rounded-[18px] sm:rounded-[22px] border border-red-200 bg-red-50 px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm text-red-600">
               <IconWarn />
               <span>{globalError}</span>
             </div>
           )}
 
-          <form className="mt-8 space-y-5" onSubmit={handleSubmit} noValidate>
+          <form className="mt-6 sm:mt-8 space-y-4 sm:space-y-5" onSubmit={handleSubmit} noValidate>
             <div>
-              <label className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--fg-tertiary)]">
+              <label className="mb-1.5 sm:mb-2 block text-[9px] sm:text-[10px] font-semibold uppercase tracking-[0.16em] sm:tracking-[0.18em] text-[var(--fg-tertiary)]">
                 Correo electronico
               </label>
               <input
@@ -171,15 +182,15 @@ export default function Login() {
                 placeholder="correo@ejemplo.com"
                 autoComplete="email"
               />
-              {errors.email ? <p className="mt-1.5 text-[11px] text-red-500">{errors.email}</p> : null}
+              {errors.email ? <p className="mt-1 text-[10px] sm:text-[11px] text-red-500">{errors.email}</p> : null}
             </div>
 
             <div>
-              <div className="mb-2 flex items-center justify-between gap-3">
-                <label className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--fg-tertiary)]">
+              <div className="mb-1.5 sm:mb-2 flex items-center justify-between gap-3">
+                <label className="block text-[9px] sm:text-[10px] font-semibold uppercase tracking-[0.16em] sm:tracking-[0.18em] text-[var(--fg-tertiary)]">
                   Contrasena
                 </label>
-                <a href="#" className="text-[11px] text-[var(--fg-tertiary)] transition-colors hover:text-[var(--condome-orange)]">
+                <a href="#" className="text-[10px] sm:text-[11px] text-[var(--fg-tertiary)] transition-colors hover:text-[var(--condome-orange)]">
                   Recuperar acceso
                 </a>
               </div>
@@ -189,25 +200,25 @@ export default function Login() {
                   name="password"
                   value={form.password}
                   onChange={handleChange}
-                  className={`${errors.password ? INPUT_ERR : INPUT} pr-12`}
+                  className={`${errors.password ? INPUT_ERR : INPUT} pr-10 sm:pr-12`}
                   placeholder="••••••••"
                   autoComplete="current-password"
                 />
                 <button
                   type="button"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 rounded-2xl border-none bg-transparent p-1.5 text-[var(--fg-tertiary)] transition-colors hover:text-[var(--condome-orange)]"
+                  className="absolute right-2.5 sm:right-3 top-1/2 -translate-y-1/2 rounded-xl sm:rounded-2xl border-none bg-transparent p-1 sm:p-1.5 text-[var(--fg-tertiary)] transition-colors hover:text-[var(--condome-orange)]"
                   onClick={() => setShowPass((current) => !current)}
                 >
                   {showPass ? <IconEyeOff /> : <IconEye />}
                 </button>
               </div>
-              {errors.password ? <p className="mt-1.5 text-[11px] text-red-500">{errors.password}</p> : null}
+              {errors.password ? <p className="mt-1 text-[10px] sm:text-[11px] text-red-500">{errors.password}</p> : null}
             </div>
 
             <button
               type="submit"
               disabled={loading || success}
-              className="flex w-full items-center justify-center gap-2 rounded-full border-none bg-[linear-gradient(135deg,#FF7A30,#D94F10)] px-5 py-4 text-sm font-semibold uppercase tracking-[0.12em] text-white shadow-[0_16px_32px_rgba(217,79,16,0.2)] transition-transform hover:translate-y-[-1px] disabled:cursor-not-allowed disabled:opacity-60"
+              className="flex w-full items-center justify-center gap-2 rounded-full border-none bg-[linear-gradient(135deg,#FF7A30,#D94F10)] px-4 sm:px-5 py-3 sm:py-4 text-xs sm:text-sm font-semibold uppercase tracking-[0.1em] sm:tracking-[0.12em] text-white shadow-[0_16px_32px_rgba(217,79,16,0.2)] transition-transform hover:translate-y-[-1px] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {loading ? (
                 <>
@@ -225,9 +236,9 @@ export default function Login() {
             </button>
           </form>
 
-          <div className="mt-8 rounded-[26px] border border-[var(--border-subtle)] bg-white/72 p-5">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--condome-orange)]">Acceso rapido</p>
-            <p className="mt-2 text-sm leading-7 text-[var(--fg-secondary)]">
+          <div className="mt-6 sm:mt-8 rounded-[20px] sm:rounded-[26px] border border-[var(--border-subtle)] bg-white/72 p-4 sm:p-5">
+            <p className="text-[9px] sm:text-[11px] font-semibold uppercase tracking-[0.2em] sm:tracking-[0.24em] text-[var(--condome-orange)]">Acceso rapido</p>
+            <p className="mt-1.5 sm:mt-2 text-xs sm:text-sm leading-6 sm:leading-7 text-[var(--fg-secondary)]">
               El nuevo shell prioriza navegacion, contexto del usuario y mejor lectura de la informacion en desktop y mobile.
             </p>
           </div>

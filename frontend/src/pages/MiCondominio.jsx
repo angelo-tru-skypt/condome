@@ -4,12 +4,13 @@ import { useAuth } from "../context/AuthContext";
 import { useCondominio } from "../context/CondominioContext";
 import RegistroCondominio from "../components/condominio/RegistroCondominio";
 import { COUNTRIES, getCountryLabel } from "../data/countries";
+import { toDashboardPath } from "../utils/dashboardPaths";
 
 const SURFACE = "rounded-[24px] border border-[var(--border-standard)] bg-[var(--surface-1)] shadow-[var(--shadow-card)]";
 const SOFT_PANEL = "rounded-[20px] border border-[var(--border-subtle)] bg-[var(--canvas)]";
 const EYEBROW = "text-[10px] uppercase tracking-[0.24em] font-bold text-[var(--fg-tertiary)]";
 const SECTION_TITLE = "mt-2 text-[1.5rem] leading-tight font-bold text-[var(--fg-primary)] tracking-tight";
-const INK_CARD = "rounded-[24px] border border-[#1A1612]/10 bg-[#1A1612] text-white p-7 shadow-xl";
+const INK_CARD = "dark-surface-readable rounded-[24px] border border-[#1A1612]/10 bg-[#1A1612] text-white p-7 shadow-xl";
 
 export default function MiCondominio() {
   const { user } = useAuth();
@@ -35,7 +36,7 @@ export default function MiCondominio() {
     return (
       <div className="space-y-6">
         <section
-          className="rounded-[34px] overflow-hidden border border-[#E6D9CD]"
+          className="dark-surface-readable rounded-[34px] overflow-hidden border border-[#E6D9CD]"
           style={{
             background:
               "linear-gradient(140deg, #1A1612 0%, #4E2C1D 42%, #121110 100%)",
@@ -114,6 +115,12 @@ export default function MiCondominio() {
       helper: "Comunidad ya vinculada",
       color: "#2E7D52",
     },
+    {
+      label: "Parqueos disponibles",
+      value: condominio.parking_spaces_available ?? 0,
+      helper: `${condominio.parking_spaces_occupied ?? 0} ocupados de ${condominio.parking_spaces_total ?? 0}`,
+      color: "#1A6B9A",
+    },
   ];
 
   const detailRows = [
@@ -123,6 +130,10 @@ export default function MiCondominio() {
     { label: "Email", value: condominio.email || "No registrado" },
     { label: "Ciudad", value: condominio.ciudad || "No registrada" },
     { label: "Pais", value: getCountryLabel(condominio.pais) || "No registrado" },
+    {
+      label: "Estacionamientos",
+      value: `${condominio.parking_spaces_total ?? 0} total · ${condominio.parking_spaces_available ?? 0} disponibles`,
+    },
   ];
 
   const quickActions = [
@@ -141,7 +152,7 @@ export default function MiCondominio() {
   return (
     <div className="space-y-6">
       <section
-        className="rounded-[34px] overflow-hidden border border-[#E6D9CD]"
+        className="dark-surface-readable rounded-[34px] overflow-hidden border border-[#E6D9CD]"
         style={{
           background:
             "linear-gradient(140deg, #1A1612 0%, #4E2C1D 42%, #121110 100%)",
@@ -189,7 +200,7 @@ export default function MiCondominio() {
                   Editar condominio
                 </button>
                 <Link
-                  to="/configuracion"
+                  to={toDashboardPath("configuracion")}
                   className="px-8 py-4 rounded-full no-underline text-xs font-black uppercase tracking-widest text-white border border-white/10 bg-white/5 hover:bg-white/10 transition-colors"
                 >
                   Ajustes
@@ -258,7 +269,7 @@ export default function MiCondominio() {
             {quickActions.map((action) => (
               <Link
                 key={action.to}
-                to={action.to}
+                to={toDashboardPath(action.to)}
                 className="rounded-[22px] border border-[#E6D9CD] bg-[#FFF8F2] p-4 no-underline transition-transform hover:-translate-y-0.5"
               >
                 <div className="flex items-start gap-4">
@@ -379,6 +390,17 @@ function EditForm({ condominio, onSave, onSuccess, onCancel }) {
         <div>
           <label className={LABEL}>RNC</label>
           <input name="rnc" value={form.rnc || ""} onChange={handleChange} className={INPUT} />
+        </div>
+        <div>
+          <label className={LABEL}>Espacios de estacionamiento</label>
+          <input
+            type="number"
+            min="0"
+            name="parking_spaces_total"
+            value={form.parking_spaces_total ?? 0}
+            onChange={handleChange}
+            className={INPUT}
+          />
         </div>
         <div className="md:col-span-2">
           <label className={LABEL}>Pais</label>

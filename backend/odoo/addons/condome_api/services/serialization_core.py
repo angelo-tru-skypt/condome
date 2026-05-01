@@ -20,6 +20,10 @@ class ApiSerializationCoreMixin:
             "owner_user_id": record.owner_user_id.id,
             "admin_user_id": record.owner_user_id.id,
             "admin_user_name": record.owner_user_id.name if record.owner_user_id else "",
+            "parking_spaces_total": int(getattr(record, "parking_spaces_total", 0) or 0),
+            "parking_spaces_occupied": int(getattr(record, "parking_spaces_occupied", 0) or 0),
+            "parking_spaces_available": int(getattr(record, "parking_spaces_available", 0) or 0),
+            "parking_spaces_pending": int(getattr(record, "parking_spaces_pending", 0) or 0),
             "totales": {
                 "edificios": len(record.edificio_ids),
                 "apartamentos": len(record.apartamento_ids),

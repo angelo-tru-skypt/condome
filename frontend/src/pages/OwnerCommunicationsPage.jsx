@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useCondominio } from "../context/CondominioContext";
 import adminService from "../utils/adminService";
+import mailService from "../utils/mailService";
 
-const SURFACE = "bg-[#1A1A1A] border border-[#262626] rounded-[28px]";
+const SURFACE = "dark-surface-readable bg-[#1A1A1A] border border-[#262626] rounded-[28px]";
 const INPUT =
   "w-full px-4 py-3 bg-[#1A1A1A] border border-[#262626] rounded-xl text-[#E5E5E5] text-sm outline-none transition-all focus:border-[#D94F10] focus:bg-[#1A1A1A] focus:ring-4 focus:ring-[#D94F10]/10";
 const FILTER_INPUT =
@@ -29,6 +30,13 @@ export default function OwnerCommunicationsPage() {
   const [form, setForm] = useState(INITIAL_FORM);
   const [editItem, setEditItem] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [emailStatus, setEmailStatus] = useState({ id: null, sending: false, sent: false, error: "" });
+  const [toast, setToast] = useState({ visible: false, message: "", ok: true });
+
+  const showToast = (message, ok = true) => {
+    setToast({ visible: true, message, ok });
+    setTimeout(() => setToast({ visible: false, message: "", ok: true }), 4500);
+  };
 
   const loadCommunications = useMemo(
     () => async () => {
@@ -77,15 +85,17 @@ export default function OwnerCommunicationsPage() {
     }
     setSaving(true);
     try {
+      let response;
       if (editItem) {
-        await adminService.updateCommunication(editItem.id, form);
+        response = await adminService.updateCommunication(editItem.id, form);
         setEditItem(null);
       } else {
-        await adminService.createCommunication({
+        response = await adminService.createCommunication({
           ...form,
           condominio_id: condominio.id,
         });
       }
+      showToast(...buildCommunicationFeedback(response, editItem ? "actualizado" : "guardado", form.status, form.channel));
       setForm(INITIAL_FORM);
       await loadCommunications();
     } catch (saveError) {
@@ -115,6 +125,8 @@ export default function OwnerCommunicationsPage() {
       setCommunications((current) =>
         current.map((item) => (item.id === communicationId ? response.data : item))
       );
+      const actionLabel = status === "published" ? "publicado" : status === "archived" ? "archivado" : "actualizado";
+      showToast(...buildCommunicationFeedback(response, actionLabel, response?.data?.status || status, response?.data?.channel));
     } catch (updateError) {
       setError(updateError.message || "No se pudo actualizar el comunicado.");
     }
@@ -140,10 +152,46 @@ export default function OwnerCommunicationsPage() {
     setForm(INITIAL_FORM);
   };
 
+  const sendByEmail = async (item) => {
+    setEmailStatus({ id: item.id, sending: true, sent: false, error: "" });
+    try {
+      const response = await mailService.sendBroadcast({
+        condominio_id: condominio.id,
+        title: item.title,
+        message: item.message,
+        priority: item.priority || "media",
+      });
+      const sentCount = Number(response?.sent || 0);
+      if (sentCount > 0) {
+        setEmailStatus({ id: item.id, sending: false, sent: true, error: "" });
+        showToast(`Comunicado enviado por email a ${sentCount} residente${sentCount === 1 ? "" : "s"}.`);
+      } else {
+        setEmailStatus({ id: item.id, sending: false, sent: false, error: "Sin destinatarios" });
+        showToast("No había residentes activos con correo para enviar este comunicado.", false);
+      }
+      setTimeout(() => setEmailStatus({ id: null, sending: false, sent: false, error: "" }), 4000);
+    } catch (err) {
+      setEmailStatus({ id: item.id, sending: false, sent: false, error: err.message || "Error al enviar" });
+      showToast(err.message || "Error al enviar el comunicado por email.", false);
+      setTimeout(() => setEmailStatus({ id: null, sending: false, sent: false, error: "" }), 5000);
+    }
+  };
+
   return (
     <div className="space-y-6">
+      {toast.visible && (
+        <div
+          className={`fixed bottom-6 right-6 z-[200] px-5 py-4 rounded-2xl shadow-2xl border text-sm font-semibold flex items-center gap-3 animate-fade-up ${
+            toast.ok
+              ? "bg-[#0D1F17] border-emerald-500/30 text-emerald-400"
+              : "bg-[#1A1A1A] border-[#262626] text-[#A3A3A3]"
+          }`}
+        >
+          {toast.ok ? "OK" : "AVISO"} {toast.message}
+        </div>
+      )}
       <section
-        className="rounded-[32px] overflow-hidden border border-[#E9D5C6]"
+        className="dark-surface-readable rounded-[32px] overflow-hidden border border-[#E9D5C6]"
         style={{
           background: "linear-gradient(135deg, #1A1612 0%, #2D231D 44%, #55321E 100%)",
           boxShadow: "0 18px 50px rgba(26,22,18,0.14)",
@@ -299,7 +347,7 @@ export default function OwnerCommunicationsPage() {
                       <h3 className="mt-3 text-lg font-semibold text-[#E5E5E5] group-hover:text-[#D94F10] transition-colors">{item.title}</h3>
                       <p className="mt-2 text-sm leading-7 text-[#A3A3A3]">{item.message}</p>
                     </div>
-                    <div className="text-right text-[11px] text-[#737373] font-medium min-w-[120px]">
+                    <div className="text-right text-[11px] text-[#A3A3A3] font-medium min-w-[120px]">
                       <p className="text-[#F5D2BC] uppercase tracking-wider">{item.targetLabel}</p>
                       <p className="mt-1">{item.channel}</p>
                       <p className="mt-1 text-[#555]">{formatDate(item.scheduledFor || item.createdAt)}</p>
@@ -314,6 +362,25 @@ export default function OwnerCommunicationsPage() {
                       {item.status !== "archived" && (
                         <ActionChip onClick={() => updateStatus(item.id, "archived")}>Archivar</ActionChip>
                       )}
+                      <ActionChip
+                        onClick={() => sendByEmail(item)}
+                        disabled={emailStatus.id === item.id && emailStatus.sending}
+                        variant={
+                          emailStatus.id === item.id && emailStatus.sent
+                            ? "success"
+                            : emailStatus.id === item.id && emailStatus.error
+                            ? "danger"
+                            : "email"
+                        }
+                      >
+                        {emailStatus.id === item.id && emailStatus.sending
+                          ? "Enviando..."
+                          : emailStatus.id === item.id && emailStatus.sent
+                          ? "✓ Enviado"
+                          : emailStatus.id === item.id && emailStatus.error
+                          ? "Error"
+                          : "✉ Enviar por email"}
+                      </ActionChip>
                     </div>
                     <div className="flex gap-2">
                       <button onClick={() => handleEdit(item)} className="px-4 py-2 rounded-xl bg-[#262626] text-[#A3A3A3] text-[11px] font-bold uppercase tracking-wider hover:bg-[#333] hover:text-white transition-all border-none cursor-pointer">
@@ -363,7 +430,7 @@ function MissingCondominioState() {
       <div className={`${SURFACE} max-w-xl p-8 text-center`}>
         <div className="w-16 h-16 bg-[#FFF4EE]/5 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl">🏠</div>
         <p className="text-lg font-semibold text-white">Primero selecciona tu condominio</p>
-        <p className="text-sm text-[#737373] mt-3 leading-7">Necesitamos una ficha base del condominio para organizar comunicados por edificio y por comunidad.</p>
+        <p className="text-sm text-[#A3A3A3] mt-3 leading-7">Necesitamos una ficha base del condominio para organizar comunicados por edificio y por comunidad.</p>
       </div>
     </div>
   );
@@ -381,7 +448,7 @@ function SummaryCard({ label, value }) {
 function Field({ label, children }) {
   return (
     <label className="block">
-      <span className="block text-[10px] font-bold tracking-[0.15em] uppercase text-[#737373] mb-2">{label}</span>
+      <span className="block text-[10px] font-bold tracking-[0.15em] uppercase text-[#A3A3A3] mb-2">{label}</span>
       {children}
     </label>
   );
@@ -395,15 +462,26 @@ function Pill({ children, variant = "strong", priority = "", status = "" }) {
 
   if (variant === "status") {
     if (status === "published") colors = "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
-    if (status === "draft") colors = "bg-[#262626] text-[#737373] border border-[#333]";
+    if (status === "draft") colors = "bg-[#262626] text-[#A3A3A3] border border-[#333]";
     if (status === "archived") colors = "bg-gray-500/10 text-gray-500 border border-gray-500/20";
   }
 
   return <span className={`px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-widest ${colors}`}>{children}</span>;
 }
 
-function ActionChip({ children, onClick }) {
-  return <button type="button" onClick={onClick} className="px-3 py-1.5 rounded-lg bg-transparent border border-[#262626] text-[10px] font-bold uppercase tracking-widest text-[#737373] hover:border-[#D94F10]/40 hover:text-[#D94F10] transition-colors cursor-pointer">{children}</button>;
+function ActionChip({ children, onClick, disabled = false, variant = "default" }) {
+  const base = "px-3 py-1.5 rounded-lg bg-transparent border text-[10px] font-bold uppercase tracking-widest transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed";
+  const styles = {
+    default: "border-[#262626] text-[#A3A3A3] hover:border-[#D94F10]/40 hover:text-[#D94F10]",
+    email: "border-[#1A6B9A]/40 text-[#1A6B9A] hover:border-[#1A6B9A] hover:bg-[#1A6B9A]/10",
+    success: "border-emerald-500/40 text-emerald-500 bg-emerald-500/10",
+    danger: "border-red-500/40 text-red-500 bg-red-500/10",
+  };
+  return (
+    <button type="button" onClick={onClick} disabled={disabled} className={`${base} ${styles[variant] || styles.default}`}>
+      {children}
+    </button>
+  );
 }
 
 function ErrorBanner({ message }) {
@@ -415,7 +493,7 @@ function EmptyState({ title, description }) {
     <div className="rounded-[24px] border border-dashed border-[#262626] bg-[#00000020] p-12 text-center">
       <div className="text-3xl mb-4 opacity-20">📭</div>
       <h3 className="text-base font-semibold text-white">{title}</h3>
-      <p className="mt-2 text-sm leading-7 text-[#737373] max-w-sm mx-auto">{description}</p>
+      <p className="mt-2 text-sm leading-7 text-[#A3A3A3] max-w-sm mx-auto">{description}</p>
     </div>
   );
 }
@@ -438,4 +516,26 @@ function formatDate(value) {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+function buildCommunicationFeedback(response, actionLabel, status, channel) {
+  const normalizedStatus = (status || "").toLowerCase();
+  const normalizedChannel = (channel || "").toLowerCase();
+  const shouldEmail = normalizedStatus === "published" && ["email", "todos", "panel-email"].includes(normalizedChannel);
+  const sentCount = Number(response?.emailsSent || 0);
+
+  if (shouldEmail) {
+    if (response?.emailSent && sentCount > 0) {
+      return [
+        `Comunicado ${actionLabel} y enviado por email a ${sentCount} residente${sentCount === 1 ? "" : "s"}.`,
+        true,
+      ];
+    }
+    return [
+      `Comunicado ${actionLabel}. Quedó visible en el panel, pero el email no pudo salir.`,
+      false,
+    ];
+  }
+
+  return [`Comunicado ${actionLabel} correctamente.`, true];
 }

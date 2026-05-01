@@ -22,6 +22,47 @@ class PropertyApiService(BaseApiService):
             return current_record.owner_user_id
         raise ValueError(_("Debes indicar un administrador de condominio válido"))
 
+    def _condominium_plan_status(self, admin_user, excluding_condominio_id=None):
+        if hasattr(admin_user, "get_condome_plan_config"):
+            plan_config = admin_user.get_condome_plan_config()
+        else:
+            safe_plan = getattr(admin_user, "condome_plan", "free") or "free"
+            plan_config = {
+                "code": safe_plan,
+                "label": safe_plan.title(),
+                "max_condominios": 1,
+            }
+
+        domain = [("owner_user_id", "=", admin_user.id)]
+        if excluding_condominio_id:
+            domain.append(("id", "!=", excluding_condominio_id))
+
+        current_count = request.env["condome.condominio"].sudo().search_count(domain)
+        max_condominios = plan_config.get("max_condominios")
+        return {
+            "plan_code": plan_config.get("code", "free"),
+            "plan_label": plan_config.get("label", "Free"),
+            "current_count": current_count,
+            "max_condominios": max_condominios,
+            "allowed": max_condominios is None or current_count < max_condominios,
+        }
+
+    def _condominium_limit_message(self, status):
+        plan_label = status.get("plan_label", "Free")
+        max_condominios = status.get("max_condominios")
+        current_count = status.get("current_count", 0)
+        if max_condominios is None:
+            return _("Tu plan actual no tiene límite de condominios.")
+        if status.get("plan_code") == "pro":
+            return _(
+                "El plan %(plan)s permite hasta %(max)s condominios. Tu cuenta ya administra %(count)s. "
+                "Actualiza a Premium para seguir agregando condominios."
+            ) % {"plan": plan_label, "max": max_condominios, "count": current_count}
+        return _(
+            "El plan %(plan)s permite hasta %(max)s condominios. Tu cuenta ya administra %(count)s. "
+            "Actualiza tu plan para continuar."
+        ) % {"plan": plan_label, "max": max_condominios, "count": current_count}
+
     def handle_options(self):
         return self.build_response({"ok": True})
 
@@ -44,6 +85,9 @@ class PropertyApiService(BaseApiService):
 
             company = request.env.company.sudo() or request.env["res.company"].sudo().search([], limit=1)
             admin_user = self._resolve_condominium_admin(user, payload)
+            plan_status = self._condominium_plan_status(admin_user)
+            if not plan_status["allowed"]:
+                return self.error_response(self._condominium_limit_message(plan_status), status=403)
             record = request.env["condome.condominio"].sudo().create(
                 {
                     "name": name,
@@ -92,7 +136,11 @@ class PropertyApiService(BaseApiService):
                 "email": self.clean_str(payload.get("email")) if "email" in payload else record.email,
             }
             if ("admin_user_id" in payload or "owner_user_id" in payload) and self.is_system_owner(user):
-                values["owner_user_id"] = self._resolve_condominium_admin(user, payload, current_record=record).id
+                next_admin = self._resolve_condominium_admin(user, payload, current_record=record)
+                plan_status = self._condominium_plan_status(next_admin, excluding_condominio_id=record.id)
+                if not plan_status["allowed"]:
+                    return self.error_response(self._condominium_limit_message(plan_status), status=403)
+                values["owner_user_id"] = next_admin.id
             record.write(values)
             return self.build_response({"data": self.serialize_condominio(record)})
         except PermissionError as error:

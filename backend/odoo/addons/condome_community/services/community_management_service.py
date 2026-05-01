@@ -432,6 +432,10 @@ class CommunityManagementService(BaseApiService):
             message = self.clean_str(payload.get("message") or payload.get("mensaje"))
             if not message:
                 return self.error_response(_("El mensaje es requerido"))
+            title = self.clean_str(payload.get("title") or payload.get("titulo")) or _("Notificación del condominio")
+            subject = self.clean_str(payload.get("subject") or payload.get("asunto"))
+            severity = self.clean_str(payload.get("severity")) or "info"
+            channel = self.clean_str(payload.get("channel") or payload.get("canal")) or "panel"
 
             target_residente_id = payload.get("residente_id")
             target_resident = False
@@ -449,7 +453,23 @@ class CommunityManagementService(BaseApiService):
                     "residente_id": target_resident.id if target_resident else False,
                 }
             )
-            return self.build_response({"data": self.serialize_notification(record)}, status=201)
+            emails_sent = self.send_notification_email(
+                condominio,
+                message,
+                resident=target_resident,
+                title=title,
+                subject=subject,
+                severity=severity,
+                channel=channel,
+            )
+            return self.build_response(
+                {
+                    "data": self.serialize_notification(record),
+                    "emailSent": bool(emails_sent),
+                    "emailsSent": emails_sent,
+                },
+                status=201,
+            )
         except PermissionError as error:
             return self.error_response(error, status=403)
         except Exception as error:  # pragma: no cover
@@ -485,7 +505,7 @@ class CommunityManagementService(BaseApiService):
             if self.is_preflight_request():
                 return self.build_response({"ok": True})
 
-            user = self.require_session()
+            user = self.require_owner_session()
             model = request.env["condome.vehiculo"].sudo()
 
             if request.httprequest.method == "GET":
@@ -516,13 +536,20 @@ class CommunityManagementService(BaseApiService):
                     "color": self.clean_str(payload.get("color")),
                     "ano": int(payload.get("ano") or payload.get("year") or 0) if payload.get("ano") or payload.get("year") else False,
                     "tipo": self.clean_str(payload.get("tipo") or payload.get("type")) or "auto",
-                    "estado": self.clean_str(payload.get("estado") or payload.get("status")) or "activo",
+                    "estado": self.clean_str(payload.get("estado") or payload.get("status")) or "pendiente",
                     "propietario_documento": self.clean_str(payload.get("propietario_documento") or payload.get("ownerDocument")),
                     "propietario_nombre": self.clean_str(payload.get("propietario_nombre") or payload.get("ownerName")),
                     "propietario_telefono": self.clean_str(payload.get("propietario_telefono") or payload.get("ownerPhone")),
                     "residente_id": int(residente_id),
                     "notas": self.clean_str(payload.get("notas") or payload.get("notes")),
                 }
+            )
+            self.create_audit_entry(
+                record.condominio_id,
+                "vehiculos",
+                _("Vehículo registrado"),
+                _("%s · Estado %s") % (record.placa, record.estado),
+                actor=self.clean_str(user.name or user.login) or "Administracion",
             )
             return self.build_response({"data": self.serialize_vehiculo(record)}, status=201)
         except PermissionError as error:
@@ -536,7 +563,7 @@ class CommunityManagementService(BaseApiService):
             if self.is_preflight_request():
                 return self.build_response({"ok": True})
 
-            user = self.require_session()
+            user = self.require_owner_session()
             model = request.env["condome.vehiculo"].sudo()
             record = model.search(
                 [("id", "=", vehiculo_id)] + self.owner_domain(user),
@@ -573,6 +600,14 @@ class CommunityManagementService(BaseApiService):
 
             if values:
                 record.write(values)
+                self.create_audit_entry(
+                    record.condominio_id,
+                    "vehiculos",
+                    _("Vehículo actualizado"),
+                    _("%s · Estado %s") % (record.placa, record.estado),
+                    actor=self.clean_str(user.name or user.login) or "Administracion",
+                    severity="success" if record.estado == "activo" else "info",
+                )
             return self.build_response({"data": self.serialize_vehiculo(record)})
         except PermissionError as error:
             return self.error_response(error, status=403)
@@ -614,6 +649,8 @@ class CommunityManagementService(BaseApiService):
                     "condominio_id": condominio.id,
                 }
             )
+            if self.should_send_announcement_email(record.estado, record.canal):
+                self.send_comunicado_email(condominio, title, message, priority=record.prioridad)
             return self.build_response({"data": self.serialize_comunicado(record)}, status=201)
         except PermissionError as error:
             return self.error_response(error, status=403)
@@ -644,7 +681,16 @@ class CommunityManagementService(BaseApiService):
                 values["estado"] = self.clean_str(payload.get("status") or payload.get("estado")) or record.estado
 
             if values:
+                previous_status = record.estado
+                previous_channel = record.canal
                 record.write(values)
+                email_related_fields = {"name", "mensaje", "prioridad", "canal", "estado"}
+                if self.should_send_announcement_email(record.estado, record.canal) and (
+                    previous_status != "published"
+                    or previous_channel != record.canal
+                    or bool(email_related_fields.intersection(values))
+                ):
+                    self.send_comunicado_email(record.condominio_id, record.name, record.mensaje, priority=record.prioridad)
             self.create_audit_entry(
                 record.condominio_id,
                 "comunicados",

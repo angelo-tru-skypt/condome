@@ -4,11 +4,12 @@ import { useAuth } from "../context/AuthContext";
 import { useCondominio } from "../context/CondominioContext";
 import { isSystemAdminRole } from "../utils/roles";
 import adminService from "../utils/adminService";
+import { toDashboardPath } from "../utils/dashboardPaths";
 
-const SURFACE = "rounded-[28px] border border-[#26201B] bg-[#11100F] shadow-[0_18px_42px_rgba(0,0,0,0.22)]";
-const EYEBROW = "text-[11px] uppercase tracking-[0.22em] font-semibold text-[#FF8B4A]";
-const SECTION_TITLE = "mt-2 text-[1.55rem] leading-tight font-semibold text-[#F6F0E9]";
-const BODY_COPY = "text-sm md:text-[15px] leading-7 text-[#B8AA9E]";
+const SURFACE = "rounded-[28px] border border-[var(--border-standard)] bg-[var(--surface-1)] shadow-[var(--shadow-card)]";
+const EYEBROW = "text-[11px] uppercase tracking-[0.22em] font-semibold text-[var(--condome-orange-soft)]";
+const SECTION_TITLE = "mt-2 text-[1.55rem] leading-tight font-semibold text-[var(--fg-primary)]";
+const BODY_COPY = "text-sm md:text-[15px] leading-7 text-[var(--fg-secondary)]";
 
 export default function AdminDashboardPage() {
   const { user } = useAuth();
@@ -89,7 +90,7 @@ export default function AdminDashboardPage() {
   }, [condominio?.id]);
 
   if (loading || !ready) {
-    return <PageLoader label="Preparando dashboard administrativo..." />;
+    return <PageLoader label="Preparando tu panel..." />;
   }
 
   const summaryTotals = summaryData?.totals || {};
@@ -149,22 +150,22 @@ export default function AdminDashboardPage() {
 
   const priorityLinks = [
     {
-      to: hasCondominio ? "/condominio" : "/condominio/nuevo",
+      to: toDashboardPath(hasCondominio ? "condominio" : "condominio/nuevo"),
       title: "Condominios y configuracion base",
       helper: hasCondominio ? "Ficha principal y contexto de operacion" : "Pendiente de inicializar",
     },
     {
-      to: hasCondominio ? "/propietarios" : "/condominio/nuevo",
+      to: toDashboardPath(hasCondominio ? "propietarios" : "condominio/nuevo"),
       title: "Comunidad administrativa",
       helper: `${registeredOwners} propietarios y ${summaryTotals.residentes ?? residentes.length} residentes`,
     },
     {
-      to: hasCondominio ? "/configuracion" : "/condominio/nuevo",
+      to: toDashboardPath(hasCondominio ? "configuracion" : "condominio/nuevo"),
       title: "Configuracion y reglas",
       helper: `${rulesCount} reglas autom. y ${accessPolicies} politicas`,
     },
     {
-      to: hasCondominio ? "/auditoria" : "/condominio/nuevo",
+      to: toDashboardPath(hasCondominio ? "auditoria" : "condominio/nuevo"),
       title: "Auditoria y trazabilidad",
       helper: `${auditEntries.length} eventos internos registrados`,
     },
@@ -177,10 +178,10 @@ export default function AdminDashboardPage() {
   return (
     <div className="space-y-6 md:space-y-7">
       <section
-        className="rounded-[34px] overflow-hidden border border-[#1A1A1A]"
+        className="dark-surface-readable rounded-[34px] overflow-hidden border border-[var(--border-standard)]"
         style={{
-          background: "linear-gradient(145deg, #050505 0%, #0E1116 50%, #050505 100%)",
-          boxShadow: "0 24px 60px rgba(0,0,0,0.45)",
+          background: "linear-gradient(145deg, #090A0C 0%, #141920 48%, #090A0C 100%)",
+          boxShadow: "0 24px 60px rgba(0,0,0,0.34)",
         }}
       >
         <div className="relative px-7 py-8 md:px-10 md:py-10">
@@ -196,7 +197,7 @@ export default function AdminDashboardPage() {
             <div>
               <div className="flex flex-wrap items-center gap-2">
                 <span className="px-3 py-1 rounded-full bg-[#D94F10]/10 border border-[#D94F10]/40 text-[11px] font-semibold tracking-[0.2em] uppercase text-[#FF7A30]">
-                  Administración Central
+                  Centro de Control
                 </span>
                 <span className="px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold">
                   {condominio?.nombre || "Sistema Maestro"}
@@ -210,21 +211,21 @@ export default function AdminDashboardPage() {
                 Bienvenido al Centro de Control, {firstName}.
               </h1>
 
-              <p className="mt-4 max-w-2xl text-sm md:text-[15px] leading-7 text-[#A3A3A3]">
+              <p className="mt-4 max-w-2xl text-sm md:text-[15px] leading-7 text-white/74">
                 Supervisa el estado operativo, financiero y comunitario de las unidades bajo tu
                 gestión con visibilidad total y herramientas de auditoría avanzada.
               </p>
 
               <div className="mt-6 flex flex-wrap gap-3">
                 <Link
-                  to={hasCondominio ? "/condominio" : "/condominio/nuevo"}
+                  to={toDashboardPath(hasCondominio ? "condominio" : "condominio/nuevo")}
                   className="px-5 py-3 rounded-2xl no-underline text-xs font-bold uppercase tracking-widest text-[#E5E5E5] transition-all hover:brightness-110"
                   style={{ background: "linear-gradient(135deg, #FF7A30, #D94F10)", boxShadow: "0 8px 16px rgba(217,79,16,0.2)" }}
                 >
                   {hasCondominio ? "Gestión de Condominio" : "Registrar Base"}
                 </Link>
                 <Link
-                  to="/configuracion"
+                  to={toDashboardPath("configuracion")}
                   className="px-5 py-3 rounded-2xl no-underline text-xs font-bold uppercase tracking-widest text-white/80 border border-white/10 bg-white/5 backdrop-blur-sm transition-all hover:bg-white/10"
                 >
                   Configuración Maestra
@@ -232,7 +233,7 @@ export default function AdminDashboardPage() {
               </div>
             </div>
 
-            <div className="rounded-[24px] border border-white/5 bg-white/[0.02] backdrop-blur-xl p-5 shadow-2xl">
+            <div className="rounded-[24px] border border-white/10 bg-white/[0.04] backdrop-blur-xl p-5 shadow-2xl">
               <p className="text-[11px] uppercase tracking-[0.2em] font-semibold text-[#FF7A30]">
                 Métricas de Supervisión
               </p>
@@ -267,9 +268,9 @@ export default function AdminDashboardPage() {
             >
               <MetricIcon />
             </div>
-            <p className="mt-4 text-[2rem] leading-tight font-semibold text-[#F6F0E9]">{card.value}</p>
-            <p className="mt-1 text-sm font-semibold text-[#F6F0E9]">{card.label}</p>
-            <p className="mt-2 text-sm leading-6 text-[#B8AA9E]">{card.helper}</p>
+            <p className="mt-4 text-[2rem] leading-tight font-semibold text-[var(--fg-primary)]">{card.value}</p>
+            <p className="mt-1 text-sm font-semibold text-[var(--fg-primary)]">{card.label}</p>
+            <p className="mt-2 text-sm leading-6 text-[var(--fg-secondary)]">{card.helper}</p>
           </article>
         ))}
       </section>
@@ -283,8 +284,8 @@ export default function AdminDashboardPage() {
               </p>
               <h2 className={SECTION_TITLE}>Frentes de gestion del admin</h2>
             </div>
-            <span className="px-3 py-1.5 rounded-full bg-[#1A1715] text-[#D9CBBF] text-xs font-semibold border border-[#2D2620]">
-              Solo modulos de gobierno y control
+            <span className="px-3 py-1.5 rounded-full bg-[var(--surface-2)] text-[var(--fg-secondary)] text-xs font-semibold border border-[var(--border-standard)]">
+              Gestión integral
             </span>
           </div>
           <p className={`mt-3 max-w-3xl ${BODY_COPY}`}>
@@ -297,10 +298,10 @@ export default function AdminDashboardPage() {
               <Link
                 key={item.to}
                 to={item.to}
-                className="rounded-[24px] border border-[#2D2620] bg-[#171513] p-5 no-underline hover:border-[#D94F10]/35 hover:bg-[#1D1916] transition-colors"
+                className="rounded-[24px] border border-[var(--border-standard)] bg-[var(--surface-0)] p-5 no-underline hover:border-[var(--control-border-strong)] hover:bg-[var(--surface-2)] transition-colors"
               >
-                <p className="text-sm font-semibold text-[#E5E5E5]">{item.title}</p>
-                <p className="mt-2 text-sm leading-7 text-[#B8AA9E]">{item.helper}</p>
+                <p className="text-sm font-semibold text-[var(--fg-primary)]">{item.title}</p>
+                <p className="mt-2 text-sm leading-7 text-[var(--fg-secondary)]">{item.helper}</p>
               </Link>
             ))}
           </div>
@@ -314,10 +315,10 @@ export default function AdminDashboardPage() {
           <div className="mt-5 space-y-3">
             {publishedCommunications.length || registeredDocuments ? (
               [...publishedCommunications.slice(0, 2), ...Array.from({ length: Math.min(registeredDocuments, 1) }).map((_, index) => ({ id: `doc-${index}`, targetLabel: "Biblioteca", title: "Documentos del condominio", message: `${registeredDocuments} documentos cargados y disponibles para gestion.` }))].slice(0, 3).map((item) => (
-                <article key={item.id} className="rounded-[22px] border border-[#2D2620] bg-[#171513] p-4">
-                  <p className="text-xs uppercase tracking-[0.18em] text-[#A3A3A3]">{item.targetLabel}</p>
-                  <h3 className="mt-2 text-base font-semibold text-[#E5E5E5]">{item.title}</h3>
-                  <p className="mt-2 text-sm leading-6 text-[#B8AA9E] line-clamp-3">{item.message}</p>
+                <article key={item.id} className="rounded-[22px] border border-[var(--border-standard)] bg-[var(--surface-0)] p-4">
+                  <p className="text-xs uppercase tracking-[0.18em] text-[var(--fg-tertiary)]">{item.targetLabel}</p>
+                  <h3 className="mt-2 text-base font-semibold text-[var(--fg-primary)]">{item.title}</h3>
+                  <p className="mt-2 text-sm leading-6 text-[var(--fg-secondary)] line-clamp-3">{item.message}</p>
                 </article>
               ))
             ) : (
@@ -349,7 +350,7 @@ export default function AdminDashboardPage() {
                   ? `${edificios.length} edificios y ${apartamentos.length} apartamentos bajo gestion.`
                   : "Todavia no hay una base estructural registrada."
               }
-              to={hasCondominio ? "/edificios" : "/condominio/nuevo"}
+              to={toDashboardPath(hasCondominio ? "edificios" : "condominio/nuevo")}
             />
             <QueueCard
               title="Comunidad"
@@ -358,7 +359,7 @@ export default function AdminDashboardPage() {
                   ? `${registeredOwners} propietarios y ${summaryTotals.residentes ?? residentes.length} residentes requieren administracion continua.`
                   : "Aun no hay comunidad administrativa registrada."
               }
-              to="/propietarios"
+              to={toDashboardPath("propietarios")}
             />
             <QueueCard
               title="Seguridad y control"
@@ -367,7 +368,7 @@ export default function AdminDashboardPage() {
                   ? `${unreadNotifications} alertas sin leer y ${accessPolicies} politicas de acceso configuradas.`
                   : "Todavia no hay alertas ni politicas registradas."
               }
-              to="/acceso"
+              to={toDashboardPath("acceso")}
             />
           </div>
         </div>
@@ -380,11 +381,11 @@ export default function AdminDashboardPage() {
           <div className="mt-5 space-y-3">
             {recentAudit.length ? (
               recentAudit.map((item) => (
-                  <article key={item.id} className="rounded-[22px] border border-[#2D2620] bg-[#171513] p-4">
-                  <p className="text-xs uppercase tracking-[0.18em] text-[#A3A3A3]">{item.category}</p>
-                  <h3 className="mt-2 text-base font-semibold text-[#E5E5E5]">{item.title}</h3>
-                  <p className="mt-2 text-sm leading-6 text-[#B8AA9E]">{item.detail}</p>
-                  <p className="mt-2 text-xs text-[#8C7D71]">
+                  <article key={item.id} className="rounded-[22px] border border-[var(--border-standard)] bg-[var(--surface-0)] p-4">
+                  <p className="text-xs uppercase tracking-[0.18em] text-[var(--fg-tertiary)]">{item.category}</p>
+                  <h3 className="mt-2 text-base font-semibold text-[var(--fg-primary)]">{item.title}</h3>
+                  <p className="mt-2 text-sm leading-6 text-[var(--fg-secondary)]">{item.detail}</p>
+                  <p className="mt-2 text-xs text-[var(--fg-muted)]">
                     {item.actor} · {formatDate(item.createdAt)}
                   </p>
                 </article>
@@ -407,10 +408,10 @@ function PageLoader({ label }) {
     <div className="flex items-center justify-center min-h-[60vh]">
       <div className="flex flex-col items-center gap-3">
         <div
-          className="w-10 h-10 rounded-full border-2 border-[#262626] border-t-[#D94F10]"
+          className="w-10 h-10 rounded-full border-2 border-[var(--border-standard)] border-t-[var(--condome-orange)]"
           style={{ animation: "spin 0.8s linear infinite" }}
         />
-        <p className="text-sm text-[#737373]">{label}</p>
+        <p className="text-sm text-[var(--fg-tertiary)]">{label}</p>
         <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
       </div>
     </div>
@@ -419,10 +420,10 @@ function PageLoader({ label }) {
 
 function StatusTile({ label, value, helper }) {
   return (
-    <div className="rounded-2xl border border-white/5 bg-white/[0.03] px-4 py-3 hover:bg-white/5 transition-colors">
+    <div className="rounded-2xl border border-white/10 bg-white/[0.05] px-4 py-3 hover:bg-white/10 transition-colors">
       <p className="text-[10px] uppercase tracking-[0.2em] text-[#FF7A30] font-bold">{label}</p>
       <p className="mt-1 text-sm font-semibold text-white">{value}</p>
-      <p className="mt-1 text-[11px] leading-5 text-[#A3A3A3]">{helper}</p>
+      <p className="mt-1 text-[11px] leading-5 text-white/64">{helper}</p>
     </div>
   );
 }
@@ -431,19 +432,19 @@ function QueueCard({ title, description, to }) {
   return (
     <Link
       to={to}
-      className="rounded-[22px] border border-white/10 bg-white/[0.02] p-5 no-underline hover:border-[#D94F10]/50 hover:bg-white/[0.05] transition-all"
+      className="rounded-[22px] border border-[var(--border-standard)] bg-[var(--surface-0)] p-5 no-underline hover:border-[var(--control-border-strong)] hover:bg-[var(--surface-2)] transition-all"
     >
-      <p className="text-sm font-semibold text-white/95">{title}</p>
-      <p className="mt-2 text-sm leading-7 text-[#A3A3A3]">{description}</p>
+      <p className="text-sm font-semibold text-[var(--fg-primary)]">{title}</p>
+      <p className="mt-2 text-sm leading-7 text-[var(--fg-secondary)]">{description}</p>
     </Link>
   );
 }
 
 function EmptyState({ title, description }) {
   return (
-    <div className="rounded-[24px] border border-dashed border-white/10 bg-white/[0.01] p-6 text-center">
-      <h3 className="text-base font-semibold text-white/80">{title}</h3>
-      <p className="mt-2 text-sm leading-7 text-[#A3A3A3]">{description}</p>
+    <div className="rounded-[24px] border border-dashed border-[var(--border-standard)] bg-[var(--surface-0)] p-6 text-center">
+      <h3 className="text-base font-semibold text-[var(--fg-primary)]">{title}</h3>
+      <p className="mt-2 text-sm leading-7 text-[var(--fg-secondary)]">{description}</p>
     </div>
   );
 }

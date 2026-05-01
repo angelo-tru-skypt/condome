@@ -6,6 +6,7 @@ import zipfile
 from datetime import datetime
 from xml.sax.saxutils import escape
 
+from odoo import _
 from odoo.http import request
 
 from odoo.addons.condome_core.services.base_api_service import BaseApiService
@@ -33,6 +34,9 @@ class OwnerReportingApiService(BaseApiService):
             "requestedBy": record.requested_by.name if record.requested_by else "",
             "downloadUrl": record.download_url or "",
             "note": record.note or "",
+            "generationMode": record.generation_mode or "manual",
+            "generatedAutomatically": record.generation_mode == "automatic",
+            "planCode": record.owner_plan or getattr(record.owner_user_id, "condome_plan", "free"),
         }
 
     def _selected_condominios(self, user):
@@ -41,6 +45,15 @@ class OwnerReportingApiService(BaseApiService):
         if condominio_id:
             domain.append(("id", "=", int(condominio_id)))
         return request.env["condome.condominio"].sudo().search(domain)
+
+    def _resolve_automation_owner(self, user, condominio_id):
+        condominio = self.get_condominio(int(condominio_id), user)
+        plan_owner = condominio.owner_user_id.sudo()
+        if not plan_owner:
+            raise ValueError(_("El condominio no tiene un administrador asignado"))
+        if not getattr(plan_owner, "supports_automatic_reports", lambda: False)():
+            raise PermissionError(_("Los reportes automáticos mensuales solo están disponibles con planes Pro o Premium"))
+        return condominio, plan_owner
 
     def _download_headers(self, filename, content_type):
         origin = request.httprequest.headers.get("Origin")
@@ -234,6 +247,39 @@ class OwnerReportingApiService(BaseApiService):
             if self.is_preflight_request():
                 return self.handle_options()
 
+            if request.httprequest.method == "PUT":
+                user = self.require_owner_session()
+                payload = self.read_payload()
+                condominio_id = payload.get("condominio_id") or request.httprequest.args.get("condominio_id")
+                if not condominio_id:
+                    return self.error_response(_("Debes indicar un condominio para configurar la automatización"))
+
+                condominio, plan_owner = self._resolve_automation_owner(user, condominio_id)
+                scheduled_day = int(payload.get("scheduledDay") or payload.get("scheduled_day") or 0)
+                if not 1 <= scheduled_day <= 28:
+                    return self.error_response(_("El día programado debe estar entre 1 y 28"))
+
+                plan_owner.sudo().write({"condome_report_day": scheduled_day})
+                self.create_audit_entry(
+                    condominio,
+                    "reportes",
+                    _("Programación automática actualizada"),
+                    _("El reporte financiero mensual se generará el día %s de cada mes.") % scheduled_day,
+                    actor=self.clean_str(user.name or user.login) or "Administracion",
+                )
+                return self.build_response(
+                    {
+                        "data": {
+                            "enabled": True,
+                            "scheduledDay": plan_owner.get_condome_report_day(),
+                            "planCode": getattr(plan_owner, "condome_plan", "free"),
+                            "message": _(
+                                "La generación automática quedó configurada correctamente."
+                            ),
+                        }
+                    }
+                )
+
             condominio_id = request.httprequest.args.get("condominio_id")
             if condominio_id:
                 user = self.require_owner_session()
@@ -244,6 +290,7 @@ class OwnerReportingApiService(BaseApiService):
                 condominios = self._selected_condominios(user)
 
             condominio_ids = condominios.ids
+            plan_owner = condominios[:1].owner_user_id if len(condominios) == 1 else False
 
             def count(model_name, extra_domain=None):
                 domain = list(extra_domain or [])
@@ -279,6 +326,26 @@ class OwnerReportingApiService(BaseApiService):
                     },
                 ],
                 "exports": count("condome.report.export"),
+                "automaticExports": count("condome.report.export", [("generation_mode", "=", "automatic")]),
+                "automation": {
+                    "enabled": bool(plan_owner and getattr(plan_owner, "supports_automatic_reports", lambda: False)()),
+                    "planCode": getattr(plan_owner, "condome_plan", "free") if plan_owner else None,
+                    "scheduledDay": (
+                        plan_owner.get_condome_report_day()
+                        if plan_owner and hasattr(plan_owner, "get_condome_report_day")
+                        else None
+                    ),
+                    "planLabel": (
+                        plan_owner.get_condome_plan_config().get("label")
+                        if plan_owner and hasattr(plan_owner, "get_condome_plan_config")
+                        else None
+                    ),
+                    "message": (
+                        "Tu plan genera automáticamente un reporte financiero mensual por condominio en un día fijo de cada mes."
+                        if plan_owner and getattr(plan_owner, "supports_automatic_reports", lambda: False)()
+                        else "Los reportes automáticos mensuales se activan con Pro o Premium."
+                    ),
+                },
             }
             return self.build_response({"data": payload})
         except PermissionError as error:

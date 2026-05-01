@@ -1,4 +1,9 @@
+import logging
+from dateutil.relativedelta import relativedelta
+
 from odoo import api, fields, models
+
+_logger = logging.getLogger(__name__)
 
 
 class CondomeReportExport(models.Model):
@@ -65,12 +70,30 @@ class CondomeReportExport(models.Model):
         required=True,
         default="requested",
     )
+    generation_mode = fields.Selection(
+        [
+            ("manual", "Manual"),
+            ("automatic", "Automático"),
+        ],
+        required=True,
+        default="manual",
+    )
     file_name = fields.Char()
     download_url = fields.Char(compute="_compute_download_url")
     filters_json = fields.Text()
     note = fields.Text()
     owner_user_id = fields.Many2one(
         related="condominio_id.owner_user_id",
+        store=True,
+        readonly=True,
+    )
+    owner_plan = fields.Selection(
+        related="owner_user_id.condome_plan",
+        store=True,
+        readonly=True,
+    )
+    owner_report_day = fields.Integer(
+        related="owner_user_id.condome_report_day",
         store=True,
         readonly=True,
     )
@@ -184,7 +207,7 @@ class CondomeReportExport(models.Model):
         charges = self.env["condome.charge"].search(
             [
                 ("condominio_id", "=", self.condominio_id.id),
-                ("state", "!=", "cancelled"),
+                ("state", "not in", ["cancelled", "rolledover"]),
             ],
             order="due_date desc, id desc",
         )
@@ -386,3 +409,56 @@ class CondomeReportExport(models.Model):
         }
         builder = builder_map.get(self.report_type, self._financial_report_payload)
         return builder()
+
+    @api.model
+    def _eligible_automatic_condominiums(self):
+        condos = self.env["condome.condominio"].search([])
+        return condos.filtered(
+            lambda condo: getattr(condo.owner_user_id, "condome_plan", "free") in ("pro", "premium")
+        )
+
+    @api.model
+    def _automatic_report_already_exists(self, condo, report_type, month_start, next_month_start):
+        return bool(
+            self.search(
+                [
+                    ("condominio_id", "=", condo.id),
+                    ("report_type", "=", report_type),
+                    ("generation_mode", "=", "automatic"),
+                    ("requested_at", ">=", fields.Datetime.to_string(month_start)),
+                    ("requested_at", "<", fields.Datetime.to_string(next_month_start)),
+                ],
+                limit=1,
+            )
+        )
+
+    @api.model
+    def cron_generate_monthly_reports(self):
+        """Generates monthly financial reports on the configured fixed day for paid plans."""
+        today = fields.Date.context_today(self)
+        month_start = today.replace(day=1)
+        next_month_start = month_start + relativedelta(months=1)
+        condos = self._eligible_automatic_condominiums()
+        _logger.info("Executing monthly automated reports for %d paid condominiums", len(condos))
+        for condo in condos:
+            try:
+                report_day = getattr(condo.owner_user_id, "get_condome_report_day", lambda: 1)()
+                if today.day != report_day:
+                    continue
+                if self._automatic_report_already_exists(condo, "cobros", month_start, next_month_start):
+                    _logger.info(
+                        "Skipping automatic monthly report for condominium %s because one already exists in %s",
+                        condo.name,
+                        month_start.strftime("%Y-%m"),
+                    )
+                    continue
+                self.create({
+                    "condominio_id": condo.id,
+                    "report_type": "cobros",
+                    "export_format": "pdf",
+                    "generation_mode": "automatic",
+                    "note": "Automated monthly financial report (System Generated).",
+                    "requested_by": condo.owner_user_id.id or self.env.ref("base.user_admin").id
+                })
+            except Exception as e:
+                _logger.error("Failed to generate monthly report for condo %s: %s", condo.name, e)

@@ -91,7 +91,7 @@ class CondomePropietario(models.Model):
         self.ensure_one()
         partner = self._ensure_partner()
         if not self.portal_access:
-            self.sudo().write({"partner_id": partner.id})
+            self.with_context(skip_owner_account_sync=True).sudo().write({"partner_id": partner.id})
             if self.user_id:
                 self.user_id.sudo().write({"active": False})
             return None
@@ -116,7 +116,7 @@ class CondomePropietario(models.Model):
             self.user_id.sudo().write(user_vals)
             if group_ids:
                 self.user_id.sudo().write({"groups_id": [(4, group_id) for group_id in group_ids]})
-            self.sudo().write({"partner_id": partner.id})
+            self.with_context(skip_owner_account_sync=True).sudo().write({"partner_id": partner.id})
             return None
 
         temporary_password = self._generate_temporary_password()
@@ -125,7 +125,7 @@ class CondomePropietario(models.Model):
         user_vals["password"] = temporary_password
 
         user = self.env["res.users"].sudo().with_context(no_reset_password=True).create(user_vals)
-        self.sudo().write({"partner_id": partner.id, "user_id": user.id})
+        self.with_context(skip_owner_account_sync=True).sudo().write({"partner_id": partner.id, "user_id": user.id})
         return temporary_password
 
     @api.model_create_multi
@@ -133,11 +133,37 @@ class CondomePropietario(models.Model):
         records = super().create(vals_list)
         if not self.env.context.get("skip_user_account_creation"):
             for owner in records:
-                owner.ensure_user_account()
+                owner.provision_access_bundle(send_welcome=True)
         return records
+
+    def provision_access_bundle(self, send_welcome=True):
+        self.ensure_one()
+        temporary_password = self.ensure_user_account()
+        email_sent = False
+        if temporary_password and send_welcome:
+            email_sent = bool(self._send_welcome_email(self, temporary_password))
+        return {
+            "login": self.user_id.login if self.user_id else self.email,
+            "temporary_password": temporary_password,
+            "email_sent": email_sent,
+        }
+
+    @staticmethod
+    def _send_welcome_email(owner, temporary_password):
+        """Envía correo de bienvenida con credenciales al nuevo propietario."""
+        try:
+            from odoo.addons.condome_mail.services.email_service import CondomeEmailService
+            mail = CondomeEmailService()
+            return bool(mail.send_welcome_credentials(owner, temporary_password, async_send=False))
+        except Exception as exc:
+            import logging
+            logging.getLogger(__name__).debug("No se pudo enviar el correo de bienvenida al propietario: %s", exc)
+            return False
 
     def write(self, vals):
         result = super().write(vals)
+        if self.env.context.get("skip_owner_account_sync"):
+            return result
         for owner in self:
             if owner.portal_access:
                 owner.ensure_user_account()
@@ -153,5 +179,3 @@ class CondomePropietario(models.Model):
         if linked_users:
             linked_users.sudo().write({"active": False})
         return result
-
-

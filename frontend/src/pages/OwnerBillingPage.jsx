@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useCondominio } from "../context/CondominioContext";
 import adminService from "../utils/adminService";
+import mailService from "../utils/mailService";
 
 const SURFACE = "rounded-[24px] border border-[var(--border-standard)] bg-[var(--surface-1)] shadow-[var(--shadow-card)]";
 const INPUT =
@@ -44,6 +45,7 @@ export default function OwnerBillingPage() {
   const [editCharge, setEditCharge] = useState(null);
   
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [reminderStatus, setReminderStatus] = useState({ id: null, sending: false, sent: false, error: "" });
 
   const loadBilling = useMemo(
     () => async () => {
@@ -196,9 +198,28 @@ export default function OwnerBillingPage() {
     try {
       const response = await adminService.updateCharge(chargeId, { state });
       setCharges((current) => current.map((item) => (item.id === chargeId ? response.data : item)));
-      await loadBilling(); // Cargar resumen actualizado
+      await loadBilling();
     } catch (updateError) {
       setError(updateError.message || "No se pudo actualizar el cargo.");
+    }
+  };
+
+  const sendPaymentReminder = async (charge) => {
+    setReminderStatus({ id: charge.id, sending: true, sent: false, error: "" });
+    try {
+      await mailService.sendPaymentReminder({
+        condominio_id: condominio.id,
+        charge_id: charge.id,
+        amount: charge.amount,
+        currency: charge.currency || "DOP",
+        concept: charge.name,
+        due_date: charge.dueDate ? new Date(charge.dueDate).toLocaleDateString("es-DO") : "Sin fecha",
+      });
+      setReminderStatus({ id: charge.id, sending: false, sent: true, error: "" });
+      setTimeout(() => setReminderStatus({ id: null, sending: false, sent: false, error: "" }), 4000);
+    } catch (err) {
+      setReminderStatus({ id: charge.id, sending: false, sent: false, error: err.message || "Error" });
+      setTimeout(() => setReminderStatus({ id: null, sending: false, sent: false, error: "" }), 5000);
     }
   };
 
@@ -392,6 +413,22 @@ export default function OwnerBillingPage() {
                         <div className="flex flex-col gap-1.5">
                           {item.state !== 'paid' && <ActionChip variant="success" onClick={() => updateChargeState(item.id, "paid")}>Marcar Pagado</ActionChip>}
                           {item.state === 'pending' && <ActionChip onClick={() => updateChargeState(item.id, "overdue")}>Vencido</ActionChip>}
+                          {(item.state === 'pending' || item.state === 'overdue') && (
+                            <ActionChip
+                              variant={
+                                reminderStatus.id === item.id && reminderStatus.sent ? "success"
+                                : reminderStatus.id === item.id && reminderStatus.error ? "danger"
+                                : "email"
+                              }
+                              onClick={() => sendPaymentReminder(item)}
+                              disabled={reminderStatus.id === item.id && reminderStatus.sending}
+                            >
+                              {reminderStatus.id === item.id && reminderStatus.sending ? "Enviando..."
+                                : reminderStatus.id === item.id && reminderStatus.sent ? "✓ Enviado"
+                                : reminderStatus.id === item.id && reminderStatus.error ? "Error"
+                                : "✉ Recordatorio"}
+                            </ActionChip>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -469,13 +506,19 @@ function Badge({ children, variant = "strong", state = "" }) {
   return <span className={`px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-widest border border-transparent ${styles}`}>{children}</span>;
 }
 
-function ActionChip({ children, onClick, variant = "default" }) {
-  const base = "px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer border";
-  const styles = variant === "success" 
-    ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-600 hover:bg-emerald-500 hover:text-white"
-    : "bg-[var(--surface-0)] border-[var(--border-standard)] text-[var(--fg-tertiary)] hover:border-[var(--condome-orange)] hover:text-[var(--condome-orange)]";
-
-  return <button type="button" onClick={onClick} className={`${base} ${styles}`}>{children}</button>;
+function ActionChip({ children, onClick, variant = "default", disabled = false }) {
+  const base = "px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer border disabled:opacity-50 disabled:cursor-not-allowed";
+  const styles = {
+    default: "bg-[var(--surface-0)] border-[var(--border-standard)] text-[var(--fg-tertiary)] hover:border-[var(--condome-orange)] hover:text-[var(--condome-orange)]",
+    success: "bg-emerald-500/10 border-emerald-500/20 text-emerald-600 hover:bg-emerald-500 hover:text-white",
+    email: "bg-[#1A6B9A]/10 border-[#1A6B9A]/30 text-[#1A6B9A] hover:bg-[#1A6B9A]/20",
+    danger: "bg-red-500/10 border-red-500/20 text-red-500",
+  };
+  return (
+    <button type="button" onClick={onClick} disabled={disabled} className={`${base} ${styles[variant] || styles.default}`}>
+      {children}
+    </button>
+  );
 }
 
 function LoadingState({ label }) {

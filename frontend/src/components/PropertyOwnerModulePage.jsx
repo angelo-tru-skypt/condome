@@ -1,7 +1,8 @@
 import { Link } from "react-router-dom";
 import { PROPERTY_OWNER_MODULES } from "../data/propertyOwnerModules";
+import { toDashboardPath } from "../utils/dashboardPaths";
 
-const SURFACE = "bg-[#1A1A1A] border border-[#262626] rounded-[28px]";
+const SURFACE = "dark-surface-readable bg-[#1A1A1A] border border-[#262626] rounded-[28px]";
 
 export default function PropertyOwnerModulePage({ moduleKey }) {
   const module = PROPERTY_OWNER_MODULES[moduleKey];
@@ -22,7 +23,7 @@ export default function PropertyOwnerModulePage({ moduleKey }) {
   return (
     <div className="space-y-6">
       <section
-        className="rounded-[32px] overflow-hidden border border-[#E9D5C6]"
+        className="dark-surface-readable rounded-[32px] overflow-hidden border border-[#E9D5C6]"
         style={{
           background:
             "linear-gradient(135deg, #1A1612 0%, #2A221D 44%, #4A2A1A 100%)",
@@ -131,7 +132,7 @@ export default function PropertyOwnerModulePage({ moduleKey }) {
               {module.related.map((item) => (
                 <Link
                   key={item.to}
-                  to={item.to}
+                  to={toDashboardPath(item.to)}
                   className="block rounded-2xl border border-[#EFE6DE] px-4 py-3 no-underline transition-all hover:border-[#D94F10]/30 hover:bg-[#FFF6F0]"
                 >
                   <p className="text-sm font-semibold text-[#E5E5E5]">{item.label}</p>

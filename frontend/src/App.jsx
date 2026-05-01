@@ -28,19 +28,50 @@ import BillingPaymentsPage from "./pages/BillingPaymentsPage";
 import BillingHistoryPage from "./pages/BillingHistoryPage";
 import Register from "./pages/register";
 import ResidentIncidentsPage from "./pages/ResidentIncidentsPage";
+import PlansPage from "./pages/PlansPage";
 import PropertyOwnerModulePage from "./components/PropertyOwnerModulePage";
 import ResidentProfilePage from "./pages/ResidentProfilePage";
 import ResidentVisitsPage from "./pages/ResidentVisitsPage";
 import ResidentesPage from "./pages/Residentes";
 import ResidentModulePage from "./components/ResidentModulePage";
+import VerifyEmailPage from "./pages/VerifyEmailPage";
 import {
   CondoAdminPage,
   SystemOwnerOnlyPage,
   DashboardHomeByRole,
   OwnerOnlyPage,
+  PropertyOwnerOnlyPage,
   ResidentOnlyPage,
   SharedRolePage,
 } from "./components/RoleDashboardPage";
+import { toDashboardPath } from "./utils/dashboardPaths";
+
+const LEGACY_DASHBOARD_ROUTES = [
+  "mi-residencia",
+  "condominio",
+  "condominio/nuevo",
+  "edificios",
+  "apartamentos",
+  "residentes",
+  "propietarios",
+  "roles",
+  "cuotas",
+  "morosidad",
+  "reportes",
+  "visitas",
+  "incidencias",
+  "avisos",
+  "reservas",
+  "acceso",
+  "auditoria",
+  "configuracion",
+  "documentos",
+  "notificaciones",
+  "vehiculos",
+  "planes",
+  "pagos",
+  "historial",
+];
 
 export default function App() {
   return (
@@ -48,8 +79,21 @@ export default function App() {
       <CondominioProvider>
         <BrowserRouter>
           <Routes>
+            <Route path="/" element={<Landing />} />
+            <Route path="/landing" element={<Landing />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/verify-email" element={<VerifyEmailPage />} />
+            {LEGACY_DASHBOARD_ROUTES.map((route) => (
+              <Route
+                key={route}
+                path={route}
+                element={<Navigate to={toDashboardPath(route)} replace />}
+              />
+            ))}
+
             <Route
-              path="/"
+              path="/dashboard"
               element={
                 <ProtectedRoute>
                   <DashboardLayout />
@@ -63,6 +107,14 @@ export default function App() {
                   <ResidentOnlyPage>
                     <ResidentProfilePage />
                   </ResidentOnlyPage>
+                }
+              />
+              <Route
+                path="perfil"
+                element={
+                  <ProtectedRoute>
+                    <ResidentProfilePage />
+                  </ProtectedRoute>
                 }
               />
               <Route
@@ -239,13 +291,18 @@ export default function App() {
                   />
                 }
               />
+              <Route
+                path="planes"
+                element={
+                  <PropertyOwnerOnlyPage>
+                    <PlansPage />
+                  </PropertyOwnerOnlyPage>
+                }
+              />
               <Route path="pagos" element={<BillingPaymentsPage />} />
               <Route path="historial" element={<BillingHistoryPage />} />
             </Route>
 
-            <Route path="login" element={<Login />} />
-            <Route path="register" element={<Register />} />
-            <Route path="landing" element={<Landing />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </BrowserRouter>

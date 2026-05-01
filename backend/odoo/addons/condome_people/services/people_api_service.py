@@ -70,16 +70,26 @@ class PeopleApiService(BaseApiService):
                     "apartamento_id": apartment.id,
                 }
             )
-            temporary_password = resident.ensure_user_account()
             apartment.sync_estado_ocupacion()
+            access_bundle = resident.provision_access_bundle(send_welcome=True)
+            temporary_password = access_bundle.get("temporary_password")
+            email_sent = bool(access_bundle.get("email_sent"))
             return self.build_response(
                 {
                     "data": self.serialize_residente(resident),
                     "apartamento": self.serialize_apartamento(apartment),
                     "credenciales": {
-                        "login": resident.user_id.login if resident.user_id else resident.email,
+                        "login": access_bundle.get("login") or resident.email,
                         "password_temporal": temporary_password,
                     },
+                    "emailSent": email_sent,
+                    "message": (
+                        _("Residente creado y credenciales enviadas por correo.")
+                        if email_sent
+                        else _(
+                            "Residente creado correctamente. Las credenciales fueron generadas, pero el correo no pudo enviarse; compártelas manualmente."
+                        )
+                    ),
                 },
                 status=201,
             )
@@ -129,11 +139,29 @@ class PeopleApiService(BaseApiService):
                     "apartamento_id": apartment.id,
                 }
             )
-            temporary_password = record.ensure_user_account()
-            response = {"data": self.serialize_propietario(record)}
+            access_bundle = record.provision_access_bundle(send_welcome=True)
+            temporary_password = access_bundle.get("temporary_password")
+            email_sent = bool(access_bundle.get("email_sent"))
+            if temporary_password:
+                message = (
+                    _("Propietario creado y credenciales enviadas por correo.")
+                    if email_sent
+                    else _(
+                        "Propietario creado correctamente. Las credenciales fueron generadas, pero el correo no pudo enviarse; compártelas manualmente."
+                    )
+                )
+            elif not record.portal_access:
+                message = _("Propietario creado sin acceso al portal.")
+            else:
+                message = _("Propietario creado correctamente.")
+            response = {
+                "data": self.serialize_propietario(record),
+                "emailSent": email_sent,
+                "message": message,
+            }
             if temporary_password:
                 response["credenciales"] = {
-                    "login": record.user_id.login if record.user_id else record.email,
+                    "login": access_bundle.get("login") or record.email,
                     "password_temporal": temporary_password,
                 }
             return self.build_response(response, status=201)
@@ -182,3 +210,93 @@ class PeopleApiService(BaseApiService):
         except Exception as error:  # pragma: no cover
             _logger.exception("People API owner update failed")
             return self.error_response(error, status=400)
+
+    def handle_resend_resident_credentials(self, resident_id):
+        try:
+            if self.is_preflight_request():
+                return self.handle_options()
+            user = self.require_owner_session()
+            resident = request.env["condome.residente"].sudo().browse(resident_id)
+            if not resident or resident.condominio_id.owner_user_id != user:
+                return self.error_response(_("Residente no encontrado o sin permisos"), status=404)
+            
+            # Forzar regeneración de contraseña temporal
+            import secrets
+            import string
+            alphabet = string.ascii_uppercase + string.digits
+            new_password = "Resi-" + "".join(secrets.choice(alphabet) for _ in range(6)) + "!"
+            
+            if not resident.user_id:
+                resident.ensure_user_account()
+            
+            resident.user_id.sudo().write({"password": new_password})
+            
+            from odoo.addons.condome_mail.services.email_service import CondomeEmailService
+            mail = CondomeEmailService()
+            email_sent = bool(mail.send_welcome_credentials(resident, new_password, async_send=False))
+            
+            return self.build_response(
+                {
+                    "ok": True,
+                    "emailSent": email_sent,
+                    "message": (
+                        _("Credenciales reenviadas correctamente por correo.")
+                        if email_sent
+                        else _(
+                            "La clave fue regenerada, pero el correo no pudo enviarse. Comparte estas credenciales manualmente."
+                        )
+                    ),
+                    "credenciales": {
+                        "login": resident.user_id.login if resident.user_id else resident.email,
+                        "password_temporal": new_password,
+                    },
+                }
+            )
+        except Exception as error:
+            _logger.exception("Resend resident credentials failed")
+            return self.error_response(str(error), status=400)
+
+    def handle_resend_owner_credentials(self, propietario_id):
+        try:
+            if self.is_preflight_request():
+                return self.handle_options()
+            user = self.require_owner_session()
+            propietario = request.env["condome.propietario"].sudo().browse(propietario_id)
+            if not propietario or propietario.condominio_id.owner_user_id != user:
+                return self.error_response(_("Propietario no encontrado o sin permisos"), status=404)
+            
+            # Forzar regeneración
+            import secrets
+            import string
+            alphabet = string.ascii_uppercase + string.digits
+            new_password = "Prop-" + "".join(secrets.choice(alphabet) for _ in range(6)) + "!"
+            
+            if not propietario.user_id:
+                propietario.ensure_user_account()
+            
+            propietario.user_id.sudo().write({"password": new_password})
+            
+            from odoo.addons.condome_mail.services.email_service import CondomeEmailService
+            mail = CondomeEmailService()
+            email_sent = bool(mail.send_welcome_credentials(propietario, new_password, async_send=False))
+            
+            return self.build_response(
+                {
+                    "ok": True,
+                    "emailSent": email_sent,
+                    "message": (
+                        _("Credenciales reenviadas correctamente por correo.")
+                        if email_sent
+                        else _(
+                            "La clave fue regenerada, pero el correo no pudo enviarse. Comparte estas credenciales manualmente."
+                        )
+                    ),
+                    "credenciales": {
+                        "login": propietario.user_id.login if propietario.user_id else propietario.email,
+                        "password_temporal": new_password,
+                    },
+                }
+            )
+        except Exception as error:
+            _logger.exception("Resend owner credentials failed")
+            return self.error_response(str(error), status=400)

@@ -129,7 +129,7 @@ export default function ResidentProfilePage() {
   return (
     <div className="space-y-6">
       <section
-        className="rounded-[34px] overflow-hidden border border-[var(--border-standard)]"
+        className="dark-surface-readable rounded-[34px] overflow-hidden border border-[var(--border-standard)]"
         style={{
           background: "linear-gradient(135deg, #0E2433 0%, #1A1612 45%, #1A1612 100%)",
           boxShadow: "0 24px 60px rgba(14,36,51,0.16)",

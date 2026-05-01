@@ -1,8 +1,11 @@
+import logging
 import secrets
 import string
 
 from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
+
+_logger = logging.getLogger(__name__)
 
 class CondomeResidente(models.Model):
     _name = "condome.residente"
@@ -143,14 +146,37 @@ class CondomeResidente(models.Model):
                     user_vals["login"] = login
                 resident.user_id.sudo().write(user_vals)
 
+    def provision_access_bundle(self, send_welcome=True):
+        self.ensure_one()
+        temporary_password = self.ensure_user_account()
+        email_sent = False
+        if temporary_password and send_welcome:
+            email_sent = bool(self._send_welcome_email(self, temporary_password))
+        return {
+            "login": self.user_id.login if self.user_id else self.email,
+            "temporary_password": temporary_password,
+            "email_sent": email_sent,
+        }
+
     @api.model_create_multi
     def create(self, vals_list):
         records = super().create(vals_list)
         if not self.env.context.get("skip_user_account_creation"):
             for resident in records:
-                resident.ensure_user_account()
+                resident.provision_access_bundle(send_welcome=True)
         records.mapped("apartamento_id").sync_estado_ocupacion()
         return records
+
+    @staticmethod
+    def _send_welcome_email(resident, temporary_password):
+        """Envía correo de bienvenida con credenciales al nuevo residente."""
+        try:
+            from odoo.addons.condome_mail.services.email_service import CondomeEmailService
+            mail = CondomeEmailService()
+            return bool(mail.send_welcome_credentials(resident, temporary_password, async_send=False))
+        except Exception as exc:
+            _logger.debug("No se pudo enviar el correo de bienvenida: %s", exc)
+            return False
 
     def write(self, vals):
         apartments_before = self.mapped("apartamento_id")

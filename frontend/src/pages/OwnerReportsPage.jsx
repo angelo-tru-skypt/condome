@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useCondominio } from "../context/CondominioContext";
 import adminService from "../utils/adminService";
 import { isSystemAdminRole } from "../utils/roles";
+import { toDashboardPath } from "../utils/dashboardPaths";
 
 const SURFACE =
   "bg-[var(--surface-1)] border border-[var(--border-standard)] rounded-[30px] shadow-[var(--shadow-card)]";
@@ -35,6 +37,7 @@ const EXPORT_FORMAT_OPTIONS = [
   { value: "xlsx", label: "Excel" },
   { value: "csv", label: "CSV" },
 ];
+const AUTOMATION_DAY_OPTIONS = Array.from({ length: 28 }, (_, index) => index + 1);
 
 const STATUS_LABELS = {
   requested: "Solicitado",
@@ -58,10 +61,12 @@ export default function OwnerReportsPage() {
   const [exports, setExports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [automationSaving, setAutomationSaving] = useState(false);
   const [downloadingId, setDownloadingId] = useState(null);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [automationDay, setAutomationDay] = useState(1);
   
   const [form, setForm] = useState({
     reportType: "cobros",
@@ -73,6 +78,7 @@ export default function OwnerReportsPage() {
     () => REPORT_TYPE_OPTIONS.find((item) => item.value === form.reportType) || REPORT_TYPE_OPTIONS[0],
     [form.reportType]
   );
+  const automationStatus = summary?.automation || null;
 
   const canRequestExport = Boolean(condominio?.id);
 
@@ -127,6 +133,12 @@ export default function OwnerReportsPage() {
       return () => clearTimeout(timer);
     }
   }, [success, error]);
+
+  useEffect(() => {
+    if (automationStatus?.scheduledDay) {
+      setAutomationDay(Number(automationStatus.scheduledDay));
+    }
+  }, [automationStatus?.scheduledDay]);
 
   if (!condominio?.id && !isSystemAdmin) {
     return <MissingCondominioState />;
@@ -184,6 +196,26 @@ export default function OwnerReportsPage() {
     }
   };
 
+  const handleAutomationSubmit = async () => {
+    if (!condominio?.id || !automationStatus?.enabled) return;
+
+    setAutomationSaving(true);
+    setError("");
+    setSuccess("");
+    try {
+      await adminService.updateReportAutomation({
+        condominio_id: condominio.id,
+        scheduledDay: Number(automationDay),
+      });
+      setSuccess(`Los reportes automáticos quedaron programados para el día ${automationDay} de cada mes.`);
+      await loadReports();
+    } catch (automationError) {
+      setError(automationError.message || "No se pudo actualizar la programación automática.");
+    } finally {
+      setAutomationSaving(false);
+    }
+  };
+
   return (
     <div className="space-y-6 md:space-y-7">
       <section
@@ -207,10 +239,10 @@ export default function OwnerReportsPage() {
               y un historial visible para trazabilidad administrativa.
             </p>
 
-            <div className="mt-6 grid gap-3 sm:grid-cols-3">
+            <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               <HeroInfoTile
                 label="Unidad Seleccionada"
-                value={condominio?.name || "Vista global"}
+                value={condominio?.name || condominio?.nombre || "Vista global"}
                 helper={condominio?.direccion || "Exportación activa para Odoo."}
               />
               <HeroInfoTile
@@ -219,11 +251,33 @@ export default function OwnerReportsPage() {
                 helper={activeReportType.helper}
               />
               <HeroInfoTile
+                label="Automatización"
+                value={automationStatus?.enabled ? "Activa" : "Manual"}
+                helper={
+                  automationStatus?.enabled
+                    ? `Día fijo ${automationStatus?.scheduledDay || 1} de cada mes.`
+                    : automationStatus?.message || "Los reportes automáticos mensuales se habilitan con un plan de pago."
+                }
+              />
+              <HeroInfoTile
                 label="Layout & Format"
                 value={form.exportFormat.toUpperCase()}
                 helper="Documento estructurado con logo corporativo."
               />
             </div>
+            {!automationStatus?.enabled ? (
+              <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-[22px] border border-white/10 bg-white/5 px-4 py-4">
+                <p className="text-sm leading-6 text-white/75">
+                  Los reportes automáticos mensuales se habilitan con Pro o Premium.
+                </p>
+                <Link
+                  to={toDashboardPath("planes")}
+                  className="rounded-full bg-white px-4 py-2 text-[11px] font-black uppercase tracking-[0.18em] text-[#1C1410] no-underline"
+                >
+                  Ver planes
+                </Link>
+              </div>
+            ) : null}
           </div>
 
           <div className="grid grid-cols-2 gap-3 self-start">
@@ -234,6 +288,12 @@ export default function OwnerReportsPage() {
               label="Historial Total"
               value={summary?.exports || 0}
               helper="Registros guardados en el servidor."
+            />
+            <HighlightTile
+              label="Auto-reportes"
+              value={summary?.automaticExports || 0}
+              color={automationStatus?.enabled ? "text-amber-200" : "text-white"}
+              helper={automationStatus?.message || "Disponible con Pro y Premium."}
             />
             <HighlightTile
                label="Engine State"
@@ -319,6 +379,55 @@ export default function OwnerReportsPage() {
               </div>
             </div>
 
+            <div className="space-y-4 rounded-[24px] border border-[var(--border-standard)] bg-[var(--surface-0)] p-5">
+              <p className="text-[10px] font-black uppercase tracking-widest text-[var(--fg-tertiary)]">
+                Reporte mensual automático
+              </p>
+              {automationStatus?.enabled && condominio?.id ? (
+                <div className="space-y-4">
+                  <p className="text-sm leading-7 text-[var(--fg-secondary)]">
+                    Tu plan {automationStatus?.planLabel || "actual"} ya puede emitir un reporte financiero automático cada mes.
+                  </p>
+                  <label className="block">
+                    <span className="mb-2 block text-[10px] font-black uppercase tracking-widest text-[var(--fg-tertiary)]">
+                      Día de generación
+                    </span>
+                    <select
+                      value={automationDay}
+                      onChange={(event) => setAutomationDay(Number(event.target.value))}
+                      className="w-full rounded-[18px] border border-[var(--border-standard)] bg-[var(--surface-1)] px-4 py-3 text-sm text-[var(--fg-primary)] outline-none transition-all focus:border-[var(--condome-orange)]"
+                    >
+                      {AUTOMATION_DAY_OPTIONS.map((day) => (
+                        <option key={day} value={day}>
+                          Día {day}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleAutomationSubmit}
+                    disabled={automationSaving}
+                    className="w-full rounded-2xl border border-[var(--condome-orange)] bg-[var(--signal-orange-fog)] px-4 py-3 text-[11px] font-black uppercase tracking-[0.24em] text-[var(--condome-orange)] transition-all disabled:opacity-60"
+                  >
+                    {automationSaving ? "Guardando..." : "Guardar programación"}
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <p className="text-sm leading-7 text-[var(--fg-secondary)]">
+                    {automationStatus?.message || "Activa Pro o Premium para habilitar reportes automáticos mensuales."}
+                  </p>
+                  <Link
+                    to={toDashboardPath("planes")}
+                    className="inline-flex rounded-full bg-[var(--condome-orange)] px-4 py-2 text-[11px] font-black uppercase tracking-[0.18em] text-white no-underline"
+                  >
+                    Ver planes
+                  </Link>
+                </div>
+              )}
+            </div>
+
             <label className="block">
                <p className="text-[10px] font-black uppercase tracking-widest text-[var(--fg-tertiary)] mb-2">Comentario de trazabilidad</p>
               <textarea
@@ -372,6 +481,7 @@ export default function OwnerReportsPage() {
                       <div className="flex flex-wrap gap-2 mb-4">
                         <StatusBadge value={TYPE_LABELS[item.reportType] || item.reportType} tone="strong" />
                         <StatusBadge value={item.exportFormat.toUpperCase()} />
+                        <StatusBadge value={item.generatedAutomatically ? "Automático" : "Manual"} tone={item.generatedAutomatically ? "automation" : "soft"} />
                         <StatusBadge value={STATUS_LABELS[item.state] || item.state} state={item.state} />
                       </div>
                       <h3 className="text-lg font-bold text-[var(--fg-primary)] group-hover:text-[var(--condome-orange)] transition-colors">
@@ -515,6 +625,8 @@ function StatusBadge({ value, tone = "soft", state = "" }) {
       ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]"
       : state === "failed"
         ? "bg-red-500/10 text-red-500 border border-red-500/20"
+        : tone === "automation"
+          ? "bg-amber-400/10 text-amber-300 border border-amber-300/20"
         : tone === "strong"
           ? "bg-[var(--condome-orange)]/10 text-[var(--condome-orange)]"
           : "bg-[var(--surface-2)] text-[var(--fg-tertiary)] border border-[var(--border-standard)]";

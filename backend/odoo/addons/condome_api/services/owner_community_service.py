@@ -7,6 +7,20 @@ from .base_api_service import BaseApiService
 
 _logger = logging.getLogger(__name__)
 
+# Inicialización diferida del servicio de correo.
+_mail_svc = None
+
+
+def _mail():
+    global _mail_svc
+    if _mail_svc is None:
+        try:
+            from odoo.addons.condome_mail.services.email_service import CondomeEmailService
+            _mail_svc = CondomeEmailService()
+        except Exception:
+            _logger.debug("condome_mail no disponible; correos de comunidad deshabilitados.")
+    return _mail_svc
+
 
 class OwnerCommunityService(BaseApiService):
     """Gestiona anuncios, áreas comunes, reservas y auditoría del condominio."""
@@ -55,6 +69,13 @@ class OwnerCommunityService(BaseApiService):
                 actor=self.clean_str(user.name or user.login) or "Administracion",
                 severity="warning" if record.prioridad == "alta" else "info",
             )
+            if self.should_send_announcement_email(record.estado, record.canal):
+                self.send_comunicado_email(
+                    condominio,
+                    title=record.name,
+                    message=record.mensaje or "",
+                    priority=record.prioridad or "media",
+                )
             return self.build_response({"data": self.serialize_comunicado(record)}, status=201)
         except PermissionError as error:
             return self.error_response(error, status=403)
@@ -87,6 +108,8 @@ class OwnerCommunityService(BaseApiService):
                 values["target_label"] = self.clean_str(payload.get("targetLabel") or payload.get("target_label")) or record.target_label
             if "scheduledFor" in payload or "scheduled_for" in payload:
                 values["scheduled_for"] = self.normalize_datetime_value(payload.get("scheduledFor") or payload.get("scheduled_for"))
+            previous_status = record.estado
+            previous_channel = record.canal
             record.write(values)
             self.create_audit_entry(
                 record.condominio_id,
@@ -96,6 +119,18 @@ class OwnerCommunityService(BaseApiService):
                 actor=self.clean_str(user.name or user.login) or "Administracion",
                 severity="warning" if record.prioridad == "alta" else "success",
             )
+            email_related_fields = {"name", "mensaje", "prioridad", "canal", "estado"}
+            if self.should_send_announcement_email(record.estado, record.canal) and (
+                previous_status != "published"
+                or previous_channel != record.canal
+                or bool(email_related_fields.intersection(values))
+            ):
+                self.send_comunicado_email(
+                    record.condominio_id,
+                    title=record.name,
+                    message=record.mensaje or "",
+                    priority=record.prioridad or "media",
+                )
             return self.build_response({"data": self.serialize_comunicado(record)})
         except PermissionError as error:
             return self.error_response(error, status=403)
@@ -320,6 +355,21 @@ class OwnerCommunityService(BaseApiService):
                 actor=self.clean_str(user.name or user.login) or "Administracion",
                 severity=severity,
             )
+            # Notificar al residente si la reserva fue aprobada
+            if record.estado == "approved" and values.get("estado") == "approved":
+                mail = _mail()
+                if mail:
+                    try:
+                        resident = record.residente_id
+                        if resident and resident.email:
+                            mail.send_reservation_confirmation(
+                                resident,
+                                area_name=record.area_id.name or "",
+                                date=str(record.fecha_reserva) if record.fecha_reserva else "",
+                                time_range=record.rango_horario or "",
+                            )
+                    except Exception as exc:
+                        _logger.debug("No se pudo enviar correo de reserva: %s", exc)
             return self.build_response({"data": self.serialize_area_reservation(record)})
         except PermissionError as error:
             return self.error_response(error, status=403)

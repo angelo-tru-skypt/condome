@@ -281,6 +281,8 @@ export function CondominioProvider({ children }) {
       crearResidente,
       actualizarResidente,
       eliminarResidente,
+      reenviarCredencialesResidente: async (id) => condominioService.reenviarCredencialesResidente(id),
+      reenviarCredencialesPropietario: async (id) => condominioService.reenviarCredencialesPropietario(id),
     }}>
       {children}
     </CondominioContext.Provider>

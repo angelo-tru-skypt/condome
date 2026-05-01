@@ -28,9 +28,16 @@ services:
       - --load=web
       - --log-level
       - info
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    networks:
+      - condome_net
+
   mydb:
     image: postgres:15
     restart: unless-stopped
+    stop_grace_period: 60s
     environment:
       - POSTGRES_DB=postgres
       - POSTGRES_PASSWORD=myodoo
@@ -38,7 +45,25 @@ services:
     volumes:
       - ./backend/data/postgres:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U odoo -d postgres"]
+      test: ["CMD-SHELL", "pg_isready -U odoo -d postgres || exit 1"]
+      start_period: 120s
       interval: 10s
       timeout: 5s
-      retries: 10
+      retries: 20
+    networks:
+      - condome_net
+
+  mailhog:
+    image: mailhog/mailhog
+    restart: unless-stopped
+    ports:
+      - "1025:1025" # Puerto SMTP
+      - "8025:8025" # Interfaz Web para ver correos
+    networks:
+      - condome_net
+
+networks:
+  condome_net:
+    driver: bridge
+    driver_opts:
+      com.docker.network.bridge.enable_ip_masquerade: "true"

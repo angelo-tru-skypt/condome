@@ -3,12 +3,15 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useCondominio } from "../context/CondominioContext";
 import adminService from "../utils/adminService";
+import { getPlanUsage } from "../utils/planUtils";
+import { toDashboardPath } from "../utils/dashboardPaths";
 
 const SURFACE = "rounded-[24px] border border-[var(--border-standard)] bg-[var(--surface-1)] shadow-[var(--shadow-card)]";
 const SOFT_PANEL = "rounded-[20px] border border-[var(--border-subtle)] bg-[var(--canvas)]";
 const EYEBROW = "text-[10px] uppercase tracking-[0.24em] font-semibold text-[var(--fg-tertiary)]";
 const SECTION_TITLE = "mt-2 text-[1.4rem] leading-tight font-semibold text-[var(--fg-primary)] tracking-tight";
 const BODY_COPY = "text-[15px] leading-relaxed text-[var(--fg-secondary)]";
+const NEW_CONDOMINIO_ROUTE = toDashboardPath("condominio/nuevo");
 
 const MANAGEMENT_AREAS = [
   {
@@ -63,13 +66,20 @@ export default function PropertyOwnerDashboardPage() {
 
   const firstName = user?.name?.split(" ")[0] || "Propietario";
   const hasCondominio = Boolean(condominio?.id);
+  const planUsage = getPlanUsage(user, condominios);
+  const canCreateAnotherCondominio = !condominios.length || planUsage.canAddMore;
   const managementAreas = useMemo(
     () =>
       MANAGEMENT_AREAS.map((area) => ({
         ...area,
-        routes: area.routes.filter((route) => (route.to === "/condominio/nuevo" ? !hasCondominio : true)),
+        routes: area.routes
+          .map((route) => ({
+            ...route,
+            to: toDashboardPath(route.to),
+          }))
+          .filter((route) => (route.to === NEW_CONDOMINIO_ROUTE ? canCreateAnotherCondominio : true)),
       })),
-    [hasCondominio]
+    [canCreateAnotherCondominio]
   );
 
   useEffect(() => {
@@ -142,7 +152,7 @@ export default function PropertyOwnerDashboardPage() {
         ? "La ficha principal del condominio ya existe y puede seguir refinandose."
         : "Crea la base del condominio para habilitar el resto de las interfaces.",
       complete: hasCondominio,
-      to: hasCondominio ? "/condominio" : "/condominio/nuevo",
+      to: toDashboardPath(hasCondominio ? "condominio" : "condominio/nuevo"),
       action: hasCondominio ? "Ver ficha" : "Registrar ahora",
       color: "#D94F10",
     },
@@ -152,7 +162,7 @@ export default function PropertyOwnerDashboardPage() {
         ? `${edificios.length} edificio(s) y ${apartamentos.length} apartamento(s) ya forman parte de la estructura.`
         : "Agrega edificios y apartamentos para organizar el condominio por unidades reales.",
       complete: Boolean(edificios.length || apartamentos.length),
-      to: edificios.length ? "/apartamentos" : "/edificios",
+      to: toDashboardPath(edificios.length ? "apartamentos" : "edificios"),
       action: edificios.length ? "Gestionar unidades" : "Crear estructura",
       color: "#B86A2D",
     },
@@ -162,7 +172,7 @@ export default function PropertyOwnerDashboardPage() {
         ? `${residentes.length} residente(s) ya estan vinculados a la operacion del condominio.`
         : "Registra residentes y responsables para activar visitas, incidencias y seguimiento.",
       complete: Boolean(residentes.length),
-      to: "/residentes",
+      to: toDashboardPath("residentes"),
       action: residentes.length ? "Ver comunidad" : "Registrar residentes",
       color: "#2E7D52",
     },
@@ -240,7 +250,7 @@ export default function PropertyOwnerDashboardPage() {
   }, [auditEntries, publishedCommunications, unreadNotifications]);
 
   if (condoLoading || !ready) {
-    return <PageLoader label="Preparando panel del propietario..." />;
+    return <PageLoader label="Preparando tu panel..." />;
   }
 
   return (
@@ -265,7 +275,10 @@ export default function PropertyOwnerDashboardPage() {
             <div>
               <div className="flex flex-wrap items-center gap-2">
                 <span className="px-3 py-1 rounded-full bg-white/10 border border-white/20 text-[10px] font-semibold tracking-[0.24em] uppercase text-white/90">
-                  Propiedad & Gestión
+                  Gestión de Propiedades
+                </span>
+                <span className="px-3 py-1 rounded-full bg-white/10 border border-white/20 text-[10px] font-semibold tracking-[0.18em] uppercase text-white/80">
+                  Plan {planUsage.details.label} · {planUsage.usageLabel}
                 </span>
                 {hasCondominio && (
                   <span className="px-3 py-1 rounded-full bg-[var(--condome-orange)]/20 text-[#FFB184] text-[10px] font-bold uppercase tracking-widest border border-[var(--condome-orange)]/30">
@@ -287,18 +300,27 @@ export default function PropertyOwnerDashboardPage() {
 
               <div className="mt-8 flex flex-wrap gap-4">
                 <Link
-                  to={hasCondominio ? "/condominio" : "/condominio/nuevo"}
+                  to={toDashboardPath(hasCondominio ? "condominio" : "condominio/nuevo")}
                   className="px-7 py-4 rounded-full no-underline text-xs font-bold uppercase tracking-widest text-white transition-all hover:scale-[1.02]"
                   style={{ background: "linear-gradient(135deg, var(--condome-orange-soft), var(--condome-orange))" }}
                 >
                   {hasCondominio ? "Explorar Condominio" : "Registrar Nueva Propiedad"}
                 </Link>
-                <Link
-                  to="/cuotas"
-                  className="px-7 py-4 rounded-full no-underline text-xs font-bold uppercase tracking-widest text-white/80 border border-white/10 bg-white/5 backdrop-blur-sm transition-all hover:bg-white/10"
-                >
-                  Finanzas & Cobros
-                </Link>
+                {canCreateAnotherCondominio && hasCondominio ? (
+                  <Link
+                    to={NEW_CONDOMINIO_ROUTE}
+                    className="px-7 py-4 rounded-full no-underline text-xs font-bold uppercase tracking-widest text-white/80 border border-white/10 bg-white/5 backdrop-blur-sm transition-all hover:bg-white/10"
+                  >
+                    Agregar otra propiedad
+                  </Link>
+                ) : (
+                  <Link
+                    to={toDashboardPath("cuotas")}
+                    className="px-7 py-4 rounded-full no-underline text-xs font-bold uppercase tracking-widest text-white/80 border border-white/10 bg-white/5 backdrop-blur-sm transition-all hover:bg-white/10"
+                  >
+                    Finanzas & Cobros
+                  </Link>
+                )}
               </div>
             </div>
 
@@ -306,6 +328,11 @@ export default function PropertyOwnerDashboardPage() {
               <p className="text-[10px] uppercase tracking-[0.24em] font-bold text-white/70">
                 Resumen de Implementación
               </p>
+              <div className="mt-4 rounded-[20px] border border-white/10 bg-white/5 px-4 py-3">
+                <p className="text-[10px] uppercase tracking-[0.18em] text-white/50">Multi-condominio</p>
+                <p className="mt-1 text-sm font-semibold text-white">{planUsage.usageLabel}</p>
+                <p className="mt-1 text-[11px] leading-5 text-white/55">{planUsage.automationCopy}</p>
+              </div>
               <div className="mt-6">
                 <div className="flex items-end justify-between gap-3">
                   <span className="text-3xl font-light text-white">{setupProgress}%</span>
@@ -395,7 +422,7 @@ export default function PropertyOwnerDashboardPage() {
               <h2 className={SECTION_TITLE}>Profundidad visual del estado del condominio</h2>
             </div>
             <span className="px-3 py-1.5 rounded-full bg-[var(--signal-orange-fog)] text-[var(--condome-orange)] text-xs font-semibold">
-              Panel en movimiento
+              Actividad reciente
             </span>
           </div>
 
@@ -510,7 +537,7 @@ export default function PropertyOwnerDashboardPage() {
               )}
             </div>
             {recentSignals.length > 0 && (
-               <Link to="/auditoria" className="mt-8 block text-center py-3 rounded-xl border border-[var(--border-subtle)] text-[11px] uppercase tracking-widest font-bold text-[var(--fg-tertiary)] no-underline hover:bg-[var(--canvas)] transition-colors">
+               <Link to={toDashboardPath("auditoria")} className="mt-8 block text-center py-3 rounded-xl border border-[var(--border-subtle)] text-[11px] uppercase tracking-widest font-bold text-[var(--fg-tertiary)] no-underline hover:bg-[var(--canvas)] transition-colors">
                   Ver Log de Auditoría Completo
                </Link>
             )}

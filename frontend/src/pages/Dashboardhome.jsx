@@ -3,12 +3,13 @@ import { useAuth } from "../context/AuthContext";
 import { useCondominio } from "../context/CondominioContext";
 import { DASHBOARD_FOCUS, OWNER_MODULES, OWNER_WORKSPACES } from "../data/ownerModules";
 import { getCountryLabel } from "../data/countries";
+import { toDashboardPath } from "../utils/dashboardPaths";
 
 const SURFACE = "rounded-[24px] border border-[var(--border-standard)] bg-[var(--surface-1)] shadow-[var(--shadow-card)]";
 const SOFT_PANEL = "rounded-[20px] border border-[var(--border-subtle)] bg-[var(--canvas)]";
 const EYEBROW = "text-[10px] uppercase tracking-[0.24em] font-bold text-[var(--fg-tertiary)]";
 const SECTION_TITLE = "mt-2 text-[1.45rem] leading-tight font-bold text-[var(--fg-primary)] tracking-tight";
-const INK_CARD = "rounded-[24px] border border-[#1A1612]/10 bg-[#1A1612] text-white p-7 shadow-xl";
+const INK_CARD = "dark-surface-readable rounded-[24px] border border-[#1A1612]/10 bg-[#1A1612] text-white p-7 shadow-xl";
 
 export default function DashboardHome() {
   const { user } = useAuth();
@@ -64,25 +65,25 @@ export default function DashboardHome() {
     {
       title: "Registrar el condominio",
       description: "Completa la ficha base y define la identidad del proyecto.",
-      to: "/condominio",
+      to: toDashboardPath("condominio"),
       ready: hasCondominio,
     },
     {
       title: "Preparar edificios y unidades",
       description: "Organiza torres, bloques y apartamentos para abrir la operacion.",
-      to: "/edificios",
+      to: toDashboardPath("edificios"),
       ready: edificios.length > 0 || apartamentos.length > 0,
     },
     {
       title: "Construir la comunidad",
       description: "Incorpora propietarios, residentes y sus permisos de acceso.",
-      to: "/propietarios",
+      to: toDashboardPath("propietarios"),
       ready: false,
     },
     {
       title: "Activar finanzas y soporte",
       description: "Pon en marcha cuotas, avisos, reclamos y control operativo.",
-      to: "/cuotas",
+      to: toDashboardPath("cuotas"),
       ready: false,
     },
   ];
@@ -95,16 +96,16 @@ export default function DashboardHome() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <section
-        className="rounded-[34px] overflow-hidden border border-[#E9D5C6] animate-reveal"
+        className="dark-surface-readable rounded-[24px] sm:rounded-[28px] md:rounded-[34px] overflow-hidden border border-[#E9D5C6] animate-reveal"
         style={{
           background:
             "linear-gradient(145deg, #1A1612 0%, #2A221D 45%, #56311E 100%)",
           boxShadow: "0 20px 60px rgba(26,22,18,0.14)",
         }}
       >
-        <div className="relative px-7 py-8 md:px-10 md:py-9">
+        <div className="relative px-4 sm:px-6 py-6 sm:py-8 md:px-10 md:py-9">
           <div
             className="absolute inset-y-0 right-0 w-[45%] opacity-30 pointer-events-none"
             style={{
@@ -112,51 +113,51 @@ export default function DashboardHome() {
                 "radial-gradient(circle at 70% 35%, rgba(255,122,48,0.95) 0, rgba(255,122,48,0) 60%)",
             }}
           />
-          <div className="relative z-10 grid gap-6 lg:grid-cols-[1.55fr_1fr]">
+          <div className="relative z-10 grid gap-5 sm:gap-6 lg:grid-cols-[1.55fr_1fr]">
             <div>
               <div className="flex flex-wrap items-center gap-2">
-                <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-bold tracking-[0.24em] uppercase text-white/50">
+                <span className="px-2.5 sm:px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[9px] sm:text-[10px] font-bold tracking-[0.2em] sm:tracking-[0.24em] uppercase text-white/50">
                   Centro del propietario
                 </span>
-                <span className="px-3 py-1 rounded-full bg-[var(--condome-orange)]/10 text-[var(--condome-orange-soft)] text-[10px] font-black uppercase tracking-[0.1em] border border-[var(--condome-orange)]/20">
+                <span className="px-2.5 sm:px-3 py-1 rounded-full bg-[var(--condome-orange)]/10 text-[var(--condome-orange-soft)] text-[9px] sm:text-[10px] font-black uppercase tracking-[0.1em] border border-[var(--condome-orange)]/20">
                   Panel Activo
                 </span>
               </div>
 
               <h1
-                className="mt-4 text-3xl md:text-4xl font-semibold text-white"
+                className="mt-3 sm:mt-4 text-[1.4rem] sm:text-[1.8rem] md:text-3xl lg:text-4xl font-semibold text-white"
                 style={{ fontFamily: "'Playfair Display', serif" }}
               >
                 Gestiona tu condominio con una vista clara de comunidad, finanzas y operacion.
               </h1>
 
-              <p className="mt-4 max-w-2xl text-sm md:text-[15px] leading-7 text-white/72">
+              <p className="mt-3 sm:mt-4 max-w-2xl text-xs sm:text-sm md:text-[15px] leading-5 sm:leading-6 md:leading-7 text-white/90">
                 Este dashboard esta reorganizado para que el propietario avance por flujos reales:
                 estructura, comunidad, cobranzas, soporte y control del condominio.
               </p>
 
-              <div className="mt-8 flex flex-wrap gap-4">
+              <div className="mt-6 sm:mt-8 flex flex-wrap gap-2.5 sm:gap-4">
                 <Link
-                  to={hasCondominio ? "/condominio" : "/condominio/nuevo"}
-                  className="px-8 py-4 rounded-full no-underline text-xs font-black uppercase tracking-widest text-white shadow-xl transition-all hover:scale-105"
+                  to={toDashboardPath(hasCondominio ? "condominio" : "condominio/nuevo")}
+                  className="px-5 sm:px-6 py-2.5 sm:py-3 md:px-8 md:py-4 rounded-full no-underline text-[10px] sm:text-xs font-black uppercase tracking-widest text-white shadow-xl transition-all hover:scale-105"
                   style={{ background: "linear-gradient(135deg, var(--condome-orange-soft), var(--condome-orange))" }}
                 >
                   {hasCondominio ? "Mi Condominio" : "Registrar ahora"}
                 </Link>
                 <Link
-                  to="/cuotas"
-                  className="px-8 py-4 rounded-full no-underline text-xs font-black uppercase tracking-widest text-white border border-white/10 bg-white/5 hover:bg-white/10 transition-colors"
+                  to={toDashboardPath("cuotas")}
+                  className="px-5 sm:px-6 py-2.5 sm:py-3 md:px-8 md:py-4 rounded-full no-underline text-[10px] sm:text-xs font-black uppercase tracking-widest text-white border border-white/10 bg-white/5 hover:bg-white/10 transition-colors"
                 >
                   Finanzas
                 </Link>
               </div>
             </div>
 
-            <div className="rounded-[24px] border border-[#E9D5C6]/30 bg-white/10 backdrop-blur-sm p-5">
-              <p className="text-[11px] uppercase tracking-[0.2em] font-bold text-[#F5D2BC]">
+            <div className="rounded-[18px] sm:rounded-[24px] border border-[#E9D5C6]/30 bg-white/10 backdrop-blur-sm p-4 sm:p-5">
+              <p className="text-[9px] sm:text-[11px] uppercase tracking-[0.18em] sm:tracking-[0.2em] font-bold text-[#F5D2BC]">
                 Estado actual
               </p>
-              <div className="mt-4 space-y-3">
+              <div className="mt-3 sm:mt-4 space-y-2.5 sm:space-y-3">
                 <StatusTile
                   label="Condominio"
                   value={condominio?.nombre || "Pendiente de registro"}
@@ -178,22 +179,22 @@ export default function DashboardHome() {
         </div>
       </section>
 
-      <section className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+      <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
         {heroStats.map((stat, idx) => (
           <article
             key={stat.label}
-            className={`${SURFACE} hover-glow-orange p-6 animate-slide-up hover:border-[var(--condome-orange)]/30 hover:shadow-xl transition-all duration-300 group`}
+            className={`${SURFACE} hover-glow-orange p-4 sm:p-5 md:p-6 animate-slide-up hover:border-[var(--condome-orange)]/30 hover:shadow-xl transition-all duration-300 group`}
             style={{ animationDelay: `${idx * 100}ms` }}
           >
             <div
-              className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm transition-transform group-hover:rotate-12"
+              className="w-9 h-9 sm:w-10 md:w-12 sm:h-10 md:h-12 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-sm transition-transform group-hover:rotate-12"
               style={{ background: `${stat.color}15`, color: stat.color }}
             >
               <MetricIcon />
             </div>
-            <p className="mt-5 text-4xl font-black text-[var(--fg-primary)] tracking-tight font-serif">{stat.value}</p>
-            <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-[var(--fg-tertiary)]">{stat.label}</p>
-            <p className="mt-3 text-xs leading-relaxed text-[var(--fg-secondary)] font-medium">{stat.helper}</p>
+            <p className="mt-3 sm:mt-5 text-2xl sm:text-3xl md:text-4xl font-black text-[var(--fg-primary)] tracking-tight font-serif">{stat.value}</p>
+            <p className="mt-0.5 sm:mt-1 text-[9px] sm:text-[10px] font-black uppercase tracking-[0.18em] sm:tracking-[0.22em] text-[var(--fg-tertiary)]">{stat.label}</p>
+            <p className="mt-2 sm:mt-3 text-[10px] sm:text-xs leading-relaxed text-[var(--fg-secondary)] font-medium">{stat.helper}</p>
           </article>
         ))}
       </section>
@@ -324,7 +325,7 @@ export default function DashboardHome() {
                   {workspace.routes.map((route) => (
                     <Link
                       key={route}
-                      to={`/${route}`}
+                      to={toDashboardPath(route)}
                       className="px-3 py-2 rounded-full bg-[#FFFFFF] border border-[#D94F10]/20 no-underline text-xs font-semibold text-[#D94F10] hover:bg-[#D94F10] hover:text-[#FFFFFF] transition-all"
                     >
                       {OWNER_MODULES[route]?.title || route}
@@ -397,7 +398,7 @@ export default function DashboardHome() {
                     return (
                       <Link
                         key={route}
-                        to={route === "condominioNuevo" ? "/condominio/nuevo" : `/${route}`}
+                        to={toDashboardPath(route === "condominioNuevo" ? "condominio/nuevo" : route)}
                         className={`${SOFT_PANEL} p-5 no-underline hover:border-[var(--condome-orange)]/40 hover:shadow-md transition-all group`}
                       >
                         <p className="text-sm font-bold text-[var(--fg-primary)] group-hover:text-[var(--condome-orange)] transition-colors">{module.title}</p>
@@ -459,9 +460,9 @@ export default function DashboardHome() {
 function StatusTile({ label, value, helper }) {
   return (
     <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-md px-4 py-3 hover:bg-white/10 transition-colors group cursor-default">
-      <p className="text-[10px] uppercase tracking-[0.24em] font-black text-white/40 group-hover:text-white/60 transition-colors">{label}</p>
+      <p className="text-[10px] uppercase tracking-[0.24em] font-black text-white/60 group-hover:text-white transition-colors">{label}</p>
       <p className="mt-1 text-sm font-bold text-white tracking-wide">{value}</p>
-      <p className="mt-1 text-[11px] leading-5 text-white/50">{helper}</p>
+      <p className="mt-1 text-[11px] leading-5 text-white/75">{helper}</p>
     </div>
   );
 }

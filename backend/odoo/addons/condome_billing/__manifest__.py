@@ -7,6 +7,7 @@
     "depends": ["base", "account", "condome_auth", "condome_core", "condome_structure", "condome_directory"],
     "data": [
         "security/ir.model.access.csv",
+        "data/billing_cron.xml",
     ],
     "installable": True,
     "application": False,

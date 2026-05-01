@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { useCondominio } from "../context/CondominioContext";
 import adminService from "../utils/adminService";
 
@@ -14,15 +15,29 @@ const DEFAULT_FORM = {
   color: "",
   ano: "",
   tipo: "auto",
-  estado: "activo",
+  estado: "pendiente",
   ownerName: "",
   ownerPhone: "",
   ownerDocument: "",
   notes: "",
 };
 
+const TYPE_OPTIONS = [
+  { value: "auto", label: "Auto" },
+  { value: "moto", label: "Moto" },
+  { value: "bicicleta", label: "Bicicleta" },
+  { value: "otro", label: "Otro" },
+];
+
+const STATUS_OPTIONS = [
+  { value: "pendiente", label: "Pendiente" },
+  { value: "activo", label: "Aprobado" },
+  { value: "restringido", label: "Restringido" },
+  { value: "inactivo", label: "Liberado" },
+];
+
 export default function OwnerVehiclesPage() {
-  const { condominio, residentes } = useCondominio();
+  const { condominio, residentes, refreshCondominio } = useCondominio();
   const [vehicles, setVehicles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -45,6 +60,7 @@ export default function OwnerVehiclesPage() {
       try {
         const response = await adminService.listVehicles(condominio.id);
         setVehicles(response.data || []);
+        setError("");
       } catch (loadError) {
         setError(loadError.message || "No se pudieron cargar los vehículos.");
       } finally {
@@ -62,11 +78,21 @@ export default function OwnerVehiclesPage() {
     return <MissingCondominioState />;
   }
 
+  const syncVehicleWorkspace = async () => {
+    await Promise.all([loadVehicles(), refreshCondominio()]);
+  };
+
+  const approvedVehicles = vehicles.filter((item) => item.estado === "activo").length;
+  const pendingVehicles = vehicles.filter((item) => item.estado === "pendiente").length;
+  const restrictedVehicles = vehicles.filter((item) => item.estado === "restringido" || item.estado === "suspendido").length;
+  const availableSpaces = condominio.parking_spaces_available ?? Math.max((condominio.parking_spaces_total ?? 0) - approvedVehicles, 0);
+
   const summary = {
     total: vehicles.length,
-    active: vehicles.filter((item) => item.estado === "activo").length,
-    restricted: vehicles.filter((item) => item.estado === "restringido").length,
-    motorcycles: vehicles.filter((item) => item.tipo === "moto").length,
+    approved: approvedVehicles,
+    pending: pendingVehicles,
+    restricted: restrictedVehicles,
+    availableSpaces,
   };
 
   const handleSubmit = async (event) => {
@@ -95,7 +121,7 @@ export default function OwnerVehiclesPage() {
         notes: form.notes,
       });
       setForm(DEFAULT_FORM);
-      await loadVehicles();
+      await syncVehicleWorkspace();
     } catch (saveError) {
       setError(saveError.message || "No se pudo registrar el vehículo.");
     } finally {
@@ -104,11 +130,15 @@ export default function OwnerVehiclesPage() {
   };
 
   const updateStatus = async (vehicleId, status) => {
+    setSaving(true);
+    setError("");
     try {
-      const response = await adminService.updateVehicle(vehicleId, { status });
-      setVehicles((current) => current.map((item) => (item.id === vehicleId ? response.data : item)));
+      await adminService.updateVehicle(vehicleId, { status });
+      await syncVehicleWorkspace();
     } catch (updateError) {
       setError(updateError.message || "No se pudo actualizar el vehículo.");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -116,19 +146,21 @@ export default function OwnerVehiclesPage() {
     <div className="space-y-6">
       <section className={`${SURFACE} p-6 md:p-7`}>
         <div className="flex items-start justify-between gap-4 flex-wrap">
-          <div>
+          <div className="max-w-3xl">
             <p className="text-[11px] uppercase tracking-[0.22em] font-semibold text-[#B15A27]">Registro de vehículos</p>
-            <h1 className="mt-2 text-2xl md:text-3xl font-semibold text-[#E5E5E5]">Controla placas autorizadas y su vínculo con cada residente.</h1>
-            <p className="mt-2 text-sm leading-7 text-[#A3A3A3] max-w-3xl">
-              Este panel conecta el inventario vehicular con el control de acceso para que portería y administración trabajen sobre el mismo dato.
+            <h1 className="mt-2 text-2xl md:text-3xl font-semibold text-[#E5E5E5]">
+              Administra aprobaciones de vehículos y el cupo real del estacionamiento.
+            </h1>
+            <p className="mt-2 text-sm leading-7 text-[#A3A3A3]">
+              Cada vehículo aprobado ocupa un espacio disponible. Cuando lo liberas, el sistema devuelve ese cupo automáticamente al inventario del condominio.
             </p>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <SummaryCard label="Vehículos" value={summary.total} />
-            <SummaryCard label="Activos" value={summary.active} />
-            <SummaryCard label="Restringidos" value={summary.restricted} />
-            <SummaryCard label="Motos" value={summary.motorcycles} />
+            <SummaryCard label="Aprobados" value={summary.approved} />
+            <SummaryCard label="Pendientes" value={summary.pending} />
+            <SummaryCard label="Espacios libres" value={summary.availableSpaces} />
           </div>
         </div>
       </section>
@@ -137,7 +169,22 @@ export default function OwnerVehiclesPage() {
         <div className={`${SURFACE} p-6 md:p-7`}>
           <div>
             <p className="text-[11px] uppercase tracking-[0.22em] font-semibold text-[#A3A3A3]">Nuevo vehículo</p>
-            <h2 className="mt-2 text-xl font-semibold text-[#E5E5E5]">Alta de acceso vehicular</h2>
+            <h2 className="mt-2 text-xl font-semibold text-[#E5E5E5]">Alta y control de parqueo</h2>
+          </div>
+
+          <div className="mt-5 rounded-[22px] border border-[#262626] bg-[#141414] p-4">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#B15A27]">Capacidad del condominio</p>
+            <p className="mt-2 text-sm text-[#E5E5E5]">
+              {condominio.parking_spaces_total ?? 0} espacios totales · {availableSpaces} disponibles · {condominio.parking_spaces_occupied ?? approvedVehicles} ocupados
+            </p>
+            {(condominio.parking_spaces_total ?? 0) <= 0 ? (
+              <p className="mt-2 text-sm leading-6 text-[#A3A3A3]">
+                Aún no has configurado espacios de estacionamiento. Puedes registrar solicitudes en pendiente y luego definir la capacidad desde{" "}
+                <Link to="/dashboard/condominio" className="text-[#FF7A30] no-underline">
+                  Mi condominio
+                </Link>.
+              </p>
+            ) : null}
           </div>
 
           <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
@@ -166,7 +213,7 @@ export default function OwnerVehiclesPage() {
 
             <div className="grid gap-4 md:grid-cols-2">
               <Field label="Placa">
-                <input value={form.placa} onChange={(event) => setForm((current) => ({ ...current, placa: event.target.value }))} className={INPUT} />
+                <input value={form.placa} onChange={(event) => setForm((current) => ({ ...current, placa: event.target.value.toUpperCase() }))} className={INPUT} />
               </Field>
               <Field label="Marca">
                 <input value={form.marca} onChange={(event) => setForm((current) => ({ ...current, marca: event.target.value }))} className={INPUT} />
@@ -188,17 +235,20 @@ export default function OwnerVehiclesPage() {
               </Field>
               <Field label="Tipo">
                 <select value={form.tipo} onChange={(event) => setForm((current) => ({ ...current, tipo: event.target.value }))} className={INPUT}>
-                  <option value="auto">Auto</option>
-                  <option value="moto">Moto</option>
-                  <option value="camioneta">Camioneta</option>
-                  <option value="otro">Otro</option>
+                  {TYPE_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
                 </select>
               </Field>
-              <Field label="Estado">
+              <Field label="Estado inicial">
                 <select value={form.estado} onChange={(event) => setForm((current) => ({ ...current, estado: event.target.value }))} className={INPUT}>
-                  <option value="activo">Activo</option>
-                  <option value="restringido">Restringido</option>
-                  <option value="inactivo">Inactivo</option>
+                  {STATUS_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
                 </select>
               </Field>
             </div>
@@ -237,7 +287,10 @@ export default function OwnerVehiclesPage() {
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div>
               <p className="text-[11px] uppercase tracking-[0.22em] font-semibold text-[#A3A3A3]">Inventario vehicular</p>
-              <h2 className="mt-2 text-xl font-semibold text-[#E5E5E5]">Vehículos autorizados</h2>
+              <h2 className="mt-2 text-xl font-semibold text-[#E5E5E5]">Solicitudes y vehículos autorizados</h2>
+            </div>
+            <div className="rounded-full border border-[#262626] bg-[#141414] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#B15A27]">
+              {summary.approved} ocupando espacio
             </div>
           </div>
 
@@ -248,11 +301,12 @@ export default function OwnerVehiclesPage() {
               vehicles.map((vehicle) => (
                 <article key={vehicle.id} className="rounded-[24px] border border-[#262626] bg-[#141414] p-5">
                   <div className="flex items-start justify-between gap-4 flex-wrap">
-                    <div>
+                    <div className="flex-1">
                       <div className="flex flex-wrap gap-2">
-                        <Badge>{vehicle.tipo}</Badge>
-                        <Badge variant="soft">{vehicle.estado}</Badge>
+                        <Badge>{labelForType(vehicle.tipo)}</Badge>
+                        <Badge variant={badgeVariant(vehicle.estado)}>{labelForStatus(vehicle.estado)}</Badge>
                         <Badge variant="soft">{vehicle.apartamento_nombre || "Sin unidad"}</Badge>
+                        {vehicle.parkingSpaceAssigned ? <Badge variant="space">Ocupa espacio</Badge> : null}
                       </div>
                       <h3 className="mt-3 text-lg font-semibold text-[#E5E5E5]">{vehicle.placa}</h3>
                       <p className="mt-1 text-sm text-[#A3A3A3]">
@@ -263,16 +317,17 @@ export default function OwnerVehiclesPage() {
                       </p>
                     </div>
 
-                    <div className="flex gap-2">
-                      <ActionChip onClick={() => updateStatus(vehicle.id, "activo")}>Activar</ActionChip>
+                    <div className="flex flex-wrap gap-2">
+                      <ActionChip onClick={() => updateStatus(vehicle.id, "activo")}>Aprobar</ActionChip>
                       <ActionChip onClick={() => updateStatus(vehicle.id, "restringido")}>Restringir</ActionChip>
-                      <ActionChip onClick={() => updateStatus(vehicle.id, "inactivo")}>Inactivar</ActionChip>
+                      <ActionChip onClick={() => updateStatus(vehicle.id, "inactivo")}>Liberar</ActionChip>
+                      <ActionChip onClick={() => updateStatus(vehicle.id, "pendiente")}>Pendiente</ActionChip>
                     </div>
                   </div>
                 </article>
               ))
             ) : (
-              <EmptyState title="Aún no hay vehículos" description="Registra el primer vehículo para conectarlo con control de acceso y trazabilidad." />
+              <EmptyState title="Aún no hay vehículos" description="Registra el primer vehículo para conectarlo con control de acceso, aprobación y disponibilidad de parqueos." />
             )}
           </div>
         </div>
@@ -311,7 +366,17 @@ function Field({ label, children }) {
 }
 
 function Badge({ children, variant = "strong" }) {
-  return <span className={`px-3 py-1 rounded-full text-[11px] font-semibold ${variant === "soft" ? "bg-[#262626] text-[#6F655B]" : "bg-[#EEF6FF] text-[#1A6B9A]"}`}>{children}</span>;
+  const className =
+    variant === "soft"
+      ? "bg-[#262626] text-[#6F655B]"
+      : variant === "warning"
+        ? "bg-[#3B2714] text-[#FFB067]"
+        : variant === "danger"
+          ? "bg-[#2C1616] text-[#FF8A8A]"
+          : variant === "space"
+            ? "bg-[#0E2433] text-[#72C4F0]"
+            : "bg-[#EEF6FF] text-[#1A6B9A]";
+  return <span className={`px-3 py-1 rounded-full text-[11px] font-semibold ${className}`}>{children}</span>;
 }
 
 function ActionChip({ children, onClick }) {
@@ -329,4 +394,27 @@ function EmptyState({ title, description }) {
       <p className="mt-2 text-sm leading-7 text-[#A3A3A3]">{description}</p>
     </div>
   );
+}
+
+function labelForStatus(status) {
+  if (status === "activo") return "Aprobado";
+  if (status === "pendiente") return "Pendiente";
+  if (status === "restringido" || status === "suspendido") return "Restringido";
+  if (status === "inactivo") return "Liberado";
+  return status || "Sin estado";
+}
+
+function labelForType(type) {
+  if (type === "auto") return "Auto";
+  if (type === "moto") return "Moto";
+  if (type === "bicicleta") return "Bicicleta";
+  if (type === "otro") return "Otro";
+  return type || "Vehículo";
+}
+
+function badgeVariant(status) {
+  if (status === "activo") return "space";
+  if (status === "pendiente") return "warning";
+  if (status === "restringido" || status === "suspendido") return "danger";
+  return "soft";
 }

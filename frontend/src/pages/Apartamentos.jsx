@@ -1,12 +1,13 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useCondominio } from "../context/CondominioContext";
+import { toDashboardPath } from "../utils/dashboardPaths";
 
 // ── Estilos reutilizables (Modo Claro) ───────────────────────────────────────
 const INPUT = "w-full px-4 py-3 bg-[var(--surface-0)] border border-[var(--border-standard)] rounded-xl text-[var(--fg-primary)] text-sm outline-none transition-all focus:border-[var(--condome-orange)] focus:bg-[var(--surface-2)] focus:ring-4 focus:ring-[var(--condome-orange)]/10 font-medium shadow-sm";
 const LABEL = "block text-[10px] font-bold tracking-[0.12em] uppercase text-[var(--fg-tertiary)] mb-1.5";
 const SURFACE = "rounded-[24px] border border-[var(--border-standard)] bg-[var(--surface-1)] shadow-[var(--shadow-card)]";
-const INK_CARD = "rounded-[22px] border border-[#1A1612]/10 bg-[#1A1612] text-white p-6 shadow-2xl";
+const INK_CARD = "dark-surface-readable rounded-[22px] border border-[#1A1612]/10 bg-[#1A1612] text-white p-6 shadow-2xl";
 
 export default function ApartamentosPage() {
   const {
@@ -121,18 +122,18 @@ export default function ApartamentosPage() {
   if (!edificios.length) {
     return (
       <div className={`${SURFACE} p-8 text-center`}>
-        <div className="w-16 h-16 bg-[#FFF4EE] rounded-full flex items-center justify-center mx-auto mb-5 text-2xl">
+        <div className="w-16 h-16 bg-[var(--signal-orange-fog)] rounded-full flex items-center justify-center mx-auto mb-5 text-2xl">
           🏗️
         </div>
         <h1 style={{ fontFamily: "'Playfair Display', serif" }}
-          className="text-2xl font-bold text-[#1A1A1A]">
+          className="text-2xl font-bold text-[var(--fg-primary)]">
           Primero crea un edificio
         </h1>
-        <p className="mt-3 text-sm leading-7 text-[#404040] font-medium max-w-sm mx-auto">
+        <p className="mt-3 text-sm leading-7 text-[var(--fg-secondary)] font-medium max-w-sm mx-auto">
           Los apartamentos necesitan pertenecer a un edificio dentro de {condominio?.nombre}.
         </p>
         <Link
-          to="/edificios"
+          to={toDashboardPath("edificios")}
           className="inline-flex mt-6 px-6 py-3 rounded-2xl no-underline text-white text-sm font-bold shadow-md"
           style={{ background: "linear-gradient(135deg, var(--condome-orange-soft), var(--condome-orange))" }}
         >
@@ -220,7 +221,7 @@ export default function ApartamentosPage() {
         <div className={`${SURFACE} overflow-hidden flex flex-col bg-[var(--canvas)]`}>
           <div className="px-6 py-5 border-b border-[var(--border-standard)] flex items-center justify-between bg-[var(--surface-0)]">
             <h2 className="text-lg font-bold text-[var(--fg-primary)]">Listado de unidades</h2>
-            <div className="px-3 py-1 rounded-full bg-white border border-[var(--border-standard)] text-[11px] font-bold text-[var(--condome-orange)]">
+            <div className="px-3 py-1 rounded-full bg-[var(--surface-2)] border border-[var(--border-standard)] text-[11px] font-bold text-[var(--condome-orange)]">
               {apartamentos.length} unidades registradas
             </div>
           </div>
@@ -229,7 +230,7 @@ export default function ApartamentosPage() {
             {!apartamentos.length ? (
               <div className="h-full flex flex-col items-center justify-center text-center opacity-60">
                 <div className="text-4xl mb-3">📭</div>
-                <p className="text-sm font-medium text-[#737373]">No hay unidades registradas todavia</p>
+                <p className="text-sm font-medium text-[var(--fg-tertiary)]">No hay unidades registradas todavia</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -328,8 +329,8 @@ export default function ApartamentosPage() {
 
 function SummaryTile({ label, value, color }) {
   return (
-    <div className="bg-[#FAF9F7] border border-[#E8DDD3]/60 rounded-xl p-3 text-center">
-      <p className="text-[9px] uppercase tracking-[0.14em] font-bold text-[#A3A3A3] mb-1">{label}</p>
+    <div className="bg-[var(--surface-0)] border border-[var(--border-standard)] rounded-xl p-3 text-center">
+      <p className="text-[9px] uppercase tracking-[0.14em] font-bold text-[var(--fg-tertiary)] mb-1">{label}</p>
       <p className="text-lg font-extrabold" style={{ color }}>{value}</p>
     </div>
   );
@@ -377,7 +378,7 @@ function ResidentsModal({ apt, onClose, onAddResidente }) {
     try {
       const response = await onAddResidente(apt.id, form);
       if (response && response.credenciales) {
-        setResult(response.credenciales);
+        setResult(response);
       } else {
         onClose();
       }
@@ -394,16 +395,28 @@ function ResidentsModal({ apt, onClose, onAddResidente }) {
         <div className={`${INK_CARD} w-full max-w-md text-center`} onClick={e => e.stopPropagation()}>
            <div className="w-16 h-16 bg-[var(--condome-orange)]/20 rounded-full flex items-center justify-center mx-auto mb-6 text-2xl">🔑</div>
            <h2 className="text-2xl font-bold mb-2">Acceso Generado</h2>
-           <p className="text-sm text-white/60 mb-8">Copia estas credenciales para entregárselas al residente. Podrá cambiarlas desde su perfil.</p>
+           <p className="text-sm text-white/60 mb-6">
+             {result.message || "Copia estas credenciales para entregárselas al residente. Podrá cambiarlas desde su perfil."}
+           </p>
+
+           <div className={`mb-6 rounded-2xl border px-4 py-3 text-sm font-bold ${
+             result.emailSent
+               ? "border-emerald-400/20 bg-emerald-500/10 text-emerald-300"
+               : "border-amber-400/20 bg-amber-500/10 text-amber-200"
+           }`}>
+             {result.emailSent
+               ? "El correo de bienvenida salió correctamente."
+               : "El acceso fue creado, pero el correo no salió. Entrega estas credenciales manualmente."}
+           </div>
            
            <div className="bg-white/5 border border-white/10 rounded-2xl p-5 mb-8 space-y-4">
               <div>
                 <p className="text-[10px] uppercase tracking-widest text-white/40 mb-1">Usuario / Login</p>
-                <p className="text-lg font-bold font-mono text-[var(--condome-orange-soft)]">{result.login}</p>
+                <p className="text-lg font-bold font-mono text-[var(--condome-orange-soft)]">{result.credenciales.login}</p>
               </div>
               <div className="pt-4 border-t border-white/5">
                 <p className="text-[10px] uppercase tracking-widest text-white/40 mb-1">Clave Temporal</p>
-                <p className="text-lg font-bold font-mono text-[var(--condome-orange-soft)]">{result.password_temporal}</p>
+                <p className="text-lg font-bold font-mono text-[var(--condome-orange-soft)]">{result.credenciales.password_temporal}</p>
               </div>
            </div>
 
@@ -461,7 +474,7 @@ function ConfirmDeleteModal({ title, message, saving, onCancel, onConfirm }) {
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-md" onClick={onCancel}>
       <div className="bg-[var(--surface-1)] rounded-[28px] w-full max-w-sm p-8 text-center relative border border-[var(--border-standard)] shadow-2xl" onClick={(e) => e.stopPropagation()}>
-        <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-5 text-2xl border border-red-100">🗑️</div>
+        <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-5 text-2xl border border-red-500/20">🗑️</div>
         <h2 className="text-xl font-bold text-[var(--fg-primary)] mb-2">{title}</h2>
         <p className="text-sm text-[var(--fg-secondary)] font-medium mb-6">{message}</p>
         <div className="flex gap-3">
@@ -487,7 +500,7 @@ function MissingCondominio({ moduleName }) {
       <p className="mt-4 text-sm leading-8 text-[var(--fg-secondary)] font-medium max-w-md mx-auto">
         No puedes gestionar {moduleName} hasta que registres la ficha principal del condominio.
       </p>
-      <Link to="/condominio" className="inline-block mt-8 px-10 py-4 rounded-2xl no-underline text-white font-black uppercase tracking-widest text-xs shadow-xl"
+      <Link to={toDashboardPath("condominio")} className="inline-block mt-8 px-10 py-4 rounded-2xl no-underline text-white font-black uppercase tracking-widest text-xs shadow-xl"
         style={{ background: "linear-gradient(135deg, var(--condome-orange-soft), var(--condome-orange))" }}>
         Registrar mi condominio
       </Link>

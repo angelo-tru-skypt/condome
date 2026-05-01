@@ -1,0 +1,205 @@
+- generic [ref=e3]:
+  - complementary [ref=e4]:
+    - generic [ref=e5]:
+      - generic [ref=e6]:
+        - img [ref=e8]
+        - generic [ref=e10]:
+          - paragraph [ref=e11]: Condome
+          - paragraph [ref=e12]: Navegacion principal
+      - button [ref=e13] [cursor=pointer]:
+        - img [ref=e14]
+    - generic [ref=e16]:
+      - paragraph [ref=e17]: Gestion del propietario
+      - paragraph [ref=e18]: Estructura · Edificios
+    - navigation [ref=e19]:
+      - generic [ref=e20]:
+        - paragraph [ref=e21]: Arranque
+        - link "Panel del condominio Vista principal del propietario encargado y prioridades de gestion." [ref=e22] [cursor=pointer]:
+          - /url: /dashboard
+          - img [ref=e24]
+          - generic [ref=e29]:
+            - paragraph [ref=e30]: Panel del condominio
+            - paragraph [ref=e31]: Vista principal del propietario encargado y prioridades de gestion.
+        - link "Mi condominio Ficha maestra, datos base y accesos de configuracion." [ref=e32] [cursor=pointer]:
+          - /url: /dashboard/condominio
+          - img [ref=e34]
+          - generic [ref=e37]:
+            - paragraph [ref=e38]: Mi condominio
+            - paragraph [ref=e39]: Ficha maestra, datos base y accesos de configuracion.
+        - link "Planes y Suscripción Actualiza tu plan y gestiona facturación mensual." [ref=e40] [cursor=pointer]:
+          - /url: /dashboard/planes
+          - img [ref=e42]
+          - generic [ref=e45]:
+            - paragraph [ref=e46]: Planes y Suscripción
+            - paragraph [ref=e47]: Actualiza tu plan y gestiona facturación mensual.
+      - generic [ref=e48]:
+        - paragraph [ref=e49]: Estructura
+        - link "Edificios Torres, bloques y niveles registrados en el condominio." [ref=e50] [cursor=pointer]:
+          - /url: /dashboard/edificios
+          - img [ref=e52]
+          - generic [ref=e56]:
+            - paragraph [ref=e57]: Edificios
+            - paragraph [ref=e58]: Torres, bloques y niveles registrados en el condominio.
+        - link "Apartamentos Unidades, estados de ocupacion y contexto estructural." [ref=e59] [cursor=pointer]:
+          - /url: /dashboard/apartamentos
+          - img [ref=e61]
+          - generic [ref=e64]:
+            - paragraph [ref=e65]: Apartamentos
+            - paragraph [ref=e66]: Unidades, estados de ocupacion y contexto estructural.
+        - link "Residentes Personas activas y relacion con cada unidad." [ref=e67] [cursor=pointer]:
+          - /url: /dashboard/residentes
+          - img [ref=e69]
+          - generic [ref=e73]:
+            - paragraph [ref=e74]: Residentes
+            - paragraph [ref=e75]: Personas activas y relacion con cada unidad.
+        - link "Propietarios Responsables por unidad y gestion comunitaria." [ref=e76] [cursor=pointer]:
+          - /url: /dashboard/propietarios
+          - img [ref=e78]
+          - generic [ref=e81]:
+            - paragraph [ref=e82]: Propietarios
+            - paragraph [ref=e83]: Responsables por unidad y gestion comunitaria.
+      - generic [ref=e84]:
+        - paragraph [ref=e85]: Operacion
+        - link "Avisos Comunicados, cartelera y publicaciones del condominio." [ref=e86] [cursor=pointer]:
+          - /url: /dashboard/avisos
+          - img [ref=e88]
+          - generic [ref=e90]:
+            - paragraph [ref=e91]: Avisos
+            - paragraph [ref=e92]: Comunicados, cartelera y publicaciones del condominio.
+        - link "Visitas Solicitudes de acceso, aprobaciones y seguimiento." [ref=e93] [cursor=pointer]:
+          - /url: /dashboard/visitas
+          - img [ref=e95]
+          - generic [ref=e98]:
+            - paragraph [ref=e99]: Visitas
+            - paragraph [ref=e100]: Solicitudes de acceso, aprobaciones y seguimiento.
+        - link "Reservas Amenidades, aprobaciones y ocupacion de espacios." [ref=e101] [cursor=pointer]:
+          - /url: /dashboard/reservas
+          - img [ref=e103]
+          - generic [ref=e106]:
+            - paragraph [ref=e107]: Reservas
+            - paragraph [ref=e108]: Amenidades, aprobaciones y ocupacion de espacios.
+        - link "Incidencias Soporte, reclamos y resolucion operativa." [ref=e109] [cursor=pointer]:
+          - /url: /dashboard/incidencias
+          - img [ref=e111]
+          - generic [ref=e113]:
+            - paragraph [ref=e114]: Incidencias
+            - paragraph [ref=e115]: Soporte, reclamos y resolucion operativa.
+        - link "Documentos Biblioteca oficial, reglamentos y archivos clave." [ref=e116] [cursor=pointer]:
+          - /url: /dashboard/documentos
+          - img [ref=e118]
+          - generic [ref=e121]:
+            - paragraph [ref=e122]: Documentos
+            - paragraph [ref=e123]: Biblioteca oficial, reglamentos y archivos clave.
+        - link "Vehiculos Registros de movilidad y autorizaciones de acceso." [ref=e124] [cursor=pointer]:
+          - /url: /dashboard/vehiculos
+          - img [ref=e126]
+          - generic [ref=e129]:
+            - paragraph [ref=e130]: Vehiculos
+            - paragraph [ref=e131]: Registros de movilidad y autorizaciones de acceso.
+      - generic [ref=e132]:
+        - paragraph [ref=e133]: Finanzas
+        - link "Cuotas Plantillas de cobro, cargos y resumen financiero." [ref=e134] [cursor=pointer]:
+          - /url: /dashboard/cuotas
+          - img [ref=e136]
+          - generic [ref=e139]:
+            - paragraph [ref=e140]: Cuotas
+            - paragraph [ref=e141]: Plantillas de cobro, cargos y resumen financiero.
+        - link "Pagos Transacciones registradas y control de cobros." [ref=e142] [cursor=pointer]:
+          - /url: /dashboard/pagos
+          - img [ref=e144]
+          - generic [ref=e146]:
+            - paragraph [ref=e147]: Pagos
+            - paragraph [ref=e148]: Transacciones registradas y control de cobros.
+        - link "Historial Trazabilidad de pagos cerrados y referencias." [ref=e149] [cursor=pointer]:
+          - /url: /dashboard/historial
+          - img [ref=e151]
+          - generic [ref=e155]:
+            - paragraph [ref=e156]: Historial
+            - paragraph [ref=e157]: Trazabilidad de pagos cerrados y referencias.
+        - link "Morosidad Deuda vencida, seguimiento y recuperacion." [ref=e158] [cursor=pointer]:
+          - /url: /dashboard/morosidad
+          - img [ref=e160]
+          - generic [ref=e162]:
+            - paragraph [ref=e163]: Morosidad
+            - paragraph [ref=e164]: Deuda vencida, seguimiento y recuperacion.
+        - link "Reportes Indicadores, resumenes y exportaciones de gestion." [ref=e165] [cursor=pointer]:
+          - /url: /dashboard/reportes
+          - img [ref=e167]
+          - generic [ref=e168]:
+            - paragraph [ref=e169]: Reportes
+            - paragraph [ref=e170]: Indicadores, resumenes y exportaciones de gestion.
+      - generic [ref=e171]:
+        - paragraph [ref=e172]: Control
+        - link "Notificaciones Alertas del sistema, recordatorios y seguimiento." [ref=e173] [cursor=pointer]:
+          - /url: /dashboard/notificaciones
+          - img [ref=e175]
+          - generic [ref=e178]:
+            - paragraph [ref=e179]: Notificaciones
+            - paragraph [ref=e180]: Alertas del sistema, recordatorios y seguimiento.
+        - link "Control de acceso Politicas operativas y trazabilidad de ingresos." [ref=e181] [cursor=pointer]:
+          - /url: /dashboard/acceso
+          - img [ref=e183]
+          - generic [ref=e186]:
+            - paragraph [ref=e187]: Control de acceso
+            - paragraph [ref=e188]: Politicas operativas y trazabilidad de ingresos.
+        - link "Auditoria Bitacora del condominio y movimientos recientes." [ref=e189] [cursor=pointer]:
+          - /url: /dashboard/auditoria
+          - img [ref=e191]
+          - generic [ref=e194]:
+            - paragraph [ref=e195]: Auditoria
+            - paragraph [ref=e196]: Bitacora del condominio y movimientos recientes.
+        - link "Configuracion Parametros base, reglas y datos generales del condominio." [ref=e197] [cursor=pointer]:
+          - /url: /dashboard/configuracion
+          - img [ref=e199]
+          - generic [ref=e202]:
+            - paragraph [ref=e203]: Configuracion
+            - paragraph [ref=e204]: Parametros base, reglas y datos generales del condominio.
+    - generic [ref=e207]:
+      - generic [ref=e208]: Q
+      - generic [ref=e209]:
+        - paragraph [ref=e210]: QA Owner
+        - paragraph [ref=e211]: Plan Free · 1 / 1
+      - button "Cerrar sesion" [ref=e212] [cursor=pointer]:
+        - img [ref=e213]
+  - generic [ref=e215]:
+    - banner [ref=e217]:
+      - generic [ref=e218]:
+        - paragraph [ref=e219]: Edificios
+        - heading "Bienvenido, QA" [level=2] [ref=e220]
+        - paragraph [ref=e221]: Torres, bloques y niveles registrados en el condominio.
+      - generic [ref=e222]:
+        - generic [ref=e223]:
+          - generic [ref=e224]: Plan Free
+          - generic [ref=e225]: 1 / 1
+        - generic [ref=e226]:
+          - generic [ref=e227]: Condominio
+          - generic [ref=e228]: Condo QA 1777609701426
+        - generic [ref=e229]: Condome
+      - generic [ref=e230]:
+        - button [ref=e231] [cursor=pointer]:
+          - img [ref=e232]
+        - generic [ref=e235]: Q
+    - main [ref=e236]:
+      - generic [ref=e239]:
+        - generic [ref=e240]:
+          - paragraph [ref=e241]: Estructura
+          - heading "Crear Edificio" [level=1] [ref=e242]
+          - paragraph [ref=e243]: Registra torres, bloques o secciones independientes del condominio Condo QA 1777609701426.
+          - generic [ref=e244]:
+            - generic [ref=e245]:
+              - generic [ref=e246]: Nombre del edificio / torre *
+              - 'textbox "Ej: Torre A, Bloque Sur..." [ref=e247]'
+            - button "Registrar edificio" [ref=e248] [cursor=pointer]
+        - generic [ref=e249]:
+          - generic [ref=e250]:
+            - heading "Torres y edificios registrados" [level=2] [ref=e251]
+            - generic [ref=e252]: 1 registros
+          - generic [ref=e255]:
+            - generic [ref=e256]: 🏢
+            - heading "Torre QA" [level=3] [ref=e257]
+            - paragraph [ref=e258]: "ID: #0006"
+            - generic [ref=e259]:
+              - generic [ref=e260]: Activo
+              - generic [ref=e261]:
+                - button "Editar" [ref=e262] [cursor=pointer]
+                - button "Eliminar" [ref=e263] [cursor=pointer]

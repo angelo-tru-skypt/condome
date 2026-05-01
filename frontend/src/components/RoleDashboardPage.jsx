@@ -62,6 +62,14 @@ export function OwnerOnlyPage({ children, redirectTo = "/" }) {
   return children;
 }
 
+export function PropertyOwnerOnlyPage({ children, redirectTo = "/" }) {
+  const { user } = useAuth();
+  if (!isPropertyOwnerRole(user?.role || user?.rol)) {
+    return <Navigate to={redirectTo} replace />;
+  }
+  return children;
+}
+
 // Acceso a páginas administrativas del condominio
 export function CondoAdminPage({ children, redirectTo = "/" }) {
   const { user } = useAuth();

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useCondominio } from "../context/CondominioContext";
 import adminService from "../utils/adminService";
+import mailService from "../utils/mailService";
 
 const SURFACE = "bg-[#1A1A1A] border border-[#262626] rounded-[28px]";
 const INPUT =
@@ -25,6 +26,7 @@ export default function OwnerSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [smtpTest, setSmtpTest] = useState({ loading: false, result: null });
 
   const loadSettings = useMemo(
     () => async () => {
@@ -74,6 +76,24 @@ export default function OwnerSettingsPage() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const testSmtp = async () => {
+    setSmtpTest({ loading: true, result: null });
+    try {
+      const response = await mailService.testSmtp(form.supportEmail || "");
+      setSmtpTest({
+        loading: false,
+        result: {
+          ok: true,
+          message: response?.message || "Correo de prueba enviado correctamente.",
+          transport: response?.transport || null,
+        },
+      });
+    } catch (err) {
+      setSmtpTest({ loading: false, result: { ok: false, message: err.message || "No se pudo conectar al servidor SMTP." } });
+    }
+    setTimeout(() => setSmtpTest({ loading: false, result: null }), 6000);
   };
 
   return (
@@ -208,6 +228,43 @@ export default function OwnerSettingsPage() {
                 </li>
               ))}
             </ul>
+          </div>
+
+          {/* Panel de prueba SMTP */}
+          <div className={`${SURFACE} p-6`}>
+            <p className="text-[11px] uppercase tracking-[0.22em] font-semibold text-[#A3A3A3]">Notificaciones por email</p>
+            <h3 className="mt-2 text-base font-semibold text-[#E5E5E5]">Servidor SMTP</h3>
+            <p className="mt-2 text-xs leading-6 text-[#737373]">
+              El sistema envía emails automáticos usando la configuración activa del servidor. En desarrollo, Condome puede usar el relay interno del stack para evitar fallos de red externa.
+            </p>
+            <div className="mt-4 space-y-3">
+              <SummaryRow
+                label="Servidor"
+                value={smtpTest.result?.transport?.host ? `${smtpTest.result.transport.host}:${smtpTest.result.transport.port}` : "Configuración del servidor"}
+              />
+              <SummaryRow
+                label="Modo"
+                value={smtpTest.result?.transport?.mode === "internal" ? "SMTP interno" : "SMTP del entorno"}
+              />
+              <SummaryRow label="Destino prueba" value={form.supportEmail || "Correo del usuario actual"} />
+            </div>
+            {smtpTest.result && (
+              <div className={`mt-4 px-4 py-3 rounded-xl text-xs font-semibold border ${
+                smtpTest.result.ok
+                  ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+                  : "bg-red-500/10 border-red-500/20 text-red-400"
+              }`}>
+                {smtpTest.result.ok ? "✅ " : "❌ "}{smtpTest.result.message}
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={testSmtp}
+              disabled={smtpTest.loading}
+              className="mt-4 w-full px-4 py-3 rounded-xl text-sm font-semibold border border-[#262626] bg-transparent text-[#A3A3A3] hover:border-[#1A6B9A]/50 hover:text-[#1A6B9A] transition-all disabled:opacity-50 cursor-pointer"
+            >
+              {smtpTest.loading ? "Enviando prueba..." : "✉ Enviar correo de prueba"}
+            </button>
           </div>
         </div>
       </form>
