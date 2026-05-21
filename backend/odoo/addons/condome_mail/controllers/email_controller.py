@@ -1,4 +1,4 @@
-"""Controlador HTTP para envío de correos desde la API de Condome.
+﻿"""Controlador HTTP para envío de correos desde la API de Condome.
 
 Expone endpoints para enviar correos masivos (avisos, comunicados) y
 correos individuales (notificaciones puntuales) a los residentes de un
@@ -30,7 +30,6 @@ class CondomeEmailController(http.Controller):
         auth="public",
         methods=["OPTIONS"],
         csrf=False,
-        cors="*",
     )
     def options(self, **kwargs):
         return _api.build_response({"ok": True})
@@ -43,7 +42,6 @@ class CondomeEmailController(http.Controller):
         auth="public",
         methods=["POST", "OPTIONS"],
         csrf=False,
-        cors="*",
     )
     def system_notice(self, **kwargs):
         """POST — Envía un aviso del sistema a todos los residentes del condominio.
@@ -88,7 +86,6 @@ class CondomeEmailController(http.Controller):
         auth="public",
         methods=["POST", "OPTIONS"],
         csrf=False,
-        cors="*",
     )
     def broadcast(self, **kwargs):
         """POST — Envía un comunicado a todos los residentes del condominio.
@@ -133,7 +130,6 @@ class CondomeEmailController(http.Controller):
         auth="public",
         methods=["POST", "OPTIONS"],
         csrf=False,
-        cors="*",
     )
     def payment_reminder(self, **kwargs):
         """POST — Envía recordatorio de pago a todos los residentes.
@@ -215,7 +211,6 @@ class CondomeEmailController(http.Controller):
         auth="public",
         methods=["POST", "OPTIONS"],
         csrf=False,
-        cors="*",
     )
     def notify_resident(self, **kwargs):
         """POST — Envía una notificación por correo a un residente específico.
@@ -267,7 +262,6 @@ class CondomeEmailController(http.Controller):
         auth="public",
         methods=["POST", "OPTIONS"],
         csrf=False,
-        cors="*",
     )
     def test_smtp(self, **kwargs):
         """POST — Envía un correo de prueba al administrador para verificar la configuración SMTP.
@@ -312,3 +306,4 @@ class CondomeEmailController(http.Controller):
         except Exception as error:
             _logger.exception("Email test failed")
             return _api.error_response(error, status=400)
+

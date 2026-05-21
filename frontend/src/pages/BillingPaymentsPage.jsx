@@ -3,7 +3,7 @@ import { useAuth } from "../context/AuthContext";
 import { useCondominio } from "../context/CondominioContext";
 import adminService from "../utils/adminService";
 import billingPortalService from "../utils/billingPortalService";
-import { isSystemAdminRole, isResidentRole, isCondoAdminRole, isPropertyOwnerRole } from "../utils/roles";
+import { isSystemAdminRole, isResidentRole, isCondoAdminRole } from "../utils/roles";
 import StripePaymentModal from "../components/StripePaymentModal";
 
 const SURFACE = "bg-[var(--surface-1)] border border-[var(--border-standard)] rounded-[28px] shadow-[var(--shadow-card)]";
@@ -13,6 +13,15 @@ const INPUT =
 const DEFAULT_PAYMENT_FORM = {
   paymentMethod: "stripe",
   paymentReference: "",
+};
+
+const PAYMENT_STATE_LABELS = {
+  draft: "Borrador",
+  pending: "Pendiente",
+  paid: "Pagado",
+  overdue: "Vencido",
+  rolledover: "Acumulado",
+  cancelled: "Cancelado",
 };
 
 export default function BillingPaymentsPage() {
@@ -72,6 +81,19 @@ export default function BillingPaymentsPage() {
     [condominio?.id, isAdmin, isResident]
   );
 
+  const availablePaymentMethods = useMemo(() => {
+    const filtered = paymentMethods.filter((method) => {
+      if (isResident) {
+        return ["stripe", "transferencia"].includes(method.id);
+      }
+      return true;
+    });
+    return filtered.length ? filtered : paymentMethods;
+  }, [isResident, paymentMethods]);
+
+  const defaultPaymentMethod = availablePaymentMethods[0]?.id || "";
+  const stripeEnabled = availablePaymentMethods.some((method) => method.id === "stripe");
+
   useEffect(() => {
     loadPayments();
   }, [loadPayments]);
@@ -85,12 +107,20 @@ export default function BillingPaymentsPage() {
 
   const submitPayment = async (chargeId) => {
     const form = paymentForms[chargeId] || DEFAULT_PAYMENT_FORM;
+    const paymentMethod = availablePaymentMethods.some((method) => method.id === form.paymentMethod)
+      ? form.paymentMethod
+      : defaultPaymentMethod;
+
     setSavingChargeId(chargeId);
     setError("");
     setSuccess("");
     
     try {
-      if (form.paymentMethod === "stripe") {
+      if (!paymentMethod) {
+        throw new Error("No hay metodos de pago disponibles para este usuario.");
+      }
+
+      if (paymentMethod === "stripe") {
         // Iniciar flujo Stripe
         const response = await adminService.initiatePayment({
           charge_ids: [chargeId],
@@ -113,13 +143,13 @@ export default function BillingPaymentsPage() {
         if (isResident) {
           await billingPortalService.registerResidentPayment({
             charge_id: chargeId,
-            payment_method: form.paymentMethod,
+            payment_method: paymentMethod,
             payment_reference: form.paymentReference,
           });
         } else {
           await billingPortalService.registerPropertyOwnerPayment({
             charge_id: chargeId,
-            payment_method: form.paymentMethod,
+            payment_method: paymentMethod,
             payment_reference: form.paymentReference,
           });
         }
@@ -133,7 +163,7 @@ export default function BillingPaymentsPage() {
     }
   };
 
-  const handleStripeSuccess = async (paymentIntent) => {
+  const handleStripeSuccess = async () => {
     setStripeIntent(null);
     setSuccess("¡Pago procesado con éxito a través de Stripe! Tus saldos han sido actualizados.");
     await loadPayments();
@@ -146,6 +176,10 @@ export default function BillingPaymentsPage() {
     setSuccess("");
     
     try {
+      if (!stripeEnabled) {
+        throw new Error("Stripe no esta configurado en este entorno. Usa transferencia desde la deuda pendiente.");
+      }
+
       const response = await adminService.initiatePayment({
         template_id: templateId,
         method: "stripe",
@@ -238,17 +272,23 @@ export default function BillingPaymentsPage() {
                     
                     {!isAdmin && (
                         <div className="mt-4 pt-4 border-t border-[var(--border-standard)] flex">
-                            <button
-                                onClick={() => submitTemplatePayment(template.id)}
-                                disabled={savingChargeId === `tpl_${template.id}`}
-                                className="w-full px-4 py-3 text-[11px] font-black uppercase tracking-widest text-white rounded-xl transition-all hover:scale-[1.02] active:scale-[0.97]"
-                                style={{
-                                    background: "linear-gradient(135deg, #635bff, #ac50ef)",
-                                    boxShadow: "0 4px 10px rgba(99,91,255,0.2)"
-                                }}
-                            >
-                                {savingChargeId === `tpl_${template.id}` ? "Procesando..." : "Pagar Cuota con Stripe"}
-                            </button>
+                            {stripeEnabled ? (
+                              <button
+                                  onClick={() => submitTemplatePayment(template.id)}
+                                  disabled={savingChargeId === `tpl_${template.id}`}
+                                  className="w-full px-4 py-3 text-[11px] font-black uppercase tracking-widest text-white rounded-xl transition-all hover:scale-[1.02] active:scale-[0.97]"
+                                  style={{
+                                      background: "linear-gradient(135deg, #635bff, #ac50ef)",
+                                      boxShadow: "0 4px 10px rgba(99,91,255,0.2)"
+                                  }}
+                              >
+                                  {savingChargeId === `tpl_${template.id}` ? "Procesando..." : "Pagar Cuota con Stripe"}
+                              </button>
+                            ) : (
+                              <div className="w-full rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-center text-[11px] font-bold text-amber-600">
+                                Stripe no esta configurado. Usa transferencia desde los cargos pendientes.
+                              </div>
+                            )}
                         </div>
                     )}
                   </article>
@@ -258,15 +298,24 @@ export default function BillingPaymentsPage() {
         ) : records.length ? (
           <div className="space-y-5 relative">
             {records.map((record) => {
-              const form = paymentForms[record.id] || DEFAULT_PAYMENT_FORM;
+              const form = paymentForms[record.id] || {
+                ...DEFAULT_PAYMENT_FORM,
+                paymentMethod: defaultPaymentMethod || DEFAULT_PAYMENT_FORM.paymentMethod,
+              };
               const isPaid = record.state === "paid";
-              const selectedMethod = paymentMethods.find(m => m.id === form.paymentMethod);
+              const activePaymentMethod = availablePaymentMethods.some((method) => method.id === form.paymentMethod)
+                ? form.paymentMethod
+                : defaultPaymentMethod;
+              const isStripeSelected = activePaymentMethod === "stripe";
+              const selectedMethod = availablePaymentMethods.find((method) => method.id === activePaymentMethod);
               return (
                 <article key={record.id} className={`rounded-[30px] border transition-all animate-reveal ${isPaid ? "border-[var(--border-standard)] bg-[var(--surface-0)] opacity-60" : "border-[var(--border-standard)] bg-[var(--surface-2)] shadow-md hover:border-[var(--condome-orange)]/40"}`}>
                   <div className="flex items-center justify-between gap-6 p-6 md:p-8 flex-wrap">
                     <div className="flex-1 min-w-[280px]">
                       <div className="flex flex-wrap gap-2 mb-4">
-                        <Badge variant={isPaid ? "soft" : "strong"} status={record.state}>{record.state}</Badge>
+                        <Badge variant={isPaid ? "soft" : "strong"} status={record.state}>
+                          {formatPaymentState(record.state)}
+                        </Badge>
                         <Badge variant="soft">{record.apartamentoNombre || "Cuerpo Central"}</Badge>
                       </div>
                       <h2 className="text-2xl font-bold text-[var(--fg-primary)] tracking-tight leading-none mb-3">{record.name}</h2>
@@ -293,9 +342,14 @@ export default function BillingPaymentsPage() {
                         
                         <p className="text-[10px] font-black uppercase tracking-[0.25em] text-[var(--fg-tertiary)] mb-5">Checkout Seguro</p>
                         <div className="space-y-4">
+                          {!availablePaymentMethods.length && (
+                            <div className="rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm font-medium text-red-500">
+                              No hay metodos de pago habilitados para esta cuenta.
+                            </div>
+                          )}
                           <label className="block">
                             <select
-                              value={form.paymentMethod}
+                              value={activePaymentMethod}
                               onChange={(event) =>
                                 setPaymentForms((current) => ({
                                   ...current,
@@ -306,21 +360,15 @@ export default function BillingPaymentsPage() {
                                 }))
                               }
                               className={`${INPUT} cursor-pointer font-bold`}
+                              disabled={!availablePaymentMethods.length}
                             >
-                                {paymentMethods
-                                  .filter(m => {
-                                    if (isResident) {
-                                      return ["stripe", "transferencia"].includes(m.id);
-                                    }
-                                    return true;
-                                  })
-                                  .map((m) => (
+                                {availablePaymentMethods.map((m) => (
                                   <option key={m.id} value={m.id}>{m.name}</option>
                                 ))}
                             </select>
                           </label>
                           
-                          {form.paymentMethod === "transferencia" && selectedMethod?.bank_info && (
+                          {activePaymentMethod === "transferencia" && selectedMethod?.bank_info && (
                             <div className="animate-reveal p-4 rounded-2xl bg-[var(--surface-1)] border border-[var(--condome-orange)]/20 mb-4">
                               <p className="text-[9px] font-black uppercase tracking-widest text-[var(--condome-orange)] mb-2">Instrucciones de Depósito</p>
                               <div className="space-y-1.5">
@@ -331,7 +379,7 @@ export default function BillingPaymentsPage() {
                             </div>
                           )}
 
-                          {form.paymentMethod !== "stripe" && (
+                          {!isStripeSelected && (
                             <label className="block animate-reveal">
                               <input
                                 value={form.paymentReference}
@@ -356,16 +404,20 @@ export default function BillingPaymentsPage() {
                           <button
                             type="button"
                             onClick={() => submitPayment(record.id)}
-                            disabled={savingChargeId === record.id || (form.paymentMethod !== "stripe" && !form.paymentReference)}
+                            disabled={
+                              savingChargeId === record.id ||
+                              !activePaymentMethod ||
+                              (!isStripeSelected && !form.paymentReference)
+                            }
                             className="w-full px-6 py-4 rounded-2xl text-white text-[11px] font-black uppercase tracking-widest border-none disabled:opacity-40 transition-all active:scale-[0.97] cursor-pointer shadow-xl"
                             style={{ 
-                                background: form.paymentMethod === "stripe" 
+                                background: isStripeSelected
                                     ? "linear-gradient(135deg, #635bff, #ac50ef)" 
                                     : "linear-gradient(135deg, var(--condome-orange), #000)",
-                                boxShadow: form.paymentMethod === "stripe" ? "0 10px 20px rgba(99,91,255,0.2)" : ""
+                                boxShadow: isStripeSelected ? "0 10px 20px rgba(99,91,255,0.2)" : ""
                             }}
                           >
-                            {savingChargeId === record.id ? "Procesando..." : form.paymentMethod === "stripe" ? "Pagar con Tarjeta" : "Registrar Pago"}
+                            {savingChargeId === record.id ? "Procesando..." : isStripeSelected ? "Pagar con Tarjeta" : "Registrar Pago"}
                           </button>
                         </div>
                       </div>
@@ -452,6 +504,10 @@ function Badge({ children, variant = "strong", status = "" }) {
   );
 }
 
+function formatPaymentState(value) {
+  return PAYMENT_STATE_LABELS[value] || value || "Sin estado";
+}
+
 function SuccessBanner({ message }) {
   return (
     <div className="px-6 py-4 rounded-[22px] bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 text-sm font-bold flex items-center gap-3 animate-in fade-in duration-500">
@@ -489,13 +545,3 @@ function formatDate(value) {
   return new Date(value).toLocaleDateString("es-DO", { day: "2-digit", month: "short", year: "numeric" });
 }
 
-function formatDateTime(value) {
-  if (!value) return "Sin fecha";
-  return new Date(value).toLocaleString("es-DO", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}

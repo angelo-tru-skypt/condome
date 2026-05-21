@@ -2,22 +2,13 @@ import json
 
 from odoo.http import request
 
+from .cors_service import build_cors_headers
+
 class ApiResponseMixin:
     """Utilidades HTTP compartidas para respuestas JSON y lectura de payload."""
 
     def cors_headers(self):
-        origin = request.httprequest.headers.get("Origin")
-        headers = {
-            "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": origin or "*",
-            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-            "Access-Control-Allow-Headers": "Content-Type, Authorization, Accept, Origin, X-Requested-With",
-            "Access-Control-Max-Age": "86400",
-            "Vary": "Origin",
-        }
-        if origin:
-            headers["Access-Control-Allow-Credentials"] = "true"
-        return headers
+        return build_cors_headers()
 
     def clean_str(self, value):
         return (value or "").strip()

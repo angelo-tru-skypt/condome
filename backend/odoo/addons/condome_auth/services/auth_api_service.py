@@ -5,6 +5,7 @@ import uuid
 from odoo import _, fields
 from odoo.exceptions import AccessDenied, MissingError, UserError
 from odoo.http import request
+from odoo.addons.condome_core.services.cors_service import build_cors_headers
 
 from ..jwt_utils import TokenError, build_tokens, verify_token
 
@@ -29,17 +30,7 @@ class AuthApiService:
     """Centraliza la lógica HTTP y de negocio de autenticación para no recargar el controller."""
 
     def cors_headers(self):
-        origin = request.httprequest.headers.get("Origin")
-        headers = {
-            "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": origin or "*",
-            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-            "Access-Control-Allow-Headers": "Content-Type, Authorization",
-            "Vary": "Origin",
-        }
-        if origin:
-            headers["Access-Control-Allow-Credentials"] = "true"
-        return headers
+        return build_cors_headers()
 
     def build_response(self, payload, status=200):
         response = request.make_response(json.dumps(payload), headers=self.cors_headers())

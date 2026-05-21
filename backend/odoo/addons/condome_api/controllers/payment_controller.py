@@ -1,4 +1,4 @@
-import json
+﻿import json
 import logging
 from odoo import http
 from odoo.http import request
@@ -11,7 +11,7 @@ gateway = BaseApiService()
 class PaymentController(http.Controller):
     """Controlador que delega la gestión de pagos al servicio dedicado."""
 
-    @http.route("/condome_api/payments/methods", type="http", auth="public", methods=["GET", "OPTIONS"], csrf=False, cors="*")
+    @http.route("/condome_api/payments/methods", type="http", auth="public", methods=["GET", "OPTIONS"], csrf=False)
     def get_payment_methods(self, **kwargs):
         """Retorna los métodos de pago disponibles incluyento Stripe."""
         if request.httprequest.method == "OPTIONS":
@@ -23,7 +23,7 @@ class PaymentController(http.Controller):
         except Exception as error:  # pragma: no cover
             return gateway.error_response(str(error), status=400)
 
-    @http.route("/condome_api/payments/initiate", type="http", auth="public", methods=["POST", "OPTIONS"], csrf=False, cors="*")
+    @http.route("/condome_api/payments/initiate", type="http", auth="public", methods=["POST", "OPTIONS"], csrf=False)
     def initiate_payment(self, **kwargs):
         """Inicia un proceso de pago delegando al servicio."""
         if request.httprequest.method == "OPTIONS":
@@ -90,7 +90,7 @@ class PaymentController(http.Controller):
 
         return gateway.build_response({"status": "success"})
 
-    @http.route("/condome_api/payments/plan/initiate", type="http", auth="public", methods=["POST", "OPTIONS"], csrf=False, cors="*")
+    @http.route("/condome_api/payments/plan/initiate", type="http", auth="public", methods=["POST", "OPTIONS"], csrf=False)
     def initiate_plan_payment(self, **kwargs):
         if request.httprequest.method == "OPTIONS":
             return gateway.build_response({"ok": True})
@@ -108,7 +108,7 @@ class PaymentController(http.Controller):
             _logger.exception("Plan payment initiation failed")
             return gateway.error_response(str(error), status=400)
 
-    @http.route("/condome_api/payments/plan/confirm", type="http", auth="public", methods=["POST", "OPTIONS"], csrf=False, cors="*")
+    @http.route("/condome_api/payments/plan/confirm", type="http", auth="public", methods=["POST", "OPTIONS"], csrf=False)
     def confirm_plan_payment(self, **kwargs):
         if request.httprequest.method == "OPTIONS":
             return gateway.build_response({"ok": True})
@@ -125,3 +125,4 @@ class PaymentController(http.Controller):
         except Exception as error:  # pragma: no cover
             _logger.exception("Plan payment confirmation failed")
             return gateway.error_response(str(error), status=400)
+

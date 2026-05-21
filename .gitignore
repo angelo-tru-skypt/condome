@@ -49,7 +49,9 @@ backend/odoo/odoo.conf
 # --- Environment and Secrets ---
 .env
 .env.*
-! .env.example
+!.env.example
+!backend/.env.example
+!frontend/.env.example
 *.pem
 *.key
 

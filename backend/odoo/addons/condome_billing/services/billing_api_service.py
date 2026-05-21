@@ -729,6 +729,7 @@ class BillingApiService(BaseApiService):
                 condominio = self.get_condominio(int(payload.get("condominio_id")), user)
                 action = self.clean_str(payload.get("action")).lower() or "notify"
                 charge_id = payload.get("charge_id")
+                audience = self.clean_str(payload.get("audience")).lower() or "all"
 
                 if action == "rollover":
                     charge = self._owner_charge_record(user, charge_id, condominio=condominio)
@@ -755,10 +756,17 @@ class BillingApiService(BaseApiService):
                 charge_domain = [
                     ("condominio_id", "=", condominio.id),
                     ("state", "in", ["pending", "overdue"]),
-                    "|",
-                    ("residente_id", "!=", False),
-                    ("propietario_id", "!=", False),
                 ]
+                if audience == "residentes":
+                    charge_domain.append(("residente_id", "!=", False))
+                else:
+                    charge_domain.extend(
+                        [
+                            "|",
+                            ("residente_id", "!=", False),
+                            ("propietario_id", "!=", False),
+                        ]
+                    )
                 if charge_id:
                     charge_domain.append(("id", "=", int(charge_id)))
                 records = request.env["condome.charge"].sudo().search(charge_domain)

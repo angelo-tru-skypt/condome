@@ -121,28 +121,56 @@ Antes de ejecutar el proyecto instala:
 ## Variables de entorno
 
 El backend usa `backend/.env`, cargado por `docker-compose.yml` en el servicio `web`.
+El frontend puede usar `frontend/.env` para el consumo local de la API.
 
-Variables esperadas:
+Archivos base recomendados:
+
+- `backend/.env.example`
+- `frontend/.env.example`
+
+Variables principales del backend:
 
 ```env
-PUBLISHED_KEY=...
-SECRET_KEY=...
-APP_PASSWORD_SMTP=...
-SMTP_EMAIL=...
-SMTP_HOST=...
-SMTP_PORT=...
-PLAN_PAYMENT_MODE=...
+PUBLISHED_KEY=
+SECRET_KEY=
+SMTP_EMAIL=no-reply@condome.local
+APP_PASSWORD_SMTP=
+SMTP_HOST=mailhog
+SMTP_PORT=1025
+SMTP_USE_TLS=false
+SMTP_USE_AUTH=false
+SMTP_CONNECTION_TIMEOUT=10
+SMTP_FALLBACK_HOST=
+SMTP_FALLBACK_PORT=1025
+SMTP_FALLBACK_EMAIL=no-reply@condome.local
+SMTP_FALLBACK_PASSWORD=
+SMTP_FALLBACK_USE_TLS=false
+SMTP_FALLBACK_USE_AUTH=false
+PLAN_PAYMENT_MODE=direct
+```
+
+Variables principales del frontend:
+
+```env
+VITE_API_URL=http://localhost:8069
+VITE_DEFAULT_DB=condome_db
+VITE_ENABLE_CONDOMINIO_API=true
 ```
 
 Uso esperado:
 
 - `PUBLISHED_KEY`: clave publica de Stripe.
 - `SECRET_KEY`: clave secreta de Stripe.
+- `SMTP_EMAIL`: cuenta remitente usada por el backend.
 - `APP_PASSWORD_SMTP`: password o app password del proveedor SMTP.
-- `SMTP_EMAIL`: cuenta remitente.
 - `SMTP_HOST`: servidor SMTP. En desarrollo puede apuntar a MailHog.
 - `SMTP_PORT`: puerto SMTP. MailHog usa `1025`.
-- `PLAN_PAYMENT_MODE`: modo de pago de planes.
+- `SMTP_USE_TLS` y `SMTP_USE_AUTH`: activan TLS/autenticacion cuando el proveedor SMTP lo requiera.
+- `SMTP_FALLBACK_*`: transporte alterno si el principal falla.
+- `PLAN_PAYMENT_MODE`: `direct`, `auto` o `stripe` para los pagos de planes.
+- `VITE_API_URL`: URL base del backend consumida por Vite en local.
+- `VITE_DEFAULT_DB`: nombre de base por defecto en el frontend.
+- `VITE_ENABLE_CONDOMINIO_API`: habilita el contexto de condominios en UI.
 
 No publiques claves reales en commits, issues ni capturas. Para desarrollo local se puede usar MailHog sin autenticacion SMTP real.
 

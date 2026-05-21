@@ -8,6 +8,11 @@ except ImportError:
     STRIPE_AVAILABLE = False
 
 try:
+    from stripe._http_client import RequestsClient as StripeRequestsClient
+except ImportError:
+    StripeRequestsClient = None
+
+try:
     from dotenv import load_dotenv
     DOTENV_AVAILABLE = True
 except ImportError:
@@ -54,6 +59,20 @@ class PaymentApiService:
         return (os.getenv("PUBLISHED_KEY") or "").strip()
 
     @staticmethod
+    def _stripe_request_timeout():
+        try:
+            return float((os.getenv("STRIPE_REQUEST_TIMEOUT_SECONDS") or "4").strip())
+        except (TypeError, ValueError):
+            return 4.0
+
+    @staticmethod
+    def _stripe_network_retries():
+        try:
+            return int((os.getenv("STRIPE_NETWORK_RETRIES") or "0").strip())
+        except (TypeError, ValueError):
+            return 0
+
+    @staticmethod
     def _stripe_config_error():
         if not STRIPE_AVAILABLE:
             return "La librería de Stripe no está instalada en el servidor."
@@ -89,6 +108,11 @@ class PaymentApiService:
             return config_error
 
         stripe.api_key = PaymentApiService._stripe_secret_key()
+        stripe.max_network_retries = PaymentApiService._stripe_network_retries()
+        if StripeRequestsClient is not None:
+            stripe.default_http_client = StripeRequestsClient(
+                timeout=PaymentApiService._stripe_request_timeout()
+            )
         return None
 
     @staticmethod
@@ -100,6 +124,17 @@ class PaymentApiService:
             return (
                 "Stripe rechazó la llave secreta configurada en el servidor. "
                 "Revisa SECRET_KEY y PUBLISHED_KEY en backend/.env y usa un par válido del mismo modo de prueba o producción."
+            )
+
+        if (
+            "temporary failure in name resolution" in lowered
+            or "failed to establish a new connection" in lowered
+            or "unexpected error communicating with stripe" in lowered
+            or "name or service not known" in lowered
+        ):
+            return (
+                "El servidor no pudo conectarse con Stripe. "
+                "Revisa la salida a internet/DNS del contenedor o usa transferencia bancaria mientras tanto."
             )
 
         return message or "Stripe devolvió un error inesperado."
@@ -230,25 +265,17 @@ class PaymentApiService:
             return {"ok": False, "error": "No se encontraron cargos válidos."}
 
         total = sum(charges.mapped("amount"))
-        
-        # Intentar obtener o crear cliente de Stripe
+
+        # Reusar el customer existente cuando ya fue creado anteriormente.
+        # Evitamos crear uno nuevo antes del PaymentIntent para no duplicar
+        # llamadas externas y no alargar el checkout cuando Stripe no responde.
         stripe_customer_id = None
         residente = env["condome.residente"].sudo().search([("user_id", "=", user.id)], limit=1)
-        
-        if residente and STRIPE_AVAILABLE:
-            if residente.stripe_customer_id:
-                stripe_customer_id = residente.stripe_customer_id
-            else:
-                try:
-                    customer = stripe.Customer.create(
-                        email=residente.email or user.login,
-                        name=residente.name,
-                        metadata={"residente_id": residente.id}
-                    )
-                    stripe_customer_id = customer.id
-                    residente.write({"stripe_customer_id": stripe_customer_id})
-                except Exception as ce:
-                    _logger.warning("Error creating Stripe customer: %s", str(ce))
+        payer_email = user.login or getattr(residente, "email", False) or ""
+        payer_name = getattr(residente, "name", False) or user.name or ""
+
+        if residente and STRIPE_AVAILABLE and residente.stripe_customer_id:
+            stripe_customer_id = residente.stripe_customer_id
 
         try:
             # Crear Intent con la versión instalada (15.0.1)
@@ -266,6 +293,11 @@ class PaymentApiService:
             if stripe_customer_id:
                 intent_args["customer"] = stripe_customer_id
                 intent_args["setup_future_usage"] = "off_session"
+            elif payer_email:
+                intent_args["receipt_email"] = payer_email
+
+            if payer_name:
+                intent_args["description"] = f"Pago Condome - {payer_name}"
 
             intent = stripe.PaymentIntent.create(**intent_args)
             return {

@@ -16,8 +16,9 @@ export default function AdminDashboardPage() {
   const isSystemAdmin = isSystemAdminRole(user?.role || user?.rol);
   const { condominio, edificios, apartamentos, residentes, hasCondominio, loading } = useCondominio();
   const [summaryData, setSummaryData] = useState(null);
+  const [billingSummary, setBillingSummary] = useState(null);
+  const [delinquencyData, setDelinquencyData] = useState(null);
   const [communications, setCommunications] = useState([]);
-  const [reservations, setReservations] = useState([]);
   const [policies, setPolicies] = useState([]);
   const [owners, setOwners] = useState([]);
   const [documents, setDocuments] = useState([]);
@@ -27,44 +28,58 @@ export default function AdminDashboardPage() {
   const [incidents, setIncidents] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [ready, setReady] = useState(false);
+  const [sendingPaymentAlerts, setSendingPaymentAlerts] = useState(false);
+  const [feedback, setFeedback] = useState({ type: "", message: "" });
 
   useEffect(() => {
-    // Si no hay condominio activo y el usuario no es system-owner, no cargamos
-    // el dashboard administrativo. Los system-owners (owner) pueden ver datos
-    // agregados globales sin seleccionar un condominio.
-    if (!condominio?.id && !isSystemAdmin) {
-      setSummaryData(null);
-      setCommunications([]);
-      setReservations([]);
-      setPolicies([]);
-      setOwners([]);
-      setDocuments([]);
-      setNotificationRules([]);
-      setAuditEntries([]);
-      setVisits([]);
-      setIncidents([]);
-      setNotifications([]);
-      setReady(true);
-      return;
-    }
+    let cancelled = false;
 
-    Promise.all([
-      adminService.getDashboardSummary(condominio?.id).catch(() => ({ data: null })),
-      adminService.listCommunications(condominio?.id).catch(() => ({ data: [] })),
-      adminService.listReservations(condominio?.id).catch(() => ({ data: [] })),
-      adminService.listAccessPolicies(condominio?.id).catch(() => ({ data: [] })),
-      adminService.listOwners(condominio?.id).catch(() => ({ data: [] })),
-      adminService.listDocuments(condominio?.id).catch(() => ({ data: [] })),
-      adminService.listNotificationRules(condominio?.id).catch(() => ({ data: [] })),
-      adminService.listAuditEntries(condominio?.id).catch(() => ({ data: [] })),
-      adminService.listNotifications(condominio?.id).catch(() => ({ data: [] })),
-      adminService.listVisits().catch(() => ({ data: [] })),
-      adminService.listIncidents().catch(() => ({ data: [] })),
-    ])
-      .then(([
+    async function loadDashboard() {
+      setReady(false);
+
+      // Si no hay condominio activo y el usuario no es system-owner, no cargamos
+      // el dashboard administrativo. Los system-owners (owner) pueden ver datos
+      // agregados globales sin seleccionar un condominio.
+      if (!condominio?.id && !isSystemAdmin) {
+        if (cancelled) return;
+        setSummaryData(null);
+        setBillingSummary(null);
+        setDelinquencyData(null);
+        setCommunications([]);
+        setPolicies([]);
+        setOwners([]);
+        setDocuments([]);
+        setNotificationRules([]);
+        setAuditEntries([]);
+        setVisits([]);
+        setIncidents([]);
+        setNotifications([]);
+        setReady(true);
+        return;
+      }
+
+      const responses = await Promise.all([
+        adminService.getDashboardSummary(condominio?.id).catch(() => ({ data: null })),
+        adminService.getBillingSummary(condominio?.id).catch(() => ({ data: null })),
+        adminService.getDelinquency(condominio?.id).catch(() => ({ data: null })),
+        adminService.listCommunications(condominio?.id).catch(() => ({ data: [] })),
+        adminService.listAccessPolicies(condominio?.id).catch(() => ({ data: [] })),
+        adminService.listOwners(condominio?.id).catch(() => ({ data: [] })),
+        adminService.listDocuments(condominio?.id).catch(() => ({ data: [] })),
+        adminService.listNotificationRules(condominio?.id).catch(() => ({ data: [] })),
+        adminService.listAuditEntries(condominio?.id).catch(() => ({ data: [] })),
+        adminService.listNotifications(condominio?.id).catch(() => ({ data: [] })),
+        adminService.listVisits().catch(() => ({ data: [] })),
+        adminService.listIncidents().catch(() => ({ data: [] })),
+      ]);
+
+      if (cancelled) return;
+
+      const [
         summaryResponse,
+        billingResponse,
+        delinquencyResponse,
         communicationsResponse,
-        reservationsResponse,
         policiesResponse,
         ownersResponse,
         documentsResponse,
@@ -73,21 +88,39 @@ export default function AdminDashboardPage() {
         notificationsResponse,
         visitsResponse,
         incidentsResponse,
-      ]) => {
-        setSummaryData(summaryResponse.data || null);
-        setCommunications(communicationsResponse.data || []);
-        setReservations(reservationsResponse.data || []);
-        setPolicies(policiesResponse.data || []);
-        setOwners(ownersResponse.data || []);
-        setDocuments(documentsResponse.data || []);
-        setNotificationRules(rulesResponse.data || []);
-        setAuditEntries(auditResponse.data || []);
-        setNotifications(notificationsResponse.data || []);
-        setVisits(visitsResponse.data || []);
-        setIncidents(incidentsResponse.data || []);
-      })
-      .finally(() => setReady(true));
-  }, [condominio?.id]);
+      ] = responses;
+
+      setSummaryData(summaryResponse.data || null);
+      setBillingSummary(billingResponse.data || null);
+      setDelinquencyData(delinquencyResponse.data || null);
+      setCommunications(communicationsResponse.data || []);
+      setPolicies(policiesResponse.data || []);
+      setOwners(ownersResponse.data || []);
+      setDocuments(documentsResponse.data || []);
+      setNotificationRules(rulesResponse.data || []);
+      setAuditEntries(auditResponse.data || []);
+      setNotifications(notificationsResponse.data || []);
+      setVisits(visitsResponse.data || []);
+      setIncidents(incidentsResponse.data || []);
+      setReady(true);
+    }
+
+    loadDashboard();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [condominio?.id, isSystemAdmin]);
+
+  useEffect(() => {
+    if (!feedback.message) return undefined;
+
+    const timer = setTimeout(() => {
+      setFeedback({ type: "", message: "" });
+    }, 4500);
+
+    return () => clearTimeout(timer);
+  }, [feedback]);
 
   if (loading || !ready) {
     return <PageLoader label="Preparando tu panel..." />;
@@ -104,9 +137,16 @@ export default function AdminDashboardPage() {
     summaryQueues.notificaciones_no_leidas ?? notifications.filter((item) => !item.read).length;
   const occupiedApartments = apartamentos.filter((item) => item.estado === "ocupado").length;
   const registeredOwners = summaryTotals.propietarios ?? owners.length;
+  const registeredResidents = summaryTotals.residentes ?? residentes.length;
   const registeredDocuments = summaryTotals.documentos ?? documents.length;
   const accessPolicies = policies.length;
   const rulesCount = notificationRules.length;
+  const pendingCharges = billingSummary?.pendingCharges ?? 0;
+  const paidCharges = billingSummary?.paidCharges ?? 0;
+  const overdueCharges = delinquencyData?.total ?? billingSummary?.overdueCharges ?? 0;
+  const overdueAmount = delinquencyData?.amount ?? billingSummary?.overdueAmount ?? 0;
+  const upcomingCount = delinquencyData?.upcomingCount ?? 0;
+  const residentsNeedingAttention = overdueCharges + upcomingCount;
   const firstName = user?.name?.split(" ")[0] || "Admin";
 
   const commandCards = [
@@ -157,7 +197,7 @@ export default function AdminDashboardPage() {
     {
       to: toDashboardPath(hasCondominio ? "propietarios" : "condominio/nuevo"),
       title: "Comunidad administrativa",
-      helper: `${registeredOwners} propietarios y ${summaryTotals.residentes ?? residentes.length} residentes`,
+      helper: `${registeredOwners} propietarios y ${registeredResidents} residentes`,
     },
     {
       to: toDashboardPath(hasCondominio ? "configuracion" : "condominio/nuevo"),
@@ -171,9 +211,82 @@ export default function AdminDashboardPage() {
     },
   ];
 
+  const quickActions = [
+    {
+      to: toDashboardPath(hasCondominio ? "cuotas" : "condominio/nuevo"),
+      title: "Cuotas y cargos",
+      helper: hasCondominio
+        ? `${pendingCharges} cargos pendientes por gestionar.`
+        : "Registra primero el condominio para abrir la facturacion.",
+      accent: "#D94F10",
+    },
+    {
+      to: toDashboardPath(hasCondominio ? "pagos" : "condominio/nuevo"),
+      title: "Pagos confirmados",
+      helper: hasCondominio
+        ? `${paidCharges} pagos ya aparecen conciliados.`
+        : "Activa el contexto operativo para revisar cobros.",
+      accent: "#0F766E",
+    },
+    {
+      to: toDashboardPath(hasCondominio ? "morosidad" : "condominio/nuevo"),
+      title: "Morosidad",
+      helper: hasCondominio
+        ? `${overdueCharges} casos en mora por ${formatMoney(overdueAmount)}.`
+        : "Todavia no hay seguimiento financiero disponible.",
+      accent: "#B45309",
+    },
+    {
+      to: toDashboardPath(hasCondominio ? "reportes" : "condominio/nuevo"),
+      title: "Reportes y cierre",
+      helper: hasCondominio
+        ? `${auditEntries.length} eventos listos para exportar y auditar.`
+        : "Selecciona o crea un condominio para exportar reportes.",
+      accent: "#1A6B9A",
+    },
+  ];
+
   const recentAudit = [...auditEntries]
     .sort((left, right) => new Date(right.createdAt) - new Date(left.createdAt))
     .slice(0, 5);
+
+  const sendPaymentAlerts = async () => {
+    if (!condominio?.id) {
+      setFeedback({
+        type: "error",
+        message: "Selecciona un condominio para enviar avisos de pago.",
+      });
+      return;
+    }
+
+    setSendingPaymentAlerts(true);
+    setFeedback({ type: "", message: "" });
+    try {
+      const response = await adminService.runDelinquencyAction(condominio.id, {
+        action: "notify",
+        audience: "residentes",
+      });
+      setFeedback({
+        type: "success",
+        message:
+          response.message ||
+          `Se enviaron avisos de pago a ${response.sent || 0} residente(s).`,
+      });
+      const [billingResponse, delinquencyResponse] = await Promise.all([
+        adminService.getBillingSummary(condominio.id).catch(() => ({ data: null })),
+        adminService.getDelinquency(condominio.id).catch(() => ({ data: null })),
+      ]);
+      setBillingSummary(billingResponse.data || null);
+      setDelinquencyData(delinquencyResponse.data || null);
+    } catch (actionError) {
+      setFeedback({
+        type: "error",
+        message: actionError.message || "No se pudieron enviar los avisos de pago.",
+      });
+    } finally {
+      setSendingPaymentAlerts(false);
+    }
+  };
 
   return (
     <div className="space-y-6 md:space-y-7">
@@ -256,6 +369,75 @@ export default function AdminDashboardPage() {
               </div>
             </div>
           </div>
+        </div>
+      </section>
+
+      {feedback.message ? (
+        feedback.type === "success" ? (
+          <SuccessBanner message={feedback.message} />
+        ) : (
+          <ErrorBanner message={feedback.message} />
+        )
+      ) : null}
+
+      <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {quickActions.map((item) => (
+          <QuickActionCard
+            key={item.title}
+            to={item.to}
+            title={item.title}
+            helper={item.helper}
+            accent={item.accent}
+          />
+        ))}
+      </section>
+
+      <section className={`${SURFACE} p-6 md:p-7`}>
+        <div className="flex items-start justify-between gap-5 flex-wrap">
+          <div className="max-w-3xl">
+            <p className={EYEBROW}>Cobranza inmediata</p>
+            <h2 className={SECTION_TITLE}>Envía avisos de pago desde el panel principal</h2>
+            <p className={`mt-3 ${BODY_COPY}`}>
+              Usa este atajo para notificar a los residentes con cargos por vencer o ya vencidos
+              sin salir del dashboard.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={sendPaymentAlerts}
+            disabled={sendingPaymentAlerts || !hasCondominio || !residentsNeedingAttention}
+            className="rounded-2xl border-none px-5 py-3 text-xs font-bold uppercase tracking-[0.18em] text-white shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{
+              background: "linear-gradient(135deg, #D94F10, #8F2D04)",
+            }}
+          >
+            {sendingPaymentAlerts ? "Enviando avisos..." : "Enviar avisos de pago"}
+          </button>
+        </div>
+
+        <div className="mt-6 grid gap-4 md:grid-cols-3">
+          <InfoStatCard
+            label="Casos vencidos"
+            value={overdueCharges}
+            helper={`${formatMoney(overdueAmount)} en atraso actual.`}
+            accent="#B45309"
+          />
+          <InfoStatCard
+            label="Por vencer"
+            value={upcomingCount}
+            helper="Cargos que entran en recordatorio preventivo."
+            accent="#1A6B9A"
+          />
+          <InfoStatCard
+            label="Avisos listos"
+            value={residentsNeedingAttention}
+            helper={
+              residentsNeedingAttention
+                ? "Hay residentes que deben recibir aviso de pago."
+                : "No hay residentes pendientes de aviso ahora mismo."
+            }
+            accent="#0F766E"
+          />
         </div>
       </section>
 
@@ -356,7 +538,7 @@ export default function AdminDashboardPage() {
               title="Comunidad"
               description={
                 registeredOwners || (summaryTotals.residentes ?? residentes.length)
-                  ? `${registeredOwners} propietarios y ${summaryTotals.residentes ?? residentes.length} residentes requieren administracion continua.`
+                  ? `${registeredOwners} propietarios y ${registeredResidents} residentes requieren administracion continua.`
                   : "Aun no hay comunidad administrativa registrada."
               }
               to={toDashboardPath("propietarios")}
@@ -369,6 +551,15 @@ export default function AdminDashboardPage() {
                   : "Todavia no hay alertas ni politicas registradas."
               }
               to={toDashboardPath("acceso")}
+            />
+            <QueueCard
+              title="Cobranza"
+              description={
+                pendingCharges || overdueCharges
+                  ? `${pendingCharges} cargos pendientes y ${overdueCharges} casos en mora por ${formatMoney(overdueAmount)}.`
+                  : "La cobranza se mantiene al dia en este momento."
+              }
+              to={toDashboardPath("morosidad")}
             />
           </div>
         </div>
@@ -440,6 +631,39 @@ function QueueCard({ title, description, to }) {
   );
 }
 
+function QuickActionCard({ to, title, helper, accent }) {
+  return (
+    <Link
+      to={to}
+      className="rounded-[24px] border border-[var(--border-standard)] bg-[var(--surface-1)] p-5 no-underline shadow-[var(--shadow-card)] transition-all hover:-translate-y-0.5 hover:border-[var(--control-border-strong)]"
+    >
+      <div
+        className="inline-flex rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em]"
+        style={{ backgroundColor: `${accent}14`, color: accent }}
+      >
+        Accion rapida
+      </div>
+      <h3 className="mt-4 text-lg font-semibold text-[var(--fg-primary)]">{title}</h3>
+      <p className="mt-2 text-sm leading-6 text-[var(--fg-secondary)]">{helper}</p>
+    </Link>
+  );
+}
+
+function InfoStatCard({ label, value, helper, accent }) {
+  return (
+    <div className="rounded-[22px] border border-[var(--border-standard)] bg-[var(--surface-0)] p-5">
+      <div
+        className="inline-flex rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em]"
+        style={{ backgroundColor: `${accent}14`, color: accent }}
+      >
+        {label}
+      </div>
+      <p className="mt-4 text-[2rem] font-semibold leading-none text-[var(--fg-primary)]">{value}</p>
+      <p className="mt-2 text-sm leading-6 text-[var(--fg-secondary)]">{helper}</p>
+    </div>
+  );
+}
+
 function EmptyState({ title, description }) {
   return (
     <div className="rounded-[24px] border border-dashed border-[var(--border-standard)] bg-[var(--surface-0)] p-6 text-center">
@@ -468,4 +692,27 @@ function formatDate(value) {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+function formatMoney(value) {
+  return new Intl.NumberFormat("es-DO", {
+    style: "currency",
+    currency: "DOP",
+  }).format(Number(value || 0));
+}
+
+function SuccessBanner({ message }) {
+  return (
+    <div className="rounded-[22px] border border-emerald-500/20 bg-emerald-500/10 px-5 py-4 text-sm font-semibold text-emerald-600">
+      {message}
+    </div>
+  );
+}
+
+function ErrorBanner({ message }) {
+  return (
+    <div className="rounded-[22px] border border-red-500/20 bg-red-500/10 px-5 py-4 text-sm font-semibold text-red-500">
+      {message}
+    </div>
+  );
 }

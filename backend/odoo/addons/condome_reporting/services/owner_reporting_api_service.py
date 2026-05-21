@@ -10,6 +10,7 @@ from odoo import _
 from odoo.http import request
 
 from odoo.addons.condome_core.services.base_api_service import BaseApiService
+from odoo.addons.condome_core.services.cors_service import build_cors_headers
 
 _logger = logging.getLogger(__name__)
 
@@ -56,28 +57,17 @@ class OwnerReportingApiService(BaseApiService):
         return condominio, plan_owner
 
     def _download_headers(self, filename, content_type):
-        origin = request.httprequest.headers.get("Origin")
         # Asegurar que el filename tenga la extensión si falta
         if "." not in filename:
             ext = "pdf" if content_type == "application/pdf" else "csv"
             filename = f"{filename}.{ext}"
 
-        headers = [
-            ("Content-Type", content_type),
-            ("Content-Disposition", f'attachment; filename="{filename}"'),
-            ("Access-Control-Expose-Headers", "Content-Disposition, Content-Type"),
-            ("Vary", "Origin"),
-        ]
-        if origin:
-            headers.extend(
-                [
-                    ("Access-Control-Allow-Origin", origin),
-                    ("Access-Control-Allow-Credentials", "true"),
-                ]
-            )
-        else:
-            headers.append(("Access-Control-Allow-Origin", "*"))
-        return headers
+        headers = build_cors_headers(
+            content_type=content_type,
+            expose_headers="Content-Disposition, Content-Type",
+        )
+        headers["Content-Disposition"] = f'attachment; filename="{filename}"'
+        return list(headers.items())
 
     def _get_export_for_download(self, export_id, user):
         model = request.env["condome.report.export"].sudo()
